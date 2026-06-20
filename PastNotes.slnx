@@ -1,4 +1,6 @@
 <Solution>
+  <Project Path="PastNotes.Console.Tests/PastNotes.Console.Tests.csproj" />
+  <Project Path="PastNotes.Console/PastNotes.Console.csproj" />
   <Project Path="PastNotes.Tests/PastNotes.Tests.csproj" />
   <Project Path="PastNotes/PastNotes.csproj" />
 </Solution>

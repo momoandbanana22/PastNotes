@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace PastNotes;
 
-public class MisskeyApiClient
+public class MisskeyApiClient : IMisskeyApiClient
 {
     public string InstanceUrl { get; }
     public string ApiToken { get; }
