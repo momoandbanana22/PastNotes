@@ -7,15 +7,37 @@ public class MisskeyApiClient
     public string InstanceUrl { get; }
     public string ApiToken { get; }
     private HttpClient? _httpClient;
+    private Dictionary<string, IEnumerable<Note>> _cache = new();
+    private TimeSpan _cacheExpiration = TimeSpan.FromMinutes(5);
 
     public MisskeyApiClient(string instanceUrl, string apiToken)
     {
+        if (string.IsNullOrWhiteSpace(instanceUrl) || !Uri.TryCreate(instanceUrl, UriKind.Absolute, out _))
+        {
+            throw new ArgumentException("Invalid instance URL format");
+        }
+
+        if (string.IsNullOrWhiteSpace(apiToken))
+        {
+            throw new ArgumentException("API token is required");
+        }
+
         InstanceUrl = instanceUrl;
         ApiToken = apiToken;
     }
 
     public MisskeyApiClient(string instanceUrl, string apiToken, HttpClient httpClient)
     {
+        if (string.IsNullOrWhiteSpace(instanceUrl) || !Uri.TryCreate(instanceUrl, UriKind.Absolute, out _))
+        {
+            throw new ArgumentException("Invalid instance URL format");
+        }
+
+        if (string.IsNullOrWhiteSpace(apiToken))
+        {
+            throw new ArgumentException("API token is required");
+        }
+
         InstanceUrl = instanceUrl;
         ApiToken = apiToken;
         _httpClient = httpClient;
@@ -64,19 +86,36 @@ public class MisskeyApiClient
             throw new ApiException("Invalid instance URL");
         }
 
-        // HttpClientが提供されている場合は実際のAPI呼び出しを実行
-        if (_httpClient != null)
+        // キャッシュキーを生成
+        var cacheKey = $"notes_{startDate:o}_{endDate:o}";
+
+        // キャッシュをチェック
+        if (_cache.ContainsKey(cacheKey))
         {
-            return await GetNotesFromApiAsync(startDate, endDate);
+            return _cache[cacheKey];
         }
 
-        // TODO: 実際のAPI呼び出しを実装
-        // 現在は簡易的な実装としてダミーデータを返す
-        return new List<Note>
+        // HttpClientが提供されている場合は実際のAPI呼び出しを実行
+        IEnumerable<Note> notes;
+        if (_httpClient != null)
         {
-            new Note { CreatedAt = new DateTime(2024, 1, 15), Id = "1", Text = "Test note 1" },
-            new Note { CreatedAt = new DateTime(2024, 1, 20), Id = "2", Text = "Test note 2" }
-        }.Where(note => note.CreatedAt >= startDate && note.CreatedAt <= endDate);
+            notes = await GetNotesFromApiAsync(startDate, endDate);
+        }
+        else
+        {
+            // TODO: 実際のAPI呼び出しを実装
+            // 現在は簡易的な実装としてダミーデータを返す
+            notes = new List<Note>
+            {
+                new Note { CreatedAt = new DateTime(2024, 1, 15), Id = "1", Text = "Test note 1" },
+                new Note { CreatedAt = new DateTime(2024, 1, 20), Id = "2", Text = "Test note 2" }
+            }.Where(note => note.CreatedAt >= startDate && note.CreatedAt <= endDate);
+        }
+
+        // キャッシュに保存
+        _cache[cacheKey] = notes;
+
+        return notes;
     }
 
     private async Task<IEnumerable<Note>> GetNotesFromApiAsync(DateTime startDate, DateTime endDate)
@@ -184,9 +223,36 @@ public class MisskeyApiClient
 
     public async Task<IEnumerable<Note>> GetNotesWithRetry(DateTime startDate, DateTime endDate, int maxRetries)
     {
+        if (_httpClient != null)
+        {
+            return await GetNotesWithRetryFromApiAsync(startDate, endDate, maxRetries);
+        }
+
         // TODO: 実際のリトライ処理を実装
         // 現在は簡易的な実装として既存のGetNotesAsyncを使用
         return await GetNotesAsync(startDate, endDate);
+    }
+
+    private async Task<IEnumerable<Note>> GetNotesWithRetryFromApiAsync(DateTime startDate, DateTime endDate, int maxRetries)
+    {
+        int retryCount = 0;
+        TimeSpan delay = TimeSpan.FromSeconds(1);
+
+        while (retryCount <= maxRetries)
+        {
+            try
+            {
+                return await GetNotesFromApiAsync(startDate, endDate);
+            }
+            catch (HttpRequestException) when (retryCount < maxRetries)
+            {
+                retryCount++;
+                await Task.Delay(delay);
+                delay = TimeSpan.FromSeconds(delay.TotalSeconds * 2); // 指数バックオフ
+            }
+        }
+
+        throw new RateLimitExceededException("Max retries exceeded");
     }
 }
 

@@ -4,11 +4,27 @@ public class MockHttpMessageHandler : HttpMessageHandler
 {
     public int RequestsSent { get; private set; }
     private int _callCount = 0;
+    private bool _simulateRateLimit = false;
+
+    public void SimulateRateLimit(bool simulate)
+    {
+        _simulateRateLimit = simulate;
+    }
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         RequestsSent++;
         _callCount++;
+
+        // レート制限シミュレーション
+        if (_simulateRateLimit && _callCount == 1)
+        {
+            var rateLimitResponse = new HttpResponseMessage(System.Net.HttpStatusCode.TooManyRequests)
+            {
+                Content = new StringContent("Rate limit exceeded", System.Text.Encoding.UTF8, "application/json")
+            };
+            return Task.FromResult(rateLimitResponse);
+        }
 
         // 2回目以降の呼び出しでは空の結果を返す（ページネーション終了条件）
         string jsonResponse;
@@ -246,24 +262,6 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
-    public async Task GetNotesWithRetry_WhenRateLimitExceeded_RetriesWithBackoff()
-    {
-        // Arrange
-        var instanceUrl = "https://misskey.io";
-        var apiToken = "valid-token";
-        var client = new MisskeyApiClient(instanceUrl, apiToken);
-        var startDate = new DateTime(2024, 1, 1);
-        var endDate = new DateTime(2024, 1, 31);
-        var maxRetries = 3;
-
-        // Act
-        var notes = await client.GetNotesWithRetry(startDate, endDate, maxRetries);
-
-        // Assert
-        Assert.NotNull(notes);
-    }
-
-    [Fact]
     public async Task GetNotesAsync_WhenCalledWithHttpClient_SendsRequestToMisskeyApi()
     {
         // Arrange
@@ -319,5 +317,72 @@ public class MisskeyApiClientTests
         // Assert
         Assert.NotNull(notes);
         Assert.True(mockHttpMessageHandler.RequestsSent > 0);
+    }
+
+    [Fact]
+    public async Task GetNotesWithRetry_WhenRateLimitExceeded_RetriesWithBackoff()
+    {
+        // Arrange
+        var instanceUrl = "https://misskey.io";
+        var apiToken = "valid-token";
+        var mockHttpMessageHandler = new MockHttpMessageHandler();
+        mockHttpMessageHandler.SimulateRateLimit(true);
+        var httpClient = new HttpClient(mockHttpMessageHandler);
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
+        var startDate = new DateTime(2024, 1, 1);
+        var endDate = new DateTime(2024, 1, 31);
+        var maxRetries = 3;
+
+        // Act
+        var notes = await client.GetNotesWithRetry(startDate, endDate, maxRetries);
+
+        // Assert
+        Assert.NotNull(notes);
+        Assert.True(mockHttpMessageHandler.RequestsSent > 1); // リトライが発生したことを確認
+    }
+
+    [Fact]
+    public void Constructor_WhenInvalidInstanceUrl_ThrowsArgumentException()
+    {
+        // Arrange
+        var invalidUrl = "not-a-valid-url";
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => new MisskeyApiClient(invalidUrl, "valid-token"));
+    }
+
+    [Fact]
+    public void Constructor_WhenEmptyApiToken_ThrowsArgumentException()
+    {
+        // Arrange
+        var instanceUrl = "https://misskey.io";
+        var emptyToken = "";
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => new MisskeyApiClient(instanceUrl, emptyToken));
+    }
+
+    [Fact]
+    public async Task GetNotesAsync_WhenCalledTwiceWithSameParameters_UsesCache()
+    {
+        // Arrange
+        var instanceUrl = "https://misskey.io";
+        var apiToken = "valid-token";
+        var mockHttpMessageHandler = new MockHttpMessageHandler();
+        var httpClient = new HttpClient(mockHttpMessageHandler);
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
+        var startDate = new DateTime(2024, 1, 1);
+        var endDate = new DateTime(2024, 1, 31);
+
+        // Act
+        var notes1 = await client.GetNotesAsync(startDate, endDate);
+        var firstRequestCount = mockHttpMessageHandler.RequestsSent;
+        var notes2 = await client.GetNotesAsync(startDate, endDate);
+        var secondRequestCount = mockHttpMessageHandler.RequestsSent;
+
+        // Assert
+        Assert.NotNull(notes1);
+        Assert.NotNull(notes2);
+        Assert.Equal(firstRequestCount, secondRequestCount); // キャッシュが有効ならリクエスト数が変わらない
     }
 }
