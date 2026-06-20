@@ -3,6 +3,7 @@ namespace PastNotes.Tests;
 public class NoteTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void Note_WhenCreated_HasRequiredProperties()
     {
         // Arrange
@@ -21,6 +22,7 @@ public class NoteTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Note_WhenCreatedWithDefaultValues_HasEmptyStrings()
     {
         // Arrange
@@ -36,6 +38,7 @@ public class NoteTests
 public class NoteRepositoryTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void SaveToFileAsync_WhenCalledWithNotes_SavesNotesToFile()
     {
         // Arrange
@@ -56,6 +59,7 @@ public class NoteRepositoryTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void LoadFromFileAsync_WhenCalledWithValidFile_ReturnsNotes()
     {
         // Arrange
@@ -78,6 +82,7 @@ public class NoteRepositoryTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void LoadFromFileAsync_WhenCalledWithInvalidFile_ReturnsEmptyList()
     {
         // Arrange
@@ -93,6 +98,7 @@ public class NoteRepositoryTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void SearchByKeyword_WhenCalledWithValidKeyword_ReturnsMatchingNotes()
     {
         // Arrange
@@ -113,6 +119,7 @@ public class NoteRepositoryTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void SearchByKeyword_WhenCalledWithCaseInsensitive_ReturnsMatchingNotes()
     {
         // Arrange
@@ -131,6 +138,7 @@ public class NoteRepositoryTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void FilterByDateRange_WhenCalledWithValidRange_ReturnsNotesInRange()
     {
         // Arrange
@@ -157,6 +165,7 @@ public class NoteRepositoryTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void FilterByDateRange_WhenCalledWithBoundaryDates_ReturnsCorrectNotes()
     {
         // Arrange

@@ -74,6 +74,7 @@ public class MockHttpMessageHandler : HttpMessageHandler
 public class MisskeyApiClientTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void Initialize_WhenCalledWithValidParameters_ReturnsInitializedClient()
     {
         // Arrange
@@ -90,6 +91,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task AuthenticateAsync_WhenCalledWithValidToken_ReturnsSuccess()
     {
         // Arrange
@@ -105,6 +107,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task AuthenticateAsync_WhenCalledWithInvalidToken_ReturnsFailure()
     {
         // Arrange
@@ -120,6 +123,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task GetNotesAsync_WhenCalledWithValidDateRange_ReturnsNotesWithinRange()
     {
         // Arrange
@@ -142,6 +146,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task GetNotesAsync_WhenApiCallFails_ThrowsApiException()
     {
         // Arrange
@@ -156,6 +161,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task GetNotesAsync_WhenStartDateIsAfterEndDate_ThrowsArgumentException()
     {
         // Arrange
@@ -170,6 +176,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void ParseApiResponse_WhenCalledWithValidJson_ReturnsNoteObjects()
     {
         // Arrange
@@ -197,6 +204,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void GetAuthorizationHeader_WhenCalled_ReturnsCorrectHeaderValue()
     {
         // Arrange
@@ -212,6 +220,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void HandleErrorResponse_WhenStatusCode404_ThrowsNotFoundException()
     {
         // Arrange
@@ -223,6 +232,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void HandleErrorResponse_WhenStatusCode429_ThrowsRateLimitExceededException()
     {
         // Arrange
@@ -234,6 +244,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task GetNotesWithPagination_WhenCalledWithPagination_ReturnsAllPages()
     {
         // Arrange
@@ -252,14 +263,17 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task IntegrationTest_WhenCalledWithRealApi_ReturnsActualNotes()
     {
         // Arrange
         var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL");
         var apiToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
-        
-        Assert.False(string.IsNullOrEmpty(apiToken), "MISSKEY_API_TOKEN環境変数が必要です");
-        Assert.False(string.IsNullOrEmpty(instanceUrl), "MISSKEY_INSTANCE_URL環境変数が必要です");
+
+        if (string.IsNullOrEmpty(instanceUrl) || string.IsNullOrEmpty(apiToken))
+        {
+            Assert.True(false, "統合テストを実行するには環境変数を設定してください。'dotnet test --filter \"Category=Integration\"' を使用して統合テストのみを実行してください。");
+        }
 
         var httpClient = new HttpClient();
         var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
@@ -280,14 +294,17 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task DebugIntegrationTest_VerifyActualApiCall()
     {
         // Arrange
         var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL");
         var apiToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
-        
-        Assert.False(string.IsNullOrEmpty(apiToken), "MISSKEY_API_TOKEN環境変数が必要です");
-        Assert.False(string.IsNullOrEmpty(instanceUrl), "MISSKEY_INSTANCE_URL環境変数が必要です");
+
+        if (string.IsNullOrEmpty(instanceUrl) || string.IsNullOrEmpty(apiToken))
+        {
+            Assert.True(false, "統合テストを実行するには環境変数を設定してください。'dotnet test --filter \"Category=Integration\"' を使用して統合テストのみを実行してください。");
+        }
 
         var httpClient = new HttpClient();
         var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
@@ -306,14 +323,17 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task EndToEndTest_FetchSaveAndSearchNotes()
     {
         // Arrange
         var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL");
         var apiToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
-        
-        Assert.False(string.IsNullOrEmpty(apiToken), "MISSKEY_API_TOKEN環境変数が必要です");
-        Assert.False(string.IsNullOrEmpty(instanceUrl), "MISSKEY_INSTANCE_URL環境変数が必要です");
+
+        if (string.IsNullOrEmpty(instanceUrl) || string.IsNullOrEmpty(apiToken))
+        {
+            Assert.True(false, "統合テストを実行するには環境変数を設定してください。'dotnet test --filter \"Category=Integration\"' を使用して統合テストのみを実行してください。");
+        }
 
         var httpClient = new HttpClient();
         var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
@@ -343,14 +363,17 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task VerifyActualNoteData_ValidateNoteFields()
     {
         // Arrange
         var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL");
         var apiToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
-        
-        Assert.False(string.IsNullOrEmpty(apiToken), "MISSKEY_API_TOKEN環境変数が必要です");
-        Assert.False(string.IsNullOrEmpty(instanceUrl), "MISSKEY_INSTANCE_URL環境変数が必要です");
+
+        if (string.IsNullOrEmpty(instanceUrl) || string.IsNullOrEmpty(apiToken))
+        {
+            Assert.True(false, "統合テストを実行するには環境変数を設定してください。'dotnet test --filter \"Category=Integration\"' を使用して統合テストのみを実行してください。");
+        }
 
         var httpClient = new HttpClient();
         var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
@@ -373,6 +396,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task GetNotesAsync_WhenCalledWithHttpClient_SendsRequestToMisskeyApi()
     {
         // Arrange
@@ -393,6 +417,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task AuthenticateAsync_WhenCalledWithHttpClient_SendsRequestToApiIEndpoint()
     {
         // Arrange
@@ -411,6 +436,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task GetNotesWithPagination_WhenCalledWithHttpClient_UsesUntilParameter()
     {
         // Arrange
@@ -431,6 +457,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task GetNotesWithRetry_WhenRateLimitExceeded_RetriesWithBackoff()
     {
         // Arrange
@@ -453,6 +480,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Constructor_WhenInvalidInstanceUrl_ThrowsArgumentException()
     {
         // Arrange
@@ -463,6 +491,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Constructor_WhenEmptyApiToken_ThrowsArgumentException()
     {
         // Arrange
@@ -474,6 +503,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task GetNotesAsync_WhenCalledTwiceWithSameParameters_UsesCache()
     {
         // Arrange

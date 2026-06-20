@@ -11,4 +11,4 @@ param(
 
 $env:MISSKEY_INSTANCE_URL = $InstanceUrl
 $env:MISSKEY_API_TOKEN = $ApiToken
-dotnet test --filter "FullyQualifiedName~IntegrationTest"
+dotnet test --filter "Category=Integration"

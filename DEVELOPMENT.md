@@ -2,15 +2,20 @@
 
 ## テスト実行方法
 
-### ユニットテスト
+### テストカテゴリ
 
-ユニットテストは環境変数なしで実行可能です:
+このプロジェクトでは、xUnitのTraitを使用してテストをカテゴリ分けしています:
+
+- **Unit**: ユニットテスト（モックを使用、環境変数不要）
+- **Integration**: 統合テスト（実際のAPIを使用、環境変数必要）
+
+### ユニットテストのみ実行
 
 ```bash
-dotnet test
+dotnet test --filter "Category=Unit"
 ```
 
-### 統合テスト
+### 統合テストのみ実行
 
 統合テストは実際のMisskey.io APIを使用するため、環境変数の設定が必要です。
 
@@ -21,8 +26,8 @@ dotnet test
 $env:MISSKEY_INSTANCE_URL = "https://misskey.io"
 $env:MISSKEY_API_TOKEN = "your-api-token"
 
-# テスト実行
-dotnet test
+# 統合テストのみ実行
+dotnet test --filter "Category=Integration"
 ```
 
 #### 方法2: PowerShellスクリプトを使用
@@ -37,7 +42,14 @@ dotnet test
   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
   ```
 - APIトークンはMisskey.ioの設定から取得してください
-- 統合テストを実行しない場合、4つの統合テストが環境変数不足で失敗します（これは正常な動作です）
+
+### すべてのテストを実行
+
+```bash
+dotnet test
+```
+
+環境変数が設定されていない場合、統合テストは環境変数不足で失敗します。
 
 ### カバレッジレポート
 
