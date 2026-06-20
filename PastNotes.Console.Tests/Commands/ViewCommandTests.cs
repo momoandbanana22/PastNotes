@@ -299,7 +299,7 @@ public class ViewHtmlCommandTests
 {
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task Execute_WhenCalledWithExistingNotes_GeneratesHtmlFiles()
+    public async Task Execute_WhenCalledWithExistingNotes_GeneratesSingleHtmlFile()
     {
         // Arrange
         var repository = new NoteRepository();
@@ -320,7 +320,9 @@ public class ViewHtmlCommandTests
         // Assert
         Assert.Equal(0, result);
         Assert.True(Directory.Exists(outputDir));
-        Assert.Equal(2, Directory.GetFiles(outputDir).Length);
+        var htmlFiles = Directory.GetFiles(outputDir, "*.html");
+        Assert.Single(htmlFiles);
+        Assert.Equal("notes.html", Path.GetFileName(htmlFiles[0]));
         
         // Cleanup
         if (File.Exists(testFilePath))
@@ -387,7 +389,7 @@ public class ViewHtmlCommandTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task Execute_WhenOpenBrowserIsTrue_OpensBrowser()
+    public async Task Execute_WhenOpenBrowserIsTrue_OpensSingleHtmlFile()
     {
         // Arrange
         var repository = new NoteRepository();
