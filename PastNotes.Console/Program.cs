@@ -42,7 +42,8 @@ public class Program
                 return 1;
             }
 
-            var apiClient = new MisskeyApiClient(instanceUrl, apiToken);
+            var httpClient = new HttpClient();
+            var apiClient = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
             var repository = new NoteRepository();
             var fetchCommand = new FetchCommand(apiClient, repository);
 
