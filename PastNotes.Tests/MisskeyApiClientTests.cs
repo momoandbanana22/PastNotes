@@ -533,4 +533,35 @@ public class MisskeyApiClientTests
         Assert.NotNull(notes2);
         Assert.Equal(firstRequestCount, secondRequestCount); // キャッシュが有効ならリクエスト数が変わらない
     }
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task GetNotesAsync_WhenUsingUntilIdPagination_ShouldFetchAllNotesCorrectly()
+    {
+        // Arrange
+        var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL") ?? "https://misskey.io";
+        var apiToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
+
+        if (string.IsNullOrEmpty(apiToken))
+        {
+            throw new Exception("統合テストを実行するには環境変数を設定してください。");
+        }
+
+        var httpClient = new HttpClient();
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
+        var startDate = DateTime.Now.AddDays(-7);
+        var endDate = DateTime.Now;
+
+        // Act
+        var notes = await client.GetNotesAsync(startDate, endDate);
+
+        // Assert
+        Assert.NotNull(notes);
+        Assert.True(notes.Count() > 0, "Expected at least one note to be fetched");
+        
+        // ノートが重複していないことを確認
+        var noteIds = notes.Select(n => n.Id).ToList();
+        var uniqueNoteIds = noteIds.Distinct().ToList();
+        Assert.Equal(noteIds.Count, uniqueNoteIds.Count);
+    }
 }

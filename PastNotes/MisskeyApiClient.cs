@@ -89,7 +89,7 @@ public class MisskeyApiClient : IMisskeyApiClient
         return true;
     }
 
-    private async Task<IEnumerable<Note>> GetNotesFromApiAsync(DateTime startDate, DateTime endDate)
+    private async Task<IEnumerable<Note>> GetNotesFromApiAsync(DateTime startDate, DateTime endDate, string? untilId = null)
     {
         // 認証してユーザーIDを取得
         if (_userId == null && _httpClient != null)
@@ -102,13 +102,18 @@ public class MisskeyApiClient : IMisskeyApiClient
             throw new ApiException("Failed to authenticate and get user ID");
         }
 
-        var requestBody = new
+        Dictionary<string, object> requestBody = new Dictionary<string, object>
         {
-            userId = _userId,
-            sinceDate = new DateTimeOffset(startDate).ToUnixTimeMilliseconds(),
-            untilDate = new DateTimeOffset(endDate).ToUnixTimeMilliseconds(),
-            limit = 100
+            { "userId", _userId },
+            { "sinceDate", new DateTimeOffset(startDate).ToUnixTimeMilliseconds() },
+            { "untilDate", new DateTimeOffset(endDate).ToUnixTimeMilliseconds() },
+            { "limit", 100 }
         };
+
+        if (!string.IsNullOrEmpty(untilId))
+        {
+            requestBody["untilId"] = untilId;
+        }
 
         var request = new HttpRequestMessage(HttpMethod.Post, $"{InstanceUrl}/api/users/notes")
         {
@@ -224,12 +229,12 @@ public class MisskeyApiClient : IMisskeyApiClient
     private async Task<IEnumerable<Note>> GetNotesWithPaginationFromApiAsync(DateTime startDate, DateTime endDate)
     {
         var allNotes = new List<Note>();
-        var until = endDate;
+        var untilId = (string?)null;
         var hasMoreNotes = true;
 
         while (hasMoreNotes)
         {
-            var notes = await GetNotesFromApiAsync(startDate, until);
+            var notes = await GetNotesFromApiAsync(startDate, endDate, untilId);
             
             if (!notes.Any())
             {
@@ -238,11 +243,11 @@ public class MisskeyApiClient : IMisskeyApiClient
             else
             {
                 allNotes.AddRange(notes);
-                // 次のページのためにuntilを更新（最後のノートの日付を使用）
-                until = notes.Last().CreatedAt;
+                // 次のページのためにuntilIdを更新（最後のノートのIDを使用）
+                untilId = notes.Last().Id;
                 
-                // 期間外になったら終了
-                if (until < startDate)
+                // 100件未満の場合はこれ以上ノートがない
+                if (notes.Count() < 100)
                 {
                     hasMoreNotes = false;
                 }
