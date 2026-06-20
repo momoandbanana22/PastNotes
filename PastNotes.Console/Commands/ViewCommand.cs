@@ -15,7 +15,30 @@ public class ViewCommand
 
     public int Execute()
     {
-        var notes = _repository.LoadFromFileAsync(_filePath);
+        var notes = _repository.LoadFromFileAsync(_filePath).GetAwaiter().GetResult();
+        
+        if (notes == null || !notes.Any())
+        {
+            System.Console.WriteLine("No notes found. Run 'fetch' command first.");
+            return 1;
+        }
+
+        System.Console.WriteLine($"Total notes: {notes.Count()}");
+        System.Console.WriteLine();
+        
+        foreach (var note in notes)
+        {
+            System.Console.WriteLine($"[{note.CreatedAt:yyyy-MM-dd HH:mm}] {note.Text}");
+            System.Console.WriteLine($"  ID: {note.Id}");
+            System.Console.WriteLine();
+        }
+
+        return 0;
+    }
+
+    public async Task<int> ExecuteAsync()
+    {
+        var notes = await _repository.LoadFromFileAsync(_filePath);
         
         if (notes == null || !notes.Any())
         {

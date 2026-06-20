@@ -28,7 +28,7 @@ public class FetchCommand
             return 0;
         }
 
-        _repository.SaveToFileAsync(notes, "notes.json");
+        await _repository.SaveToFileAsync(notes, "notes.json");
         System.Console.WriteLine($"Saved {notes.Count()} notes to notes.json");
 
         return 0;

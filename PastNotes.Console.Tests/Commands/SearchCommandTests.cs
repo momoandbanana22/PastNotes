@@ -7,7 +7,7 @@ public class SearchCommandTests
 {
     [Fact]
     [Trait("Category", "Unit")]
-    public void Execute_WhenCalledWithValidKeyword_ReturnsSuccess()
+    public async Task Execute_WhenCalledWithValidKeyword_ReturnsSuccess()
     {
         // Arrange
         var repository = new NoteRepository();
@@ -19,10 +19,40 @@ public class SearchCommandTests
             new Note { Id = "1", Text = "Hello world", CreatedAt = DateTime.Now },
             new Note { Id = "2", Text = "Goodbye world", CreatedAt = DateTime.Now }
         };
-        repository.SaveToFileAsync(testNotes, testFilePath);
+        await repository.SaveToFileAsync(testNotes, testFilePath);
 
         // Act
         var result = command.Execute("world");
+
+        // Assert
+        Assert.Equal(0, result);
+        
+        // Cleanup
+        if (File.Exists(testFilePath))
+        {
+            File.Delete(testFilePath);
+        }
+    }
+
+    // TDD: 非同期バージョンのテスト
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ExecuteAsync_WhenCalledWithValidKeyword_ReturnsSuccess()
+    {
+        // Arrange
+        var repository = new NoteRepository();
+        var testFilePath = $"test_notes_{Guid.NewGuid()}.json";
+        var command = new SearchCommand(repository, testFilePath);
+        
+        var testNotes = new List<Note>
+        {
+            new Note { Id = "1", Text = "Hello world", CreatedAt = DateTime.Now },
+            new Note { Id = "2", Text = "Goodbye world", CreatedAt = DateTime.Now }
+        };
+        await repository.SaveToFileAsync(testNotes, testFilePath);
+
+        // Act
+        var result = await command.ExecuteAsync("world");
 
         // Assert
         Assert.Equal(0, result);

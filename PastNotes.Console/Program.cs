@@ -5,6 +5,8 @@ namespace PastNotes.Console;
 
 public class Program
 {
+    private static readonly HttpClient _sharedHttpClient = new HttpClient();
+
     public static int Main(string[] args)
     {
         if (args.Length == 0)
@@ -42,8 +44,7 @@ public class Program
                 return 1;
             }
 
-            var httpClient = new HttpClient();
-            var apiClient = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
+            var apiClient = new MisskeyApiClient(instanceUrl, apiToken, _sharedHttpClient);
             var repository = new NoteRepository();
             var fetchCommand = new FetchCommand(apiClient, repository);
 

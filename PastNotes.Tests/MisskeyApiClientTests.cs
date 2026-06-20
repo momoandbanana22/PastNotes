@@ -351,8 +351,8 @@ public class MisskeyApiClientTests
 
         // Act
         var notes = await client.GetNotesAsync(startDate, endDate);
-        repository.SaveToFileAsync(notes, testFilePath);
-        var loadedNotes = repository.LoadFromFileAsync(testFilePath);
+        await repository.SaveToFileAsync(notes, testFilePath);
+        var loadedNotes = await repository.LoadFromFileAsync(testFilePath);
         var searchResults = repository.SearchByKeyword(loadedNotes, "test");
 
         // Assert

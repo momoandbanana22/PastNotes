@@ -39,7 +39,7 @@ public class NoteRepositoryTests
 {
     [Fact]
     [Trait("Category", "Unit")]
-    public void SaveToFileAsync_WhenCalledWithNotes_SavesNotesToFile()
+    public async Task SaveToFileAsync_WhenCalledWithNotes_SavesNotesToFile()
     {
         // Arrange
         var notes = new List<Note>
@@ -51,7 +51,7 @@ public class NoteRepositoryTests
         var repository = new NoteRepository();
 
         // Act
-        repository.SaveToFileAsync(notes, filePath);
+        await repository.SaveToFileAsync(notes, filePath);
 
         // Assert
         Assert.True(File.Exists(filePath));
@@ -60,7 +60,7 @@ public class NoteRepositoryTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void LoadFromFileAsync_WhenCalledWithValidFile_ReturnsNotes()
+    public async Task LoadFromFileAsync_WhenCalledWithValidFile_ReturnsNotes()
     {
         // Arrange
         var notes = new List<Note>
@@ -70,10 +70,10 @@ public class NoteRepositoryTests
         };
         var filePath = "test-notes-load.json";
         var repository = new NoteRepository();
-        repository.SaveToFileAsync(notes, filePath);
+        await repository.SaveToFileAsync(notes, filePath);
 
         // Act
-        var loadedNotes = repository.LoadFromFileAsync(filePath);
+        var loadedNotes = await repository.LoadFromFileAsync(filePath);
 
         // Assert
         Assert.NotNull(loadedNotes);
@@ -83,14 +83,14 @@ public class NoteRepositoryTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void LoadFromFileAsync_WhenCalledWithInvalidFile_ReturnsEmptyList()
+    public async Task LoadFromFileAsync_WhenCalledWithInvalidFile_ReturnsEmptyList()
     {
         // Arrange
         var filePath = "non-existent-file.json";
         var repository = new NoteRepository();
 
         // Act
-        var loadedNotes = repository.LoadFromFileAsync(filePath);
+        var loadedNotes = await repository.LoadFromFileAsync(filePath);
 
         // Assert
         Assert.NotNull(loadedNotes);
@@ -184,5 +184,66 @@ public class NoteRepositoryTests
 
         // Assert
         Assert.Equal(3, results.Count());
+    }
+
+    // TDD: 非同期バージョンのテスト
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task SaveToFileAsync_WhenCalledWithNotes_SavesNotesToFileAsync()
+    {
+        // Arrange
+        var notes = new List<Note>
+        {
+            new Note { Id = "1", Text = "Test note 1", CreatedAt = DateTime.Now },
+            new Note { Id = "2", Text = "Test note 2", CreatedAt = DateTime.Now }
+        };
+        var filePath = "test-notes-async.json";
+        var repository = new NoteRepository();
+
+        // Act
+        await repository.SaveToFileAsync(notes, filePath);
+
+        // Assert
+        Assert.True(File.Exists(filePath));
+        File.Delete(filePath);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task LoadFromFileAsync_WhenCalledWithValidFile_ReturnsNotesAsync()
+    {
+        // Arrange
+        var notes = new List<Note>
+        {
+            new Note { Id = "1", Text = "Test note 1", CreatedAt = DateTime.Now },
+            new Note { Id = "2", Text = "Test note 2", CreatedAt = DateTime.Now }
+        };
+        var filePath = "test-notes-load-async.json";
+        var repository = new NoteRepository();
+        await repository.SaveToFileAsync(notes, filePath);
+
+        // Act
+        var loadedNotes = await repository.LoadFromFileAsync(filePath);
+
+        // Assert
+        Assert.NotNull(loadedNotes);
+        Assert.Equal(2, loadedNotes.Count());
+        File.Delete(filePath);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task LoadFromFileAsync_WhenCalledWithInvalidFile_ReturnsEmptyListAsync()
+    {
+        // Arrange
+        var filePath = "non-existent-file-async.json";
+        var repository = new NoteRepository();
+
+        // Act
+        var loadedNotes = await repository.LoadFromFileAsync(filePath);
+
+        // Assert
+        Assert.NotNull(loadedNotes);
+        Assert.Empty(loadedNotes);
     }
 }

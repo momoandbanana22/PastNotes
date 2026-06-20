@@ -52,8 +52,7 @@ public class MisskeyApiClient : IMisskeyApiClient
             return await AuthenticateWithApiAsync();
         }
 
-        // TODO: 実際のAPI認証を実装
-        // 現在は簡易的な実装としてトークンの有無で判定
+        // HttpClientが提供されていない場合は簡易的な実装としてトークンの有無で判定
         return !string.IsNullOrEmpty(ApiToken) && ApiToken != "invalid-token";
     }
 
@@ -158,8 +157,7 @@ public class MisskeyApiClient : IMisskeyApiClient
         }
         else
         {
-            // TODO: 実際のAPI呼び出しを実装
-            // 現在は簡易的な実装としてダミーデータを返す
+            // HttpClientが提供されていない場合は簡易的な実装としてダミーデータを返す
             notes = new List<Note>
             {
                 new Note { CreatedAt = new DateTime(2024, 1, 15), Id = "1", Text = "Test note 1" },
@@ -221,8 +219,7 @@ public class MisskeyApiClient : IMisskeyApiClient
             return await GetNotesWithPaginationFromApiAsync(startDate, endDate);
         }
 
-        // TODO: 実際のページネーション処理を実装
-        // 現在は簡易的な実装として既存のGetNotesAsyncを使用
+        // HttpClientが提供されていない場合は簡易的な実装として既存のGetNotesAsyncを使用
         return await GetNotesAsync(startDate, endDate);
     }
 
@@ -264,8 +261,7 @@ public class MisskeyApiClient : IMisskeyApiClient
             return await GetNotesWithRetryFromApiAsync(startDate, endDate, maxRetries);
         }
 
-        // TODO: 実際のリトライ処理を実装
-        // 現在は簡易的な実装として既存のGetNotesAsyncを使用
+        // HttpClientが提供されていない場合は簡易的な実装として既存のGetNotesAsyncを使用
         return await GetNotesAsync(startDate, endDate);
     }
 

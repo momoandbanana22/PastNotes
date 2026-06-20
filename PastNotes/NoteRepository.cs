@@ -4,20 +4,20 @@ namespace PastNotes;
 
 public class NoteRepository
 {
-    public void SaveToFileAsync(IEnumerable<Note> notes, string filePath)
+    public async Task SaveToFileAsync(IEnumerable<Note> notes, string filePath)
     {
         var json = JsonSerializer.Serialize(notes);
-        File.WriteAllText(filePath, json);
+        await File.WriteAllTextAsync(filePath, json);
     }
 
-    public IEnumerable<Note> LoadFromFileAsync(string filePath)
+    public async Task<IEnumerable<Note>> LoadFromFileAsync(string filePath)
     {
         if (!File.Exists(filePath))
         {
             return Enumerable.Empty<Note>();
         }
 
-        var json = File.ReadAllText(filePath);
+        var json = await File.ReadAllTextAsync(filePath);
         return JsonSerializer.Deserialize<IEnumerable<Note>>(json) ?? Enumerable.Empty<Note>();
     }
 

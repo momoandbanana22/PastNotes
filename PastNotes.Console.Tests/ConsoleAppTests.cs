@@ -32,7 +32,7 @@ public class ConsoleAppTests
 
     [Fact]
     [Trait("Category", "Integration")]
-    public void FetchCommand_WhenCalledWithRealApi_ShouldFetchNotes()
+    public async Task FetchCommand_WhenCalledWithRealApi_ShouldFetchNotes()
     {
         // Arrange
         var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL") ?? "https://misskey.io";
@@ -59,7 +59,7 @@ public class ConsoleAppTests
         
         // Verify that notes were saved
         var repository = new PastNotes.NoteRepository();
-        var notes = repository.LoadFromFileAsync("notes.json");
+        var notes = await repository.LoadFromFileAsync("notes.json");
         Assert.NotNull(notes);
         Assert.True(notes.Any(), "Expected at least one note to be fetched");
         
