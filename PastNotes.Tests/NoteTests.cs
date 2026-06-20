@@ -232,6 +232,67 @@ public class NoteHtmlGeneratorTests
             File.Delete(outputPath);
         }
     }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GenerateHtml_WhenNoteHasLineBreaks_PreservesLineBreaksInHtml()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var note = new Note
+        {
+            Id = "test-id",
+            Text = "Line 1\nLine 2\nLine 3",
+            CreatedAt = DateTime.Now
+        };
+        var outputPath = $"test_note_linebreaks_{Guid.NewGuid()}.html";
+
+        // Act
+        generator.GenerateHtml(note, outputPath);
+
+        // Assert
+        var htmlContent = File.ReadAllText(outputPath);
+        // Check that line breaks are preserved either as <br> tags or with CSS white-space
+        Assert.True(htmlContent.Contains("<br") || htmlContent.Contains("white-space"));
+        
+        // Cleanup
+        if (File.Exists(outputPath))
+        {
+            File.Delete(outputPath);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GenerateHtmlForAllNotes_WhenNotesHaveLineBreaks_PreservesLineBreaksInHtml()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var notes = new List<Note>
+        {
+            new Note 
+            { 
+                Id = "1", 
+                Text = "First line\nSecond line\nThird line", 
+                CreatedAt = DateTime.Now
+            }
+        };
+        var outputPath = $"test_notes_linebreaks_{Guid.NewGuid()}.html";
+
+        // Act
+        generator.GenerateHtmlForAllNotes(notes, outputPath);
+
+        // Assert
+        var htmlContent = File.ReadAllText(outputPath);
+        // Check that line breaks are preserved either as <br> tags or with CSS white-space
+        Assert.True(htmlContent.Contains("<br") || htmlContent.Contains("white-space"));
+        
+        // Cleanup
+        if (File.Exists(outputPath))
+        {
+            File.Delete(outputPath);
+        }
+    }
 }
 
 public class NoteRepositoryTests
