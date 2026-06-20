@@ -244,22 +244,29 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
-    [Trait("Category", "Unit")]
-    public async Task GetNotesWithPagination_WhenCalledWithPagination_ReturnsAllPages()
+    [Trait("Category", "Integration")]
+    public async Task GetNotesAsync_WhenCalledWithRealApi_ShouldFetchMoreThan100Notes()
     {
         // Arrange
-        var instanceUrl = "https://misskey.io";
-        var apiToken = "valid-token";
-        var client = new MisskeyApiClient(instanceUrl, apiToken);
-        var startDate = new DateTime(2024, 1, 1);
-        var endDate = new DateTime(2024, 1, 31);
+        var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL") ?? "https://misskey.io";
+        var apiToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
+
+        if (string.IsNullOrEmpty(apiToken))
+        {
+            throw new Exception("統合テストを実行するには環境変数を設定してください。");
+        }
+
+        var httpClient = new HttpClient();
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
+        var startDate = DateTime.Now.AddDays(-30);
+        var endDate = DateTime.Now;
 
         // Act
-        var notes = await client.GetNotesWithPagination(startDate, endDate);
+        var notes = await client.GetNotesAsync(startDate, endDate);
 
         // Assert
         Assert.NotNull(notes);
-        Assert.True(notes.Count() > 0);
+        Assert.True(notes.Count() > 100, "Expected more than 100 notes to be fetched with pagination");
     }
 
     [Fact]

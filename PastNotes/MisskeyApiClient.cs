@@ -149,7 +149,7 @@ public class MisskeyApiClient : IMisskeyApiClient
         IEnumerable<Note> notes;
         if (_httpClient != null)
         {
-            notes = await GetNotesFromApiAsync(startDate, endDate);
+            notes = await GetNotesWithPaginationFromApiAsync(startDate, endDate);
         }
         else
         {
@@ -229,7 +229,7 @@ public class MisskeyApiClient : IMisskeyApiClient
 
         while (hasMoreNotes)
         {
-            var notes = await GetNotesFromApiWithUntilAsync(startDate, until);
+            var notes = await GetNotesFromApiAsync(startDate, until);
             
             if (!notes.Any())
             {
@@ -250,18 +250,6 @@ public class MisskeyApiClient : IMisskeyApiClient
         }
 
         return allNotes.Where(note => note.CreatedAt >= startDate && note.CreatedAt <= endDate);
-    }
-
-    private async Task<IEnumerable<Note>> GetNotesFromApiWithUntilAsync(DateTime startDate, DateTime until)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Get, $"{InstanceUrl}/api/notes/by-user?until={until:o}");
-        request.Headers.Add("Authorization", GetAuthorizationHeader());
-        
-        var response = await _httpClient!.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-        
-        var jsonResponse = await response.Content.ReadAsStringAsync();
-        return ParseApiResponse(jsonResponse);
     }
 
     public async Task<IEnumerable<Note>> GetNotesWithRetry(DateTime startDate, DateTime endDate, int maxRetries)
