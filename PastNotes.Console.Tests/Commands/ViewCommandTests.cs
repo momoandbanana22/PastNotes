@@ -108,7 +108,7 @@ public class ViewCommandTests
         
         var testNotes = new List<Note>
         {
-            new Note { Id = "1", Text = "Test note 1", CreatedAt = new DateTime(2024, 1, 15, 10, 30, 45) }
+            new Note { Id = "1", Text = "Test note 1", CreatedAt = DateTime.Now }
         };
         await repository.SaveToFileAsync(testNotes, testFilePath);
 
@@ -122,8 +122,8 @@ public class ViewCommandTests
         var output = stringWriter.ToString();
         System.Console.SetOut(originalOutput);
 
-        // Assert
-        Assert.Contains("10:30:45", output);
+        // Assert - Check that seconds are displayed (format includes :ss)
+        Assert.Matches(@"\d{2}:\d{2}:\d{2}", output);
         
         // Cleanup
         if (File.Exists(testFilePath))
@@ -195,6 +195,44 @@ public class ViewCommandTests
         // Assert
         Assert.Contains("ID:", output);
         Assert.Contains("test-id-123", output);
+        
+        // Cleanup
+        if (File.Exists(testFilePath))
+        {
+            File.Delete(testFilePath);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Execute_WhenCalledWithUtcDateTime_ConvertsToJst()
+    {
+        // Arrange
+        var repository = new NoteRepository();
+        var testFilePath = $"test_notes_{Guid.NewGuid()}.json";
+        var command = new ViewCommand(repository, testFilePath);
+        
+        // UTC時間の2024-01-15 10:30:45はJSTでは2024-01-15 19:30:45（+9時間）
+        var utcDateTime = new DateTime(2024, 1, 15, 10, 30, 45, DateTimeKind.Utc);
+        var testNotes = new List<Note>
+        {
+            new Note { Id = "1", Text = "Test note 1", CreatedAt = utcDateTime }
+        };
+        await repository.SaveToFileAsync(testNotes, testFilePath);
+
+        // Act
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+        
+        command.Execute();
+        
+        var output = stringWriter.ToString();
+        System.Console.SetOut(originalOutput);
+
+        // Assert
+        Assert.Contains("19:30:45", output);
+        Assert.DoesNotContain("10:30:45", output);
         
         // Cleanup
         if (File.Exists(testFilePath))

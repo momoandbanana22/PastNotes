@@ -30,7 +30,8 @@ public class ViewCommand
         
         foreach (var note in notes)
         {
-            System.Console.WriteLine($"[{note.CreatedAt:yyyy-MM-dd HH:mm:ss}] {note.Text}");
+            var jstTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(note.CreatedAt, DateTimeKind.Utc), TimeZoneInfo.FindSystemTimeZoneById("Tokyo Standard Time"));
+            System.Console.WriteLine($"[{jstTime:yyyy-MM-dd HH:mm:ss}] {note.Text}");
             if (_showId)
             {
                 System.Console.WriteLine($"  ID: {note.Id}");
@@ -56,7 +57,8 @@ public class ViewCommand
         
         foreach (var note in notes)
         {
-            System.Console.WriteLine($"[{note.CreatedAt:yyyy-MM-dd HH:mm:ss}] {note.Text}");
+            var jstTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(note.CreatedAt, DateTimeKind.Utc), TimeZoneInfo.FindSystemTimeZoneById("Tokyo Standard Time"));
+            System.Console.WriteLine($"[{jstTime:yyyy-MM-dd HH:mm:ss}] {note.Text}");
             if (_showId)
             {
                 System.Console.WriteLine($"  ID: {note.Id}");
