@@ -36,6 +36,9 @@ dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- search <keywo
 
 # ノート表示
 dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- view
+
+# ノート表示（IDを含める）
+dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- view --show-id
 ```
 
 詳細なテスト計画は [TEST_PLAN.md](TEST_PLAN.md) を参照してください。

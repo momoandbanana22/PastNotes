@@ -6,11 +6,13 @@ public class ViewCommand
 {
     private readonly NoteRepository _repository;
     private readonly string _filePath;
+    private readonly bool _showId;
 
-    public ViewCommand(NoteRepository repository, string filePath = "notes.json")
+    public ViewCommand(NoteRepository repository, string filePath = "notes.json", bool showId = false)
     {
         _repository = repository;
         _filePath = filePath;
+        _showId = showId;
     }
 
     public int Execute()
@@ -28,8 +30,11 @@ public class ViewCommand
         
         foreach (var note in notes)
         {
-            System.Console.WriteLine($"[{note.CreatedAt:yyyy-MM-dd HH:mm}] {note.Text}");
-            System.Console.WriteLine($"  ID: {note.Id}");
+            System.Console.WriteLine($"[{note.CreatedAt:yyyy-MM-dd HH:mm:ss}] {note.Text}");
+            if (_showId)
+            {
+                System.Console.WriteLine($"  ID: {note.Id}");
+            }
             System.Console.WriteLine();
         }
 
@@ -51,8 +56,11 @@ public class ViewCommand
         
         foreach (var note in notes)
         {
-            System.Console.WriteLine($"[{note.CreatedAt:yyyy-MM-dd HH:mm}] {note.Text}");
-            System.Console.WriteLine($"  ID: {note.Id}");
+            System.Console.WriteLine($"[{note.CreatedAt:yyyy-MM-dd HH:mm:ss}] {note.Text}");
+            if (_showId)
+            {
+                System.Console.WriteLine($"  ID: {note.Id}");
+            }
             System.Console.WriteLine();
         }
 

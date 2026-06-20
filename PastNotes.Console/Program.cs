@@ -15,7 +15,7 @@ public class Program
             System.Console.WriteLine("Commands:");
             System.Console.WriteLine("  fetch --days <days>  Fetch notes from the last N days");
             System.Console.WriteLine("  search <keyword>     Search notes by keyword");
-            System.Console.WriteLine("  view                 View all notes");
+            System.Console.WriteLine("  view [--show-id]     View all notes (use --show-id to display note IDs)");
             return 1;
         }
 
@@ -87,7 +87,8 @@ public class Program
         if (command == "view")
         {
             var repository = new NoteRepository();
-            var viewCommand = new ViewCommand(repository);
+            var showId = args.Contains("--show-id");
+            var viewCommand = new ViewCommand(repository, showId: showId);
 
             try
             {
