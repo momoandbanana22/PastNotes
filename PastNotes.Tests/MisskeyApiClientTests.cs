@@ -237,7 +237,7 @@ public class MisskeyApiClientTests
         Assert.True(notes.Count() > 0);
     }
 
-    [Fact(Skip = "統合テスト: 実際のAPIエンドポイントが必要")]
+    [Fact]
     public async Task IntegrationTest_WhenCalledWithRealApi_ReturnsActualNotes()
     {
         // Arrange
@@ -249,7 +249,8 @@ public class MisskeyApiClientTests
             return; // 環境変数がない場合はテストをスキップ
         }
 
-        var client = new MisskeyApiClient(instanceUrl, apiToken);
+        var httpClient = new HttpClient();
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
         var startDate = DateTime.Now.AddDays(-30);
         var endDate = DateTime.Now;
 
@@ -259,6 +260,11 @@ public class MisskeyApiClientTests
         // Assert
         Assert.NotNull(notes);
         Assert.True(notes.Count() > 0);
+
+        // 実際のAPI呼び出しを確認するために、2回目の呼び出しも行う
+        var notes2 = await client.GetNotesAsync(startDate, endDate);
+        Assert.NotNull(notes2);
+        Assert.Equal(notes.Count(), notes2.Count()); // キャッシュが効いているはず
     }
 
     [Fact]

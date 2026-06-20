@@ -9,6 +9,7 @@ public class MisskeyApiClient
     private HttpClient? _httpClient;
     private Dictionary<string, IEnumerable<Note>> _cache = new();
     private TimeSpan _cacheExpiration = TimeSpan.FromMinutes(5);
+    private string? _userId;
 
     public MisskeyApiClient(string instanceUrl, string apiToken)
     {
@@ -58,17 +59,33 @@ public class MisskeyApiClient
 
     private async Task<bool> AuthenticateWithApiAsync()
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, $"{InstanceUrl}/api/i");
-        request.Headers.Add("Authorization", GetAuthorizationHeader());
-        
+        var requestBody = new
+        {
+            i = ApiToken
+        };
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{InstanceUrl}/api/i")
+        {
+            Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(requestBody), System.Text.Encoding.UTF8, "application/json")
+        };
+
         var response = await _httpClient!.SendAsync(request);
-        
+
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
             return false;
         }
-        
+
         response.EnsureSuccessStatusCode();
+
+        // ユーザーIDを取得
+        var jsonResponse = await response.Content.ReadAsStringAsync();
+        var userData = System.Text.Json.JsonSerializer.Deserialize<JsonElement>(jsonResponse);
+        if (userData.TryGetProperty("id", out var idElement))
+        {
+            _userId = idElement.GetString();
+        }
+
         return true;
     }
 
@@ -120,12 +137,33 @@ public class MisskeyApiClient
 
     private async Task<IEnumerable<Note>> GetNotesFromApiAsync(DateTime startDate, DateTime endDate)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, $"{InstanceUrl}/api/notes/by-user");
-        request.Headers.Add("Authorization", GetAuthorizationHeader());
-        
+        // 認証してユーザーIDを取得
+        if (_userId == null && _httpClient != null)
+        {
+            await AuthenticateWithApiAsync();
+        }
+
+        if (_userId == null)
+        {
+            throw new ApiException("Failed to authenticate and get user ID");
+        }
+
+        var requestBody = new
+        {
+            userId = _userId,
+            sinceDate = new DateTimeOffset(startDate).ToUnixTimeMilliseconds(),
+            untilDate = new DateTimeOffset(endDate).ToUnixTimeMilliseconds(),
+            limit = 100
+        };
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{InstanceUrl}/api/users/notes")
+        {
+            Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(requestBody), System.Text.Encoding.UTF8, "application/json")
+        };
+
         var response = await _httpClient!.SendAsync(request);
         response.EnsureSuccessStatusCode();
-        
+
         var jsonResponse = await response.Content.ReadAsStringAsync();
         return ParseApiResponse(jsonResponse);
     }
@@ -136,14 +174,19 @@ public class MisskeyApiClient
         {
             PropertyNameCaseInsensitive = true
         };
-        var apiResponses = JsonSerializer.Deserialize<IEnumerable<MisskeyApiResponse>>(jsonResponse, options);
+        var apiResponses = JsonSerializer.Deserialize<List<JsonElement>>(jsonResponse, options);
         
-        return apiResponses?.Select(api => new Note
+        if (apiResponses == null)
         {
-            Id = api.Id,
-            Text = api.Text,
-            CreatedAt = api.CreatedAt
-        }) ?? Enumerable.Empty<Note>();
+            return Enumerable.Empty<Note>();
+        }
+        
+        return apiResponses.Select(api => new Note
+        {
+            Id = api.TryGetProperty("id", out var idElement) ? idElement.GetString() ?? string.Empty : string.Empty,
+            Text = api.TryGetProperty("text", out var textElement) ? textElement.GetString() ?? string.Empty : string.Empty,
+            CreatedAt = api.TryGetProperty("createdAt", out var createdAtElement) ? createdAtElement.GetDateTime() : DateTime.MinValue
+        });
     }
 
     public string GetAuthorizationHeader()
