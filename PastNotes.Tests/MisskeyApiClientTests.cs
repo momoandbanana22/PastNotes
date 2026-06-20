@@ -26,6 +26,20 @@ public class MockHttpMessageHandler : HttpMessageHandler
             return Task.FromResult(rateLimitResponse);
         }
 
+        // /api/iエンドポイントの場合はユーザーオブジェクトを返す
+        if (request.RequestUri?.AbsolutePath.Contains("/api/i") == true)
+        {
+            var userResponse = new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent(@"{
+                    ""id"": ""test-user-id"",
+                    ""name"": ""Test User"",
+                    ""username"": ""testuser""
+                }", System.Text.Encoding.UTF8, "application/json")
+            };
+            return Task.FromResult(userResponse);
+        }
+
         // 2回目以降の呼び出しでは空の結果を返す（ページネーション終了条件）
         string jsonResponse;
         if (_callCount > 1)
@@ -241,13 +255,11 @@ public class MisskeyApiClientTests
     public async Task IntegrationTest_WhenCalledWithRealApi_ReturnsActualNotes()
     {
         // Arrange
-        var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL") ?? "https://misskey.io";
+        var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL");
         var apiToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
         
-        if (string.IsNullOrEmpty(apiToken))
-        {
-            return; // 環境変数がない場合はテストをスキップ
-        }
+        Assert.False(string.IsNullOrEmpty(apiToken), "MISSKEY_API_TOKEN環境変数が必要です");
+        Assert.False(string.IsNullOrEmpty(instanceUrl), "MISSKEY_INSTANCE_URL環境変数が必要です");
 
         var httpClient = new HttpClient();
         var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
@@ -274,9 +286,8 @@ public class MisskeyApiClientTests
         var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL");
         var apiToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
         
-        // 環境変数が設定されていることを確認
-        Assert.False(string.IsNullOrEmpty(apiToken), "MISSKEY_API_TOKEN環境変数が設定されていません");
-        Assert.False(string.IsNullOrEmpty(instanceUrl), "MISSKEY_INSTANCE_URL環境変数が設定されていません");
+        Assert.False(string.IsNullOrEmpty(apiToken), "MISSKEY_API_TOKEN環境変数が必要です");
+        Assert.False(string.IsNullOrEmpty(instanceUrl), "MISSKEY_INSTANCE_URL環境変数が必要です");
 
         var httpClient = new HttpClient();
         var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
@@ -301,10 +312,8 @@ public class MisskeyApiClientTests
         var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL");
         var apiToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
         
-        if (string.IsNullOrEmpty(apiToken) || string.IsNullOrEmpty(instanceUrl))
-        {
-            return; // 環境変数がない場合はテストをスキップ
-        }
+        Assert.False(string.IsNullOrEmpty(apiToken), "MISSKEY_API_TOKEN環境変数が必要です");
+        Assert.False(string.IsNullOrEmpty(instanceUrl), "MISSKEY_INSTANCE_URL環境変数が必要です");
 
         var httpClient = new HttpClient();
         var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
@@ -340,10 +349,8 @@ public class MisskeyApiClientTests
         var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL");
         var apiToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
         
-        if (string.IsNullOrEmpty(apiToken) || string.IsNullOrEmpty(instanceUrl))
-        {
-            return; // 環境変数がない場合はテストをスキップ
-        }
+        Assert.False(string.IsNullOrEmpty(apiToken), "MISSKEY_API_TOKEN環境変数が必要です");
+        Assert.False(string.IsNullOrEmpty(instanceUrl), "MISSKEY_INSTANCE_URL環境変数が必要です");
 
         var httpClient = new HttpClient();
         var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
