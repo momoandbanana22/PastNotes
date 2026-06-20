@@ -94,18 +94,18 @@
 
 ### 優先度: 高
 
-18. **GetNotesAsyncの実装（実際のHTTPリクエスト）**
+18. ✅ **GetNotesAsyncの実装（実際のHTTPリクエスト）**
     - HttpClientを使用してMisskey APIエンドポイントにリクエストを送信
     - 正しいAPIパス（/api/notes/by-user）を使用
     - 認証ヘッダーを正しく設定
     - クエリパラメータ（until, limit）を正しく設定
 
-19. **AuthenticateAsyncの実装（実際のAPI認証）**
+19. ✅ **AuthenticateAsyncの実装（実際のAPI認証）**
     - /api/iエンドポイントを使用して認証を検証
     - トークンが有効かどうかを確認
     - 無効なトークンの場合に適切なエラーを返す
 
-20. **GetNotesWithPaginationの実装（実際のページネーション）**
+20. ✅ **GetNotesWithPaginationの実装（実際のページネーション）**
     - untilパラメータを使用してページングを実装
     - すべてのページを取得するループ処理
     - 空のレスポンスで終了条件を判定
