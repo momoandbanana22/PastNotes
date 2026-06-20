@@ -27,6 +27,7 @@ public class NoteHtmlGenerator
             padding: 15px;
             border-radius: 5px;
             margin-bottom: 20px;
+            white-space: pre-wrap;
         }}
         .note-date {{
             color: #666;
@@ -94,6 +95,7 @@ public class NoteHtmlGenerator
         }
         .note-text {
             margin-bottom: 10px;
+            white-space: pre-wrap;
         }
         .images {
             margin-top: 20px;
