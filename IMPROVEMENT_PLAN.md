@@ -194,7 +194,7 @@ var result = fetchCommand.ExecuteAsync(days).GetAwaiter().GetResult();
 - [x] 1. NoteRepositoryの非同期一貫性を改善する
 - [x] 2. HttpClientのライフサイクル管理を改善する
 - [x] 3. MisskeyApiClientのTODOコメントを整理する
-- [ ] 4. キャッシュの有効期限管理を実装する
-- [ ] 5. エラーハンドリングを改善する
-- [ ] 6. IMisskeyApiClientインターフェースを拡張する
-- [ ] 7. コンソールアプリの非同期呼び出しを改善する
+- [x] 4. キャッシュの有効期限管理を実装する
+- [x] 5. エラーハンドリングを改善する
+- [x] 6. IMisskeyApiClientインターフェースを拡張する
+- [x] 7. コンソールアプリの非同期呼び出しを改善する

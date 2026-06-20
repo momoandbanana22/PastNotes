@@ -5,16 +5,28 @@ public class MockHttpMessageHandler : HttpMessageHandler
     public int RequestsSent { get; private set; }
     private int _callCount = 0;
     private bool _simulateRateLimit = false;
+    private HttpResponseMessage? _customErrorResponse;
 
     public void SimulateRateLimit(bool simulate)
     {
         _simulateRateLimit = simulate;
     }
 
+    public void SetErrorResponse(HttpResponseMessage response)
+    {
+        _customErrorResponse = response;
+    }
+
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         RequestsSent++;
         _callCount++;
+
+        // カスタムエラーレスポンスが設定されている場合はそれを返す
+        if (_customErrorResponse != null)
+        {
+            return Task.FromResult(_customErrorResponse);
+        }
 
         // レート制限シミュレーション
         if (_simulateRateLimit && _callCount == 1)
@@ -563,5 +575,62 @@ public class MisskeyApiClientTests
         var noteIds = notes.Select(n => n.Id).ToList();
         var uniqueNoteIds = noteIds.Distinct().ToList();
         Assert.Equal(noteIds.Count, uniqueNoteIds.Count);
+    }
+
+    // TDD: キャッシュ有効期限管理
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesAsync_WhenCalledAfterCacheExpiration_ShouldRefetchData()
+    {
+        // Arrange
+        var instanceUrl = "https://misskey.io";
+        var apiToken = "valid-token";
+        var mockHttpMessageHandler = new MockHttpMessageHandler();
+        var httpClient = new HttpClient(mockHttpMessageHandler);
+        // テスト用に短いキャッシュ有効期限（50ms）を設定
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient, TimeSpan.FromMilliseconds(50));
+        var startDate = new DateTime(2024, 1, 1);
+        var endDate = new DateTime(2024, 1, 31);
+
+        // Act
+        var notes1 = await client.GetNotesAsync(startDate, endDate);
+        var firstRequestCount = mockHttpMessageHandler.RequestsSent;
+        
+        // キャッシュ有効期限を待つ
+        await Task.Delay(100);
+        
+        var notes2 = await client.GetNotesAsync(startDate, endDate);
+        var secondRequestCount = mockHttpMessageHandler.RequestsSent;
+
+        // Assert
+        Assert.NotNull(notes1);
+        Assert.NotNull(notes2);
+        // キャッシュが有効期限切れの場合、リクエスト数が増えるはず
+        Assert.True(secondRequestCount > firstRequestCount, "Cache should expire and refetch data");
+    }
+
+    // TDD: エラーハンドリング改善
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesFromApiAsync_WhenReturns404_ShouldThrowNotFoundException()
+    {
+        // Arrange
+        var instanceUrl = "https://misskey.io";
+        var apiToken = "valid-token";
+        var mockHttpMessageHandler = new MockHttpMessageHandler();
+        // 404エラーを返すようにモックを設定
+        var errorResponse = new HttpResponseMessage(System.Net.HttpStatusCode.NotFound)
+        {
+            Content = new StringContent("Not Found", System.Text.Encoding.UTF8, "application/json")
+        };
+        mockHttpMessageHandler.SetErrorResponse(errorResponse);
+        
+        var httpClient = new HttpClient(mockHttpMessageHandler);
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
+        var startDate = new DateTime(2024, 1, 1);
+        var endDate = new DateTime(2024, 1, 31);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<NotFoundException>(() => client.GetNotesAsync(startDate, endDate));
     }
 }

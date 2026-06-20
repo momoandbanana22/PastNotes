@@ -24,3 +24,17 @@ public class RateLimitExceededException : ApiException
     {
     }
 }
+
+public class UnauthorizedException : ApiException
+{
+    public UnauthorizedException(string message) : base(message)
+    {
+    }
+}
+
+public class ServerErrorException : ApiException
+{
+    public ServerErrorException(string message) : base(message)
+    {
+    }
+}

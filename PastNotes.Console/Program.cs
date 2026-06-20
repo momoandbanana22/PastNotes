@@ -7,7 +7,7 @@ public class Program
 {
     private static readonly HttpClient _sharedHttpClient = new HttpClient();
 
-    public static int Main(string[] args)
+    public static async Task<int> Main(string[] args)
     {
         if (args.Length == 0)
         {
@@ -50,7 +50,7 @@ public class Program
 
             try
             {
-                var result = fetchCommand.ExecuteAsync(days).GetAwaiter().GetResult();
+                var result = await fetchCommand.ExecuteAsync(days);
                 return result;
             }
             catch (Exception ex)
@@ -74,7 +74,7 @@ public class Program
 
             try
             {
-                var result = searchCommand.Execute(keyword);
+                var result = await searchCommand.ExecuteAsync(keyword);
                 return result;
             }
             catch (Exception ex)
@@ -91,7 +91,7 @@ public class Program
 
             try
             {
-                var result = viewCommand.Execute();
+                var result = await viewCommand.ExecuteAsync();
                 return result;
             }
             catch (Exception ex)

@@ -7,7 +7,7 @@ public class MisskeyApiClient : IMisskeyApiClient
     public string InstanceUrl { get; }
     public string ApiToken { get; }
     private HttpClient? _httpClient;
-    private Dictionary<string, IEnumerable<Note>> _cache = new();
+    private Dictionary<string, (IEnumerable<Note> Notes, DateTime Timestamp)> _cache = new();
     private TimeSpan _cacheExpiration = TimeSpan.FromMinutes(5);
     private string? _userId;
 
@@ -44,6 +44,25 @@ public class MisskeyApiClient : IMisskeyApiClient
         _httpClient = httpClient;
     }
 
+    // テスト用：キャッシュ有効期限を設定できるコンストラクタ
+    public MisskeyApiClient(string instanceUrl, string apiToken, HttpClient httpClient, TimeSpan cacheExpiration)
+    {
+        if (string.IsNullOrWhiteSpace(instanceUrl) || !Uri.TryCreate(instanceUrl, UriKind.Absolute, out _))
+        {
+            throw new ArgumentException("Invalid instance URL format");
+        }
+
+        if (string.IsNullOrWhiteSpace(apiToken))
+        {
+            throw new ArgumentException("API token is required");
+        }
+
+        InstanceUrl = instanceUrl;
+        ApiToken = apiToken;
+        _httpClient = httpClient;
+        _cacheExpiration = cacheExpiration;
+    }
+
     public async Task<bool> AuthenticateAsync()
     {
         // HttpClientが提供されている場合は実際のAPI認証を実行
@@ -75,7 +94,11 @@ public class MisskeyApiClient : IMisskeyApiClient
             return false;
         }
 
-        response.EnsureSuccessStatusCode();
+        // エラーハンドリング
+        if (!response.IsSuccessStatusCode)
+        {
+            HandleErrorResponse(response);
+        }
 
         // ユーザーIDを取得
         var jsonResponse = await response.Content.ReadAsStringAsync();
@@ -86,6 +109,27 @@ public class MisskeyApiClient : IMisskeyApiClient
         }
 
         return true;
+    }
+
+    private void HandleErrorResponse(HttpResponseMessage response)
+    {
+        var statusCode = response.StatusCode;
+        
+        switch (statusCode)
+        {
+            case System.Net.HttpStatusCode.NotFound:
+                throw new NotFoundException("Resource not found");
+            case System.Net.HttpStatusCode.Unauthorized:
+                throw new UnauthorizedException("Unauthorized access");
+            case System.Net.HttpStatusCode.TooManyRequests:
+                throw new RateLimitExceededException("Rate limit exceeded");
+            case System.Net.HttpStatusCode.InternalServerError:
+            case System.Net.HttpStatusCode.BadGateway:
+            case System.Net.HttpStatusCode.ServiceUnavailable:
+                throw new ServerErrorException($"Server error: {statusCode}");
+            default:
+                throw new ApiException($"HTTP error: {statusCode}");
+        }
     }
 
     private async Task<IEnumerable<Note>> GetNotesFromApiAsync(DateTime startDate, DateTime endDate, string? untilId = null)
@@ -120,7 +164,12 @@ public class MisskeyApiClient : IMisskeyApiClient
         };
 
         var response = await _httpClient!.SendAsync(request);
-        response.EnsureSuccessStatusCode();
+        
+        // エラーハンドリング
+        if (!response.IsSuccessStatusCode)
+        {
+            HandleErrorResponse(response);
+        }
 
         var jsonResponse = await response.Content.ReadAsStringAsync();
         return ParseApiResponse(jsonResponse);
@@ -143,10 +192,16 @@ public class MisskeyApiClient : IMisskeyApiClient
         // キャッシュキーを生成
         var cacheKey = $"notes_{startDate:o}_{endDate:o}";
 
-        // キャッシュをチェック
-        if (_cache.ContainsKey(cacheKey))
+        // キャッシュをチェック（有効期限も確認）
+        if (_cache.TryGetValue(cacheKey, out var cachedData))
         {
-            return _cache[cacheKey];
+            var (cachedNotes, timestamp) = cachedData;
+            if (DateTime.Now - timestamp < _cacheExpiration)
+            {
+                return cachedNotes;
+            }
+            // 有効期限切れの場合はキャッシュを削除
+            _cache.Remove(cacheKey);
         }
 
         // HttpClientが提供されている場合は実際のAPI呼び出しを実行
@@ -165,8 +220,8 @@ public class MisskeyApiClient : IMisskeyApiClient
             }.Where(note => note.CreatedAt >= startDate && note.CreatedAt <= endDate);
         }
 
-        // キャッシュに保存
-        _cache[cacheKey] = notes;
+        // キャッシュに保存（タイムスタンプ付き）
+        _cache[cacheKey] = (notes, DateTime.Now);
 
         return notes;
     }
@@ -277,6 +332,12 @@ public class MisskeyApiClient : IMisskeyApiClient
                 return await GetNotesFromApiAsync(startDate, endDate);
             }
             catch (HttpRequestException) when (retryCount < maxRetries)
+            {
+                retryCount++;
+                await Task.Delay(delay);
+                delay = TimeSpan.FromSeconds(delay.TotalSeconds * 2); // 指数バックオフ
+            }
+            catch (RateLimitExceededException) when (retryCount < maxRetries)
             {
                 retryCount++;
                 await Task.Delay(delay);
