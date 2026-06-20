@@ -1,4 +1,4 @@
-namespace PastNotes.Tests;
+namespace PastNotes;
 
 public class MockHttpMessageHandler : HttpMessageHandler
 {
@@ -265,6 +265,104 @@ public class MisskeyApiClientTests
         var notes2 = await client.GetNotesAsync(startDate, endDate);
         Assert.NotNull(notes2);
         Assert.Equal(notes.Count(), notes2.Count()); // キャッシュが効いているはず
+    }
+
+    [Fact]
+    public async Task DebugIntegrationTest_VerifyActualApiCall()
+    {
+        // Arrange
+        var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL");
+        var apiToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
+        
+        // 環境変数が設定されていることを確認
+        Assert.False(string.IsNullOrEmpty(apiToken), "MISSKEY_API_TOKEN環境変数が設定されていません");
+        Assert.False(string.IsNullOrEmpty(instanceUrl), "MISSKEY_INSTANCE_URL環境変数が設定されていません");
+
+        var httpClient = new HttpClient();
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
+        var startDate = DateTime.Now.AddDays(-30);
+        var endDate = DateTime.Now;
+
+        // Act
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var notes = await client.GetNotesAsync(startDate, endDate);
+        stopwatch.Stop();
+
+        // Assert
+        Assert.NotNull(notes);
+        // 実際のAPI呼び出しであれば、実行時間は100ms以上であるはず
+        Assert.True(stopwatch.ElapsedMilliseconds > 100, $"実行時間が短すぎます: {stopwatch.ElapsedMilliseconds}ms (実際のAPI呼び出しであれば100ms以上)");
+    }
+
+    [Fact]
+    public async Task EndToEndTest_FetchSaveAndSearchNotes()
+    {
+        // Arrange
+        var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL");
+        var apiToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
+        
+        if (string.IsNullOrEmpty(apiToken) || string.IsNullOrEmpty(instanceUrl))
+        {
+            return; // 環境変数がない場合はテストをスキップ
+        }
+
+        var httpClient = new HttpClient();
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
+        var repository = new NoteRepository();
+        var testFilePath = "test_notes.json";
+        var startDate = DateTime.Now.AddDays(-30);
+        var endDate = DateTime.Now;
+
+        // Act
+        var notes = await client.GetNotesAsync(startDate, endDate);
+        repository.SaveToFileAsync(notes, testFilePath);
+        var loadedNotes = repository.LoadFromFileAsync(testFilePath);
+        var searchResults = repository.SearchByKeyword(loadedNotes, "test");
+
+        // Assert
+        Assert.NotNull(notes);
+        Assert.True(notes.Count() > 0);
+        Assert.NotNull(loadedNotes);
+        Assert.Equal(notes.Count(), loadedNotes.Count());
+        Assert.NotNull(searchResults);
+
+        // Cleanup
+        if (File.Exists(testFilePath))
+        {
+            File.Delete(testFilePath);
+        }
+    }
+
+    [Fact]
+    public async Task VerifyActualNoteData_ValidateNoteFields()
+    {
+        // Arrange
+        var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL");
+        var apiToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
+        
+        if (string.IsNullOrEmpty(apiToken) || string.IsNullOrEmpty(instanceUrl))
+        {
+            return; // 環境変数がない場合はテストをスキップ
+        }
+
+        var httpClient = new HttpClient();
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
+        var startDate = DateTime.Now.AddDays(-30);
+        var endDate = DateTime.Now;
+
+        // Act
+        var notes = await client.GetNotesAsync(startDate, endDate);
+
+        // Assert
+        Assert.NotNull(notes);
+        Assert.True(notes.Count() > 0);
+
+        // 各ノートのフィールドを検証
+        foreach (var note in notes)
+        {
+            Assert.False(string.IsNullOrEmpty(note.Id), "Note ID should not be empty");
+            Assert.True(note.CreatedAt > DateTime.MinValue, "Note CreatedAt should be valid");
+        }
     }
 
     [Fact]

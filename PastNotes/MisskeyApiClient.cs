@@ -89,6 +89,39 @@ public class MisskeyApiClient
         return true;
     }
 
+    private async Task<IEnumerable<Note>> GetNotesFromApiAsync(DateTime startDate, DateTime endDate)
+    {
+        // 認証してユーザーIDを取得
+        if (_userId == null && _httpClient != null)
+        {
+            await AuthenticateWithApiAsync();
+        }
+
+        if (_userId == null)
+        {
+            throw new ApiException("Failed to authenticate and get user ID");
+        }
+
+        var requestBody = new
+        {
+            userId = _userId,
+            sinceDate = new DateTimeOffset(startDate).ToUnixTimeMilliseconds(),
+            untilDate = new DateTimeOffset(endDate).ToUnixTimeMilliseconds(),
+            limit = 100
+        };
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{InstanceUrl}/api/users/notes")
+        {
+            Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(requestBody), System.Text.Encoding.UTF8, "application/json")
+        };
+
+        var response = await _httpClient!.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+
+        var jsonResponse = await response.Content.ReadAsStringAsync();
+        return ParseApiResponse(jsonResponse);
+    }
+
     public async Task<IEnumerable<Note>> GetNotesAsync(DateTime startDate, DateTime endDate)
     {
         // 日付範囲のバリデーション
@@ -133,39 +166,6 @@ public class MisskeyApiClient
         _cache[cacheKey] = notes;
 
         return notes;
-    }
-
-    private async Task<IEnumerable<Note>> GetNotesFromApiAsync(DateTime startDate, DateTime endDate)
-    {
-        // 認証してユーザーIDを取得
-        if (_userId == null && _httpClient != null)
-        {
-            await AuthenticateWithApiAsync();
-        }
-
-        if (_userId == null)
-        {
-            throw new ApiException("Failed to authenticate and get user ID");
-        }
-
-        var requestBody = new
-        {
-            userId = _userId,
-            sinceDate = new DateTimeOffset(startDate).ToUnixTimeMilliseconds(),
-            untilDate = new DateTimeOffset(endDate).ToUnixTimeMilliseconds(),
-            limit = 100
-        };
-
-        var request = new HttpRequestMessage(HttpMethod.Post, $"{InstanceUrl}/api/users/notes")
-        {
-            Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(requestBody), System.Text.Encoding.UTF8, "application/json")
-        };
-
-        var response = await _httpClient!.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-
-        var jsonResponse = await response.Content.ReadAsStringAsync();
-        return ParseApiResponse(jsonResponse);
     }
 
     public static IEnumerable<Note> ParseApiResponse(string jsonResponse)
