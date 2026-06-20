@@ -21,18 +21,37 @@ public class MisskeyApiClient
         _httpClient = httpClient;
     }
 
-    public bool AuthenticateAsync()
+    public async Task<bool> AuthenticateAsync()
     {
+        // HttpClientが提供されている場合は実際のAPI認証を実行
+        if (_httpClient != null)
+        {
+            return await AuthenticateWithApiAsync();
+        }
+
         // TODO: 実際のAPI認証を実装
         // 現在は簡易的な実装としてトークンの有無で判定
         return !string.IsNullOrEmpty(ApiToken) && ApiToken != "invalid-token";
     }
 
-    public IEnumerable<Note> GetNotesAsync(DateTime startDate, DateTime endDate)
+    private async Task<bool> AuthenticateWithApiAsync()
     {
-        // TODO: 実際のAPI呼び出しを実装
-        // 現在は簡易的な実装としてダミーデータを返す
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{InstanceUrl}/api/i");
+        request.Headers.Add("Authorization", GetAuthorizationHeader());
         
+        var response = await _httpClient!.SendAsync(request);
+        
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            return false;
+        }
+        
+        response.EnsureSuccessStatusCode();
+        return true;
+    }
+
+    public async Task<IEnumerable<Note>> GetNotesAsync(DateTime startDate, DateTime endDate)
+    {
         // 日付範囲のバリデーション
         if (startDate > endDate)
         {
@@ -45,11 +64,31 @@ public class MisskeyApiClient
             throw new ApiException("Invalid instance URL");
         }
 
+        // HttpClientが提供されている場合は実際のAPI呼び出しを実行
+        if (_httpClient != null)
+        {
+            return await GetNotesFromApiAsync(startDate, endDate);
+        }
+
+        // TODO: 実際のAPI呼び出しを実装
+        // 現在は簡易的な実装としてダミーデータを返す
         return new List<Note>
         {
             new Note { CreatedAt = new DateTime(2024, 1, 15), Id = "1", Text = "Test note 1" },
             new Note { CreatedAt = new DateTime(2024, 1, 20), Id = "2", Text = "Test note 2" }
         }.Where(note => note.CreatedAt >= startDate && note.CreatedAt <= endDate);
+    }
+
+    private async Task<IEnumerable<Note>> GetNotesFromApiAsync(DateTime startDate, DateTime endDate)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, $"{InstanceUrl}/api/notes/by-user");
+        request.Headers.Add("Authorization", GetAuthorizationHeader());
+        
+        var response = await _httpClient!.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        
+        var jsonResponse = await response.Content.ReadAsStringAsync();
+        return ParseApiResponse(jsonResponse);
     }
 
     public static IEnumerable<Note> ParseApiResponse(string jsonResponse)
@@ -88,18 +127,66 @@ public class MisskeyApiClient
         }
     }
 
-    public IEnumerable<Note> GetNotesWithPagination(DateTime startDate, DateTime endDate)
+    public async Task<IEnumerable<Note>> GetNotesWithPagination(DateTime startDate, DateTime endDate)
     {
+        if (_httpClient != null)
+        {
+            return await GetNotesWithPaginationFromApiAsync(startDate, endDate);
+        }
+
         // TODO: 実際のページネーション処理を実装
         // 現在は簡易的な実装として既存のGetNotesAsyncを使用
-        return GetNotesAsync(startDate, endDate);
+        return await GetNotesAsync(startDate, endDate);
     }
 
-    public IEnumerable<Note> GetNotesWithRetry(DateTime startDate, DateTime endDate, int maxRetries)
+    private async Task<IEnumerable<Note>> GetNotesWithPaginationFromApiAsync(DateTime startDate, DateTime endDate)
+    {
+        var allNotes = new List<Note>();
+        var until = endDate;
+        var hasMoreNotes = true;
+
+        while (hasMoreNotes)
+        {
+            var notes = await GetNotesFromApiWithUntilAsync(startDate, until);
+            
+            if (!notes.Any())
+            {
+                hasMoreNotes = false;
+            }
+            else
+            {
+                allNotes.AddRange(notes);
+                // 次のページのためにuntilを更新（最後のノートの日付を使用）
+                until = notes.Last().CreatedAt;
+                
+                // 期間外になったら終了
+                if (until < startDate)
+                {
+                    hasMoreNotes = false;
+                }
+            }
+        }
+
+        return allNotes.Where(note => note.CreatedAt >= startDate && note.CreatedAt <= endDate);
+    }
+
+    private async Task<IEnumerable<Note>> GetNotesFromApiWithUntilAsync(DateTime startDate, DateTime until)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, $"{InstanceUrl}/api/notes/by-user?until={until:o}");
+        request.Headers.Add("Authorization", GetAuthorizationHeader());
+        
+        var response = await _httpClient!.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        
+        var jsonResponse = await response.Content.ReadAsStringAsync();
+        return ParseApiResponse(jsonResponse);
+    }
+
+    public async Task<IEnumerable<Note>> GetNotesWithRetry(DateTime startDate, DateTime endDate, int maxRetries)
     {
         // TODO: 実際のリトライ処理を実装
         // 現在は簡易的な実装として既存のGetNotesAsyncを使用
-        return GetNotesAsync(startDate, endDate);
+        return await GetNotesAsync(startDate, endDate);
     }
 }
 

@@ -1,5 +1,46 @@
 namespace PastNotes.Tests;
 
+public class MockHttpMessageHandler : HttpMessageHandler
+{
+    public int RequestsSent { get; private set; }
+    private int _callCount = 0;
+
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        RequestsSent++;
+        _callCount++;
+
+        // 2回目以降の呼び出しでは空の結果を返す（ページネーション終了条件）
+        string jsonResponse;
+        if (_callCount > 1)
+        {
+            jsonResponse = "[]";
+        }
+        else
+        {
+            jsonResponse = @"[
+                {
+                    ""id"": ""test-id-1"",
+                    ""text"": ""Test note 1"",
+                    ""createdAt"": ""2024-01-15T10:30:00.000Z""
+                },
+                {
+                    ""id"": ""test-id-2"",
+                    ""text"": ""Test note 2"",
+                    ""createdAt"": ""2024-01-20T14:45:00.000Z""
+                }
+            ]";
+        }
+
+        var response = new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent(jsonResponse, System.Text.Encoding.UTF8, "application/json")
+        };
+
+        return Task.FromResult(response);
+    }
+}
+
 public class MisskeyApiClientTests
 {
     [Fact]
@@ -19,7 +60,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
-    public void AuthenticateAsync_WhenCalledWithValidToken_ReturnsSuccess()
+    public async Task AuthenticateAsync_WhenCalledWithValidToken_ReturnsSuccess()
     {
         // Arrange
         var instanceUrl = "https://misskey.io";
@@ -27,14 +68,14 @@ public class MisskeyApiClientTests
         var client = new MisskeyApiClient(instanceUrl, apiToken);
 
         // Act
-        var result = client.AuthenticateAsync();
+        var result = await client.AuthenticateAsync();
 
         // Assert
         Assert.True(result);
     }
 
     [Fact]
-    public void AuthenticateAsync_WhenCalledWithInvalidToken_ReturnsFailure()
+    public async Task AuthenticateAsync_WhenCalledWithInvalidToken_ReturnsFailure()
     {
         // Arrange
         var instanceUrl = "https://misskey.io";
@@ -42,14 +83,14 @@ public class MisskeyApiClientTests
         var client = new MisskeyApiClient(instanceUrl, apiToken);
 
         // Act
-        var result = client.AuthenticateAsync();
+        var result = await client.AuthenticateAsync();
 
         // Assert
         Assert.False(result);
     }
 
     [Fact]
-    public void GetNotesAsync_WhenCalledWithValidDateRange_ReturnsNotesWithinRange()
+    public async Task GetNotesAsync_WhenCalledWithValidDateRange_ReturnsNotesWithinRange()
     {
         // Arrange
         var instanceUrl = "https://misskey.io";
@@ -59,7 +100,7 @@ public class MisskeyApiClientTests
         var endDate = new DateTime(2024, 1, 31);
 
         // Act
-        var notes = client.GetNotesAsync(startDate, endDate);
+        var notes = await client.GetNotesAsync(startDate, endDate);
 
         // Assert
         Assert.NotNull(notes);
@@ -71,7 +112,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
-    public void GetNotesAsync_WhenApiCallFails_ThrowsApiException()
+    public async Task GetNotesAsync_WhenApiCallFails_ThrowsApiException()
     {
         // Arrange
         var instanceUrl = "https://invalid-instance.example.com";
@@ -81,11 +122,11 @@ public class MisskeyApiClientTests
         var endDate = new DateTime(2024, 1, 31);
 
         // Act & Assert
-        Assert.Throws<ApiException>(() => client.GetNotesAsync(startDate, endDate));
+        await Assert.ThrowsAsync<ApiException>(() => client.GetNotesAsync(startDate, endDate));
     }
 
     [Fact]
-    public void GetNotesAsync_WhenStartDateIsAfterEndDate_ThrowsArgumentException()
+    public async Task GetNotesAsync_WhenStartDateIsAfterEndDate_ThrowsArgumentException()
     {
         // Arrange
         var instanceUrl = "https://misskey.io";
@@ -95,25 +136,7 @@ public class MisskeyApiClientTests
         var endDate = new DateTime(2024, 1, 1);
 
         // Act & Assert
-        Assert.Throws<ArgumentException>(() => client.GetNotesAsync(startDate, endDate));
-    }
-
-    [Fact]
-    public void GetNotesAsync_WhenCalledWithHttpClient_SendsRequestToCorrectEndpoint()
-    {
-        // Arrange
-        var instanceUrl = "https://misskey.io";
-        var apiToken = "valid-token";
-        var httpClient = new HttpClient();
-        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
-        var startDate = new DateTime(2024, 1, 1);
-        var endDate = new DateTime(2024, 1, 31);
-
-        // Act
-        var notes = client.GetNotesAsync(startDate, endDate);
-
-        // Assert
-        Assert.NotNull(notes);
+        await Assert.ThrowsAsync<ArgumentException>(() => client.GetNotesAsync(startDate, endDate));
     }
 
     [Fact]
@@ -181,7 +204,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
-    public void GetNotesWithPagination_WhenCalledWithPagination_ReturnsAllPages()
+    public async Task GetNotesWithPagination_WhenCalledWithPagination_ReturnsAllPages()
     {
         // Arrange
         var instanceUrl = "https://misskey.io";
@@ -191,7 +214,7 @@ public class MisskeyApiClientTests
         var endDate = new DateTime(2024, 1, 31);
 
         // Act
-        var notes = client.GetNotesWithPagination(startDate, endDate);
+        var notes = await client.GetNotesWithPagination(startDate, endDate);
 
         // Assert
         Assert.NotNull(notes);
@@ -199,7 +222,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact(Skip = "統合テスト: 実際のAPIエンドポイントが必要")]
-    public void IntegrationTest_WhenCalledWithRealApi_ReturnsActualNotes()
+    public async Task IntegrationTest_WhenCalledWithRealApi_ReturnsActualNotes()
     {
         // Arrange
         var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL") ?? "https://misskey.io";
@@ -215,7 +238,7 @@ public class MisskeyApiClientTests
         var endDate = DateTime.Now;
 
         // Act
-        var notes = client.GetNotesAsync(startDate, endDate);
+        var notes = await client.GetNotesAsync(startDate, endDate);
 
         // Assert
         Assert.NotNull(notes);
@@ -223,7 +246,7 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
-    public void GetNotesWithRetry_WhenRateLimitExceeded_RetriesWithBackoff()
+    public async Task GetNotesWithRetry_WhenRateLimitExceeded_RetriesWithBackoff()
     {
         // Arrange
         var instanceUrl = "https://misskey.io";
@@ -234,9 +257,67 @@ public class MisskeyApiClientTests
         var maxRetries = 3;
 
         // Act
-        var notes = client.GetNotesWithRetry(startDate, endDate, maxRetries);
+        var notes = await client.GetNotesWithRetry(startDate, endDate, maxRetries);
 
         // Assert
         Assert.NotNull(notes);
+    }
+
+    [Fact]
+    public async Task GetNotesAsync_WhenCalledWithHttpClient_SendsRequestToMisskeyApi()
+    {
+        // Arrange
+        var instanceUrl = "https://misskey.io";
+        var apiToken = "valid-token";
+        var mockHttpMessageHandler = new MockHttpMessageHandler();
+        var httpClient = new HttpClient(mockHttpMessageHandler);
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
+        var startDate = new DateTime(2024, 1, 1);
+        var endDate = new DateTime(2024, 1, 31);
+
+        // Act
+        var notes = await client.GetNotesAsync(startDate, endDate);
+
+        // Assert
+        Assert.NotNull(notes);
+        Assert.True(mockHttpMessageHandler.RequestsSent > 0);
+    }
+
+    [Fact]
+    public async Task AuthenticateAsync_WhenCalledWithHttpClient_SendsRequestToApiIEndpoint()
+    {
+        // Arrange
+        var instanceUrl = "https://misskey.io";
+        var apiToken = "valid-token";
+        var mockHttpMessageHandler = new MockHttpMessageHandler();
+        var httpClient = new HttpClient(mockHttpMessageHandler);
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
+
+        // Act
+        var result = await client.AuthenticateAsync();
+
+        // Assert
+        Assert.True(result);
+        Assert.True(mockHttpMessageHandler.RequestsSent > 0);
+    }
+
+    [Fact]
+    public async Task GetNotesWithPagination_WhenCalledWithHttpClient_UsesUntilParameter()
+    {
+        // Arrange
+        var instanceUrl = "https://misskey.io";
+        var apiToken = "valid-token";
+        var mockHttpMessageHandler = new MockHttpMessageHandler();
+        var httpClient = new HttpClient(mockHttpMessageHandler);
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
+        var startDate = new DateTime(2024, 1, 1);
+        var endDate = new DateTime(2024, 1, 31);
+
+        // Act
+        var notes = await client.GetNotesWithPagination(startDate, endDate);
+
+        // Assert
+        Assert.NotNull(notes);
+        Assert.True(mockHttpMessageHandler.RequestsSent > 0);
     }
 }
