@@ -33,6 +33,38 @@ public class NoteTests
         Assert.Equal(string.Empty, note.Text);
         Assert.Equal(default(DateTime), note.CreatedAt);
     }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Note_WhenCreatedWithFiles_HasFilesProperty()
+    {
+        // Arrange
+        var note = new Note();
+
+        // Act & Assert
+        Assert.NotNull(note.Files);
+        Assert.Empty(note.Files);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void NoteFile_WhenCreated_HasRequiredProperties()
+    {
+        // Arrange
+        var file = new NoteFile
+        {
+            Id = "file-id",
+            Url = "https://example.com/image.jpg",
+            Type = "image/jpeg",
+            Name = "image.jpg"
+        };
+
+        // Act & Assert
+        Assert.Equal("file-id", file.Id);
+        Assert.Equal("https://example.com/image.jpg", file.Url);
+        Assert.Equal("image/jpeg", file.Type);
+        Assert.Equal("image.jpg", file.Name);
+    }
 }
 
 public class NoteRepositoryTests

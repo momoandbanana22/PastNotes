@@ -240,4 +240,57 @@ public class ViewCommandTests
             File.Delete(testFilePath);
         }
     }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Execute_WhenNoteHasFiles_DisplaysFileInformation()
+    {
+        // Arrange
+        var repository = new NoteRepository();
+        var testFilePath = $"test_notes_{Guid.NewGuid()}.json";
+        var command = new ViewCommand(repository, testFilePath);
+        
+        var testNotes = new List<Note>
+        {
+            new Note 
+            { 
+                Id = "1", 
+                Text = "Test note with image", 
+                CreatedAt = DateTime.Now,
+                Files = new List<NoteFile>
+                {
+                    new NoteFile 
+                    { 
+                        Id = "file-1", 
+                        Url = "https://example.com/image.jpg", 
+                        Type = "image/jpeg", 
+                        Name = "image.jpg" 
+                    }
+                }
+            }
+        };
+        await repository.SaveToFileAsync(testNotes, testFilePath);
+
+        // Act
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+        
+        command.Execute();
+        
+        var output = stringWriter.ToString();
+        System.Console.SetOut(originalOutput);
+
+        // Assert
+        Assert.Contains("添付ファイル", output);
+        Assert.Contains("image.jpg", output);
+        Assert.Contains("image/jpeg", output);
+        Assert.Contains("https://example.com/image.jpg", output);
+        
+        // Cleanup
+        if (File.Exists(testFilePath))
+        {
+            File.Delete(testFilePath);
+        }
+    }
 }

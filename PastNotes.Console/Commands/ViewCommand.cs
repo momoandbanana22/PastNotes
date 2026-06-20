@@ -36,6 +36,15 @@ public class ViewCommand
             {
                 System.Console.WriteLine($"  ID: {note.Id}");
             }
+            if (note.Files.Any())
+            {
+                System.Console.WriteLine("  添付ファイル:");
+                foreach (var file in note.Files)
+                {
+                    System.Console.WriteLine($"    - {file.Name} ({file.Type})");
+                    System.Console.WriteLine($"      URL: {file.Url}");
+                }
+            }
             System.Console.WriteLine();
         }
 
@@ -62,6 +71,15 @@ public class ViewCommand
             if (_showId)
             {
                 System.Console.WriteLine($"  ID: {note.Id}");
+            }
+            if (note.Files.Any())
+            {
+                System.Console.WriteLine("  添付ファイル:");
+                foreach (var file in note.Files)
+                {
+                    System.Console.WriteLine($"    - {file.Name} ({file.Type})");
+                    System.Console.WriteLine($"      URL: {file.Url}");
+                }
             }
             System.Console.WriteLine();
         }

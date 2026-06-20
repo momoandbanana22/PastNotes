@@ -243,7 +243,16 @@ public class MisskeyApiClient : IMisskeyApiClient
         {
             Id = api.TryGetProperty("id", out var idElement) ? idElement.GetString() ?? string.Empty : string.Empty,
             Text = api.TryGetProperty("text", out var textElement) ? textElement.GetString() ?? string.Empty : string.Empty,
-            CreatedAt = api.TryGetProperty("createdAt", out var createdAtElement) ? createdAtElement.GetDateTime() : DateTime.MinValue
+            CreatedAt = api.TryGetProperty("createdAt", out var createdAtElement) ? createdAtElement.GetDateTime() : DateTime.MinValue,
+            Files = api.TryGetProperty("files", out var filesElement) && filesElement.ValueKind == JsonValueKind.Array 
+                ? filesElement.EnumerateArray().Select(file => new NoteFile
+                {
+                    Id = file.TryGetProperty("id", out var fileId) ? fileId.GetString() ?? string.Empty : string.Empty,
+                    Url = file.TryGetProperty("url", out var fileUrl) ? fileUrl.GetString() ?? string.Empty : string.Empty,
+                    Type = file.TryGetProperty("type", out var fileType) ? fileType.GetString() ?? string.Empty : string.Empty,
+                    Name = file.TryGetProperty("name", out var fileName) ? fileName.GetString() ?? string.Empty : string.Empty
+                }).ToList()
+                : new List<NoteFile>()
         });
     }
 

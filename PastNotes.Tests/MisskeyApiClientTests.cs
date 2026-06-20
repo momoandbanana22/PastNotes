@@ -217,6 +217,48 @@ public class MisskeyApiClientTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    public void ParseApiResponse_WhenCalledWithFiles_ReturnsNotesWithFiles()
+    {
+        // Arrange
+        var jsonResponse = @"[
+            {
+                ""id"": ""test-id-1"",
+                ""text"": ""Test note with image"",
+                ""createdAt"": ""2024-01-15T10:30:00.000Z"",
+                ""files"": [
+                    {
+                        ""id"": ""file-1"",
+                        ""url"": ""https://example.com/image1.jpg"",
+                        ""type"": ""image/jpeg"",
+                        ""name"": ""image1.jpg""
+                    },
+                    {
+                        ""id"": ""file-2"",
+                        ""url"": ""https://example.com/image2.png"",
+                        ""type"": ""image/png"",
+                        ""name"": ""image2.png""
+                    }
+                ]
+            }
+        ]";
+
+        // Act
+        var notes = MisskeyApiClient.ParseApiResponse(jsonResponse);
+
+        // Assert
+        Assert.NotNull(notes);
+        Assert.Single(notes);
+        var note = notes.First();
+        Assert.NotNull(note.Files);
+        Assert.Equal(2, note.Files.Count);
+        Assert.Equal("file-1", note.Files[0].Id);
+        Assert.Equal("https://example.com/image1.jpg", note.Files[0].Url);
+        Assert.Equal("image/jpeg", note.Files[0].Type);
+        Assert.Equal("image1.jpg", note.Files[0].Name);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     public void GetAuthorizationHeader_WhenCalled_ReturnsCorrectHeaderValue()
     {
         // Arrange
