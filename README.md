@@ -42,9 +42,17 @@ dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- view
 
 # ノート表示（IDを含める）
 dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- view --show-id
+
+# ノートをHTMLで表示（画像を含む）
+dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- view-html
+
+# ノートをHTMLで表示してブラウザで開く
+dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- view-html --open
 ```
 
 ノートに添付ファイルがある場合、ファイル名、タイプ、URLが表示されます。
+
+view-htmlコマンドを使用すると、すべてのノートを1つのHTMLファイルとして生成し、画像をブラウザで表示できます。
 
 詳細なテスト計画は [TEST_PLAN.md](TEST_PLAN.md) を参照してください。
 開発者向けドキュメントは [DEVELOPMENT.md](DEVELOPMENT.md) を参照してください。

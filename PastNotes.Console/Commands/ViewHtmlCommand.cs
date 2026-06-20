@@ -33,19 +33,15 @@ public class ViewHtmlCommand
         }
 
         var generator = new NoteHtmlGenerator();
-        foreach (var note in notes)
-        {
-            var outputPath = Path.Combine(_outputDir, $"{note.Id}.html");
-            generator.GenerateHtml(note, outputPath);
-        }
+        var outputPath = Path.Combine(_outputDir, "notes.html");
+        generator.GenerateHtmlForAllNotes(notes, outputPath);
 
-        System.Console.WriteLine($"Generated {notes.Count()} HTML files in {_outputDir}");
+        System.Console.WriteLine($"Generated HTML file: {outputPath}");
 
-        if (_openBrowser && notes.Any())
+        if (_openBrowser)
         {
-            var firstHtmlFile = Path.Combine(_outputDir, $"{notes.First().Id}.html");
-            generator.OpenInBrowser(firstHtmlFile);
-            System.Console.WriteLine($"Opened {firstHtmlFile} in browser");
+            generator.OpenInBrowser(outputPath);
+            System.Console.WriteLine($"Opened {outputPath} in browser");
         }
 
         return 0;

@@ -161,6 +161,77 @@ public class NoteHtmlGeneratorTests
             File.Delete(outputPath);
         }
     }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GenerateHtmlForAllNotes_WhenCalledWithMultipleNotes_GeneratesSingleHtmlFile()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var notes = new List<Note>
+        {
+            new Note { Id = "1", Text = "Test note 1", CreatedAt = DateTime.Now },
+            new Note { Id = "2", Text = "Test note 2", CreatedAt = DateTime.Now }
+        };
+        var outputPath = $"test_notes_{Guid.NewGuid()}.html";
+
+        // Act
+        generator.GenerateHtmlForAllNotes(notes, outputPath);
+
+        // Assert
+        Assert.True(File.Exists(outputPath));
+        var htmlContent = File.ReadAllText(outputPath);
+        Assert.Contains("Test note 1", htmlContent);
+        Assert.Contains("Test note 2", htmlContent);
+        
+        // Cleanup
+        if (File.Exists(outputPath))
+        {
+            File.Delete(outputPath);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GenerateHtmlForAllNotes_WhenNotesHaveFiles_IncludesImageTags()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var notes = new List<Note>
+        {
+            new Note 
+            { 
+                Id = "1", 
+                Text = "Test note with image", 
+                CreatedAt = DateTime.Now,
+                Files = new List<NoteFile>
+                {
+                    new NoteFile 
+                    { 
+                        Id = "file-1", 
+                        Url = "https://example.com/image.jpg", 
+                        Type = "image/jpeg", 
+                        Name = "image.jpg" 
+                    }
+                }
+            }
+        };
+        var outputPath = $"test_notes_{Guid.NewGuid()}.html";
+
+        // Act
+        generator.GenerateHtmlForAllNotes(notes, outputPath);
+
+        // Assert
+        var htmlContent = File.ReadAllText(outputPath);
+        Assert.Contains("<img", htmlContent);
+        Assert.Contains("https://example.com/image.jpg", htmlContent);
+        
+        // Cleanup
+        if (File.Exists(outputPath))
+        {
+            File.Delete(outputPath);
+        }
+    }
 }
 
 public class NoteRepositoryTests
