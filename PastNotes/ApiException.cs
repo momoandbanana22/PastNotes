@@ -10,3 +10,17 @@ public class ApiException : Exception
     {
     }
 }
+
+public class NotFoundException : ApiException
+{
+    public NotFoundException(string message) : base(message)
+    {
+    }
+}
+
+public class RateLimitExceededException : ApiException
+{
+    public RateLimitExceededException(string message) : base(message)
+    {
+    }
+}

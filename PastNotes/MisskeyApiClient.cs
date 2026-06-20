@@ -1,14 +1,24 @@
+using System.Text.Json;
+
 namespace PastNotes;
 
 public class MisskeyApiClient
 {
     public string InstanceUrl { get; }
     public string ApiToken { get; }
+    private HttpClient? _httpClient;
 
     public MisskeyApiClient(string instanceUrl, string apiToken)
     {
         InstanceUrl = instanceUrl;
         ApiToken = apiToken;
+    }
+
+    public MisskeyApiClient(string instanceUrl, string apiToken, HttpClient httpClient)
+    {
+        InstanceUrl = instanceUrl;
+        ApiToken = apiToken;
+        _httpClient = httpClient;
     }
 
     public bool AuthenticateAsync()
@@ -41,4 +51,61 @@ public class MisskeyApiClient
             new Note { CreatedAt = new DateTime(2024, 1, 20), Id = "2", Text = "Test note 2" }
         }.Where(note => note.CreatedAt >= startDate && note.CreatedAt <= endDate);
     }
+
+    public static IEnumerable<Note> ParseApiResponse(string jsonResponse)
+    {
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+        var apiResponses = JsonSerializer.Deserialize<IEnumerable<MisskeyApiResponse>>(jsonResponse, options);
+        
+        return apiResponses?.Select(api => new Note
+        {
+            Id = api.Id,
+            Text = api.Text,
+            CreatedAt = api.CreatedAt
+        }) ?? Enumerable.Empty<Note>();
+    }
+
+    public string GetAuthorizationHeader()
+    {
+        return $"Bearer {ApiToken}";
+    }
+
+    public void HandleErrorResponse(int statusCode, string message)
+    {
+        switch (statusCode)
+        {
+            case 404:
+                throw new NotFoundException(message);
+            case 429:
+                throw new RateLimitExceededException(message);
+            case 500:
+                throw new ApiException($"Server error: {message}");
+            default:
+                throw new ApiException($"HTTP error {statusCode}: {message}");
+        }
+    }
+
+    public IEnumerable<Note> GetNotesWithPagination(DateTime startDate, DateTime endDate)
+    {
+        // TODO: 実際のページネーション処理を実装
+        // 現在は簡易的な実装として既存のGetNotesAsyncを使用
+        return GetNotesAsync(startDate, endDate);
+    }
+
+    public IEnumerable<Note> GetNotesWithRetry(DateTime startDate, DateTime endDate, int maxRetries)
+    {
+        // TODO: 実際のリトライ処理を実装
+        // 現在は簡易的な実装として既存のGetNotesAsyncを使用
+        return GetNotesAsync(startDate, endDate);
+    }
+}
+
+public class MisskeyApiResponse
+{
+    public string Id { get; set; } = string.Empty;
+    public string Text { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
 }
