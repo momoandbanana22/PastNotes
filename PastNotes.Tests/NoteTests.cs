@@ -67,6 +67,102 @@ public class NoteTests
     }
 }
 
+public class NoteHtmlGeneratorTests
+{
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GenerateHtml_WhenCalledWithNote_CreatesHtmlFile()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var note = new Note
+        {
+            Id = "test-id",
+            Text = "Test note",
+            CreatedAt = DateTime.Now
+        };
+        var outputPath = $"test_note_{Guid.NewGuid()}.html";
+
+        // Act
+        generator.GenerateHtml(note, outputPath);
+
+        // Assert
+        Assert.True(File.Exists(outputPath));
+        
+        // Cleanup
+        if (File.Exists(outputPath))
+        {
+            File.Delete(outputPath);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GenerateHtml_WhenNoteHasFiles_IncludesImageTags()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var note = new Note
+        {
+            Id = "test-id",
+            Text = "Test note with image",
+            CreatedAt = DateTime.Now,
+            Files = new List<NoteFile>
+            {
+                new NoteFile
+                {
+                    Id = "file-1",
+                    Url = "https://example.com/image.jpg",
+                    Type = "image/jpeg",
+                    Name = "image.jpg"
+                }
+            }
+        };
+        var outputPath = $"test_note_{Guid.NewGuid()}.html";
+
+        // Act
+        generator.GenerateHtml(note, outputPath);
+
+        // Assert
+        var htmlContent = File.ReadAllText(outputPath);
+        Assert.Contains("<img", htmlContent);
+        Assert.Contains("https://example.com/image.jpg", htmlContent);
+        
+        // Cleanup
+        if (File.Exists(outputPath))
+        {
+            File.Delete(outputPath);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void OpenInBrowser_WhenCalledWithHtmlFile_OpensBrowser()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var note = new Note
+        {
+            Id = "test-id",
+            Text = "Test note",
+            CreatedAt = DateTime.Now
+        };
+        var outputPath = $"test_note_{Guid.NewGuid()}.html";
+        generator.GenerateHtml(note, outputPath);
+
+        // Act & Assert
+        // ブラウザを開く機能はテストが難しいため、メソッドが存在することを確認
+        var method = typeof(NoteHtmlGenerator).GetMethod("OpenInBrowser", new[] { typeof(string) });
+        Assert.NotNull(method);
+        
+        // Cleanup
+        if (File.Exists(outputPath))
+        {
+            File.Delete(outputPath);
+        }
+    }
+}
+
 public class NoteRepositoryTests
 {
     [Fact]

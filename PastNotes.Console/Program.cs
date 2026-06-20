@@ -16,6 +16,7 @@ public class Program
             System.Console.WriteLine("  fetch --days <days>  Fetch notes from the last N days");
             System.Console.WriteLine("  search <keyword>     Search notes by keyword");
             System.Console.WriteLine("  view [--show-id]     View all notes (use --show-id to display note IDs)");
+            System.Console.WriteLine("  view-html [--open]    Generate HTML files for notes (use --open to open in browser)");
             return 1;
         }
 
@@ -93,6 +94,24 @@ public class Program
             try
             {
                 var result = await viewCommand.ExecuteAsync();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                System.Console.WriteLine($"Error: {ex.Message}");
+                return 1;
+            }
+        }
+
+        if (command == "view-html")
+        {
+            var repository = new NoteRepository();
+            var openBrowser = args.Contains("--open");
+            var viewHtmlCommand = new ViewHtmlCommand(repository, openBrowser: openBrowser);
+
+            try
+            {
+                var result = viewHtmlCommand.Execute();
                 return result;
             }
             catch (Exception ex)
