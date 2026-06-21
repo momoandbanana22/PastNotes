@@ -55,12 +55,16 @@ public class FetchCommandTests
 
         // Assert
         Assert.Equal(0, result);
-        mockApiClient.Verify(x => x.GetNotesAsync(It.Is<DateTime>(d => d == startDate), It.Is<DateTime>(d => d == endDate)), Times.Once);
+        // Verify that dates were converted from JST to UTC
+        mockApiClient.Verify(x => x.GetNotesAsync(
+            It.Is<DateTime>(d => d == startDate.AddHours(-9)), 
+            It.Is<DateTime>(d => d == endDate.AddHours(-9))), 
+            Times.Once);
     }
 
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task ExecuteAsync_WhenCalledWithJstDateRange_ConvertsToUtcCorrectly()
+    public async Task ExecuteAsync_WhenCalledWithDateRange_ConvertsJstToUtcByDefault()
     {
         // Arrange
         var mockApiClient = new Mock<IMisskeyApiClient>();
@@ -72,7 +76,7 @@ public class FetchCommandTests
             new Note { Id = "1", Text = "Test note", CreatedAt = DateTime.Now }
         };
         
-        // JST dates (UTC+9)
+        // Input dates are treated as JST (UTC+9)
         var jstStartDate = new DateTime(2024, 1, 1, 0, 0, 0);
         var jstEndDate = new DateTime(2024, 1, 31, 23, 59, 59);
         
@@ -80,11 +84,11 @@ public class FetchCommandTests
                    .ReturnsAsync(testNotes);
 
         // Act
-        var result = await command.ExecuteAsync(jstStartDate, jstEndDate, true);
+        var result = await command.ExecuteAsync(jstStartDate, jstEndDate);
 
         // Assert
         Assert.Equal(0, result);
-        // Verify that the dates were converted from JST to UTC
+        // Verify that the dates were converted from JST to UTC by default
         mockApiClient.Verify(x => x.GetNotesAsync(
             It.Is<DateTime>(d => d == jstStartDate.AddHours(-9)), 
             It.Is<DateTime>(d => d == jstEndDate.AddHours(-9))), 

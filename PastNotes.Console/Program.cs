@@ -14,8 +14,7 @@ public class Program
             System.Console.WriteLine("Usage: PastNotes.Console <command> [options]");
             System.Console.WriteLine("Commands:");
             System.Console.WriteLine("  fetch --days <days>                    Fetch notes from the last N days");
-            System.Console.WriteLine("  fetch --start <date> --end <date>      Fetch notes within date range");
-            System.Console.WriteLine("    [--jst]                              Use JST timezone (UTC+9)");
+            System.Console.WriteLine("  fetch --start <date> --end <date>      Fetch notes within date range (JST)");
             System.Console.WriteLine("  search <keyword>                       Search notes by keyword");
             System.Console.WriteLine("  view [--show-id]                       View all notes (use --show-id to display note IDs)");
             System.Console.WriteLine("  view-html [--open]                      Generate HTML files for notes (use --open to open in browser)");
@@ -69,15 +68,15 @@ public class Program
                         return 1;
                     }
 
-                    var isJst = args.Contains("--jst");
-                    var result = await fetchCommand.ExecuteAsync(startDate, endDate, isJst);
+                    var result = await fetchCommand.ExecuteAsync(startDate, endDate);
                     return result;
                 }
                 else
                 {
                     System.Console.WriteLine("Usage: PastNotes.Console fetch --days <days>");
-                    System.Console.WriteLine("   or: PastNotes.Console fetch --start <date> --end <date> [--jst]");
+                    System.Console.WriteLine("   or: PastNotes.Console fetch --start <date> --end <date>");
                     System.Console.WriteLine("Date format: yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
+                    System.Console.WriteLine("Note: Date ranges are treated as JST (Japan Standard Time)");
                     return 1;
                 }
             }

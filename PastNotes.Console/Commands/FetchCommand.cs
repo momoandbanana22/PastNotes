@@ -34,26 +34,18 @@ public class FetchCommand
         return 0;
     }
 
-    public async Task<int> ExecuteAsync(DateTime startDate, DateTime endDate, bool isJst = false)
+    public async Task<int> ExecuteAsync(DateTime startDate, DateTime endDate)
     {
         if (startDate > endDate)
         {
             throw new ArgumentException("Start date must be before or equal to end date");
         }
 
-        DateTime convertedStartDate = startDate;
-        DateTime convertedEndDate = endDate;
+        // Input dates are treated as JST (UTC+9), convert to UTC for API
+        var convertedStartDate = startDate.AddHours(-9);
+        var convertedEndDate = endDate.AddHours(-9);
 
-        if (isJst)
-        {
-            convertedStartDate = startDate.AddHours(-9);
-            convertedEndDate = endDate.AddHours(-9);
-            System.Console.WriteLine($"Fetching notes from {startDate:yyyy-MM-dd HH:mm:ss} (JST) to {endDate:yyyy-MM-dd HH:mm:ss} (JST)...");
-        }
-        else
-        {
-            System.Console.WriteLine($"Fetching notes from {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}...");
-        }
+        System.Console.WriteLine($"Fetching notes from {startDate:yyyy-MM-dd HH:mm:ss} (JST) to {endDate:yyyy-MM-dd HH:mm:ss} (JST)...");
 
         var notes = await _apiClient.GetNotesAsync(convertedStartDate, convertedEndDate);
         

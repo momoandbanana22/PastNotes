@@ -30,18 +30,19 @@ $env:MISSKEY_API_TOKEN = "your-api-token"
 
 #### コマンド
 
-```bash
-# ノート取得（過去30日間）
-dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --days 30
+#### 取得系コマンド
 
-# ノート取得（日付範囲指定）
-dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --start 2024-01-01 --end 2024-01-31
+    # ノート取得（過去30日間）
+    dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --days 30
 
-# ノート取得（日付範囲指定・JSTタイムゾーン）
-dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --start 2024-01-01 --end 2024-01-31 --jst
+    # ノート取得（日付範囲指定）
+    dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --start 2024-01-01 --end 2024-01-31
 
-# ノート検索
-dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- search <keyword>
+    # ノート取得（日時範囲指定）
+    dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --start "2024-01-01 00:00:00" --end "2024-01-31 23:59:59"
+
+    # ノート検索
+    dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- search <keyword>
 
 #### 表示系コマンド
 
