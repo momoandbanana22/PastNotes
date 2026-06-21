@@ -64,6 +64,20 @@ dotnet test PastNotes.Console.Tests/PastNotes.Console.Tests.csproj
 - **モックライブラリ**: Moq
 - **カバレッジツール**: Coverlet
 
+## API制限事項
+
+Misskey APIの`/api/users/notes`エンドポイントには既知のバグがあります：
+
+- **sinceDateパラメータ**: 何を入れてもそのユーザーの最初からlimit番目までのノートが返ってくる
+- **untilDateパラメータ**: 0以外を入れると空の配列が返ってくる
+
+詳細: [GitHub Issue #10679](https://github.com/misskey-dev/misskey/issues/10679)
+
+これらのパラメータはバグがあるため使用せず、以下のアプローチを採用しています：
+
+1. `untilId`パラメータを使用してページネーション
+2. すべてのノートを取得した後、クライアント側で日付フィルタリング
+
 ## テスト実行方法
 
 ### テストカテゴリ

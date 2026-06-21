@@ -132,6 +132,22 @@ public class MisskeyApiClient : IMisskeyApiClient
         }
     }
 
+    public async Task<string> GetUserIdAsync()
+    {
+        // 認証してユーザーIDを取得
+        if (_userId == null && _httpClient != null)
+        {
+            await AuthenticateWithApiAsync();
+        }
+
+        if (_userId == null)
+        {
+            throw new ApiException("Failed to authenticate and get user ID");
+        }
+
+        return _userId;
+    }
+
     private async Task<IEnumerable<Note>> GetNotesFromApiAsync(DateTime startDate, DateTime endDate, string? untilId = null)
     {
         // 認証してユーザーIDを取得
@@ -145,11 +161,10 @@ public class MisskeyApiClient : IMisskeyApiClient
             throw new ApiException("Failed to authenticate and get user ID");
         }
 
+        // 日付範囲を指定せずに、すべてのノートを取得してからクライアント側でフィルタリング
         Dictionary<string, object> requestBody = new Dictionary<string, object>
         {
             { "userId", _userId },
-            { "sinceDate", new DateTimeOffset(startDate).ToUnixTimeMilliseconds() },
-            { "untilDate", new DateTimeOffset(endDate).ToUnixTimeMilliseconds() },
             { "limit", 100 }
         };
 
@@ -303,7 +318,10 @@ public class MisskeyApiClient : IMisskeyApiClient
             }
             else
             {
-                allNotes.AddRange(notes);
+                // Filter notes by date range before adding
+                var filteredNotes = notes.Where(note => note.CreatedAt >= startDate && note.CreatedAt <= endDate).ToList();
+                allNotes.AddRange(filteredNotes);
+                
                 // 次のページのためにuntilIdを更新（最後のノートのIDを使用）
                 untilId = notes.Last().Id;
                 
@@ -312,10 +330,16 @@ public class MisskeyApiClient : IMisskeyApiClient
                 {
                     hasMoreNotes = false;
                 }
+                
+                // 全てのノートが日付範囲外の場合は終了
+                if (!filteredNotes.Any())
+                {
+                    hasMoreNotes = false;
+                }
             }
         }
 
-        return allNotes.Where(note => note.CreatedAt >= startDate && note.CreatedAt <= endDate);
+        return allNotes;
     }
 
     public async Task<IEnumerable<Note>> GetNotesWithRetry(DateTime startDate, DateTime endDate, int maxRetries)

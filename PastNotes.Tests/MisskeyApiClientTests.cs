@@ -4,8 +4,11 @@ public class MockHttpMessageHandler : HttpMessageHandler
 {
     public int RequestsSent { get; private set; }
     private int _callCount = 0;
+    private int _notesCallCount = 0; // ノート取得呼び出しのみカウント
     private bool _simulateRateLimit = false;
     private HttpResponseMessage? _customErrorResponse;
+    private bool _simulatePagination = false;
+    public List<string> RequestBodies { get; private set; } = new List<string>();
 
     public void SimulateRateLimit(bool simulate)
     {
@@ -17,10 +20,22 @@ public class MockHttpMessageHandler : HttpMessageHandler
         _customErrorResponse = response;
     }
 
+    public void SimulatePagination(bool simulate)
+    {
+        _simulatePagination = simulate;
+    }
+
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         RequestsSent++;
         _callCount++;
+
+        // リクエストボディを保存
+        if (request.Content != null)
+        {
+            var requestBody = request.Content.ReadAsStringAsync().Result;
+            RequestBodies.Add(requestBody);
+        }
 
         // カスタムエラーレスポンスが設定されている場合はそれを返す
         if (_customErrorResponse != null)
@@ -52,26 +67,73 @@ public class MockHttpMessageHandler : HttpMessageHandler
             return Task.FromResult(userResponse);
         }
 
-        // 2回目以降の呼び出しでは空の結果を返す（ページネーション終了条件）
-        string jsonResponse;
-        if (_callCount > 1)
+        // /api/users/notesエンドポイントの場合はカウント
+        if (request.RequestUri?.AbsolutePath.Contains("/api/users/notes") == true)
         {
-            jsonResponse = "[]";
+            _notesCallCount++;
+        }
+
+        string jsonResponse;
+        
+        // ページネーションシミュレーション
+        if (_simulatePagination)
+        {
+            // 3回呼び出しをシミュレート（1ページ目100件、2ページ目100件、3ページ目で空）
+            if (_notesCallCount == 1)
+            {
+                // 100件のノートを生成
+                var notes = new List<string>();
+                for (int i = 0; i < 100; i++)
+                {
+                    notes.Add($@"{{
+                        ""id"": ""test-id-{i}"",
+                        ""text"": ""Test note {i}"",
+                        ""createdAt"": ""2024-01-15T10:30:00.000Z""
+                    }}");
+                }
+                jsonResponse = "[" + string.Join(",", notes) + "]";
+            }
+            else if (_notesCallCount == 2)
+            {
+                // 100件のノートを生成
+                var notes = new List<string>();
+                for (int i = 100; i < 200; i++)
+                {
+                    notes.Add($@"{{
+                        ""id"": ""test-id-{i}"",
+                        ""text"": ""Test note {i}"",
+                        ""createdAt"": ""2024-01-10T10:30:00.000Z""
+                    }}");
+                }
+                jsonResponse = "[" + string.Join(",", notes) + "]";
+            }
+            else
+            {
+                jsonResponse = "[]";
+            }
         }
         else
         {
-            jsonResponse = @"[
-                {
-                    ""id"": ""test-id-1"",
-                    ""text"": ""Test note 1"",
-                    ""createdAt"": ""2024-01-15T10:30:00.000Z""
-                },
-                {
-                    ""id"": ""test-id-2"",
-                    ""text"": ""Test note 2"",
-                    ""createdAt"": ""2024-01-20T14:45:00.000Z""
-                }
-            ]";
+            // 2回目以降の呼び出しでは空の結果を返す（ページネーション終了条件）
+            if (_callCount > 1)
+            {
+                jsonResponse = "[]";
+            }
+            else
+            {
+                jsonResponse = @"[
+                    {
+                        ""id"": ""test-id-1"",
+                        ""text"": ""Test note 1"",
+                        ""createdAt"": ""2024-01-15T10:30:00.000Z""
+                    },
+                    {
+                        ""id"": ""test-id-2"",
+                        ""text"": ""Test note 2"",
+                        ""createdAt"": ""2024-01-20T14:45:00.000Z""
+                    }
+                ]";
+            }
         }
 
         var response = new HttpResponseMessage(System.Net.HttpStatusCode.OK)
@@ -586,6 +648,67 @@ public class MisskeyApiClientTests
         Assert.NotNull(notes1);
         Assert.NotNull(notes2);
         Assert.Equal(firstRequestCount, secondRequestCount); // キャッシュが有効ならリクエスト数が変わらない
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesWithPagination_WhenApiReturnsMultiplePages_ShouldFetchAllNotes()
+    {
+        // Arrange
+        var instanceUrl = "https://misskey.io";
+        var apiToken = "valid-token";
+        
+        // モックハンドラーを作成して、複数ページを返すように設定
+        var mockHandler = new MockHttpMessageHandler();
+        mockHandler.SimulatePagination(true);
+        var httpClient = new HttpClient(mockHandler);
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
+        
+        var startDate = new DateTime(2024, 1, 1);
+        var endDate = new DateTime(2024, 1, 31);
+        
+        // Act
+        var notes = await client.GetNotesAsync(startDate, endDate);
+        
+        // Assert
+        // ページネーションが実行されていれば、4回呼び出されるはず（認証1回 + 1ページ目 + 2ページ目 + 3ページ目で空）
+        Assert.Equal(4, mockHandler.RequestsSent);
+        Assert.Equal(200, notes.Count()); // 2ページ × 100件 = 200件
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesAsync_ShouldNotUseSinceDateUntilDateParameters()
+    {
+        // Arrange
+        var instanceUrl = "https://misskey.io";
+        var apiToken = "valid-token";
+        
+        // カスタムモックハンドラーを作成して、リクエスト内容を検証
+        var customHandler = new MockHttpMessageHandler();
+        var httpClient = new HttpClient(customHandler);
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
+        
+        var startDate = new DateTime(2024, 1, 1);
+        var endDate = new DateTime(2024, 1, 31);
+        
+        // Act
+        var notes = await client.GetNotesAsync(startDate, endDate);
+        
+        // Assert
+        // Misskey APIのsinceDateとuntilDateパラメータは壊れているため、使用しないことを確認
+        Assert.NotNull(notes);
+        
+        // /api/users/notesへのリクエストボディを確認
+        var notesRequests = customHandler.RequestBodies.Where(body => body.Contains("\"userId\"")).ToList();
+        Assert.NotEmpty(notesRequests);
+        
+        foreach (var requestBody in notesRequests)
+        {
+            // sinceDateとuntilDateが含まれていないことを確認
+            Assert.DoesNotContain("sinceDate", requestBody);
+            Assert.DoesNotContain("untilDate", requestBody);
+        }
     }
 
     [Fact]

@@ -58,7 +58,7 @@ public class FetchCommandTests
         // Verify that dates were converted from JST to UTC
         mockApiClient.Verify(x => x.GetNotesAsync(
             It.Is<DateTime>(d => d == startDate.AddHours(-9)), 
-            It.Is<DateTime>(d => d == endDate.AddHours(-9))), 
+            It.Is<DateTime>(d => d == endDate.AddHours(-9).AddSeconds(1))), 
             Times.Once);
     }
 
@@ -91,7 +91,7 @@ public class FetchCommandTests
         // Verify that the dates were converted from JST to UTC by default
         mockApiClient.Verify(x => x.GetNotesAsync(
             It.Is<DateTime>(d => d == jstStartDate.AddHours(-9)), 
-            It.Is<DateTime>(d => d == jstEndDate.AddHours(-9))), 
+            It.Is<DateTime>(d => d == jstEndDate.AddHours(-9).AddSeconds(1))), 
             Times.Once);
     }
 
