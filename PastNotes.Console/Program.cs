@@ -13,10 +13,13 @@ public class Program
         {
             System.Console.WriteLine("Usage: PastNotes.Console <command> [options]");
             System.Console.WriteLine("Commands:");
-            System.Console.WriteLine("  fetch --days <days>  Fetch notes from the last N days");
-            System.Console.WriteLine("  search <keyword>     Search notes by keyword");
-            System.Console.WriteLine("  view [--show-id]     View all notes (use --show-id to display note IDs)");
-            System.Console.WriteLine("  view-html [--open]    Generate HTML files for notes (use --open to open in browser)");
+            System.Console.WriteLine("  fetch --days <days>                    Fetch notes from the last N days");
+            System.Console.WriteLine("  fetch --start <date> --end <date>      Fetch notes within date range");
+            System.Console.WriteLine("    [--jst]                              Use JST timezone (UTC+9)");
+            System.Console.WriteLine("  search <keyword>                       Search notes by keyword");
+            System.Console.WriteLine("  view [--show-id]                       View all notes (use --show-id to display note IDs)");
+            System.Console.WriteLine("  view-html [--open]                      Generate HTML files for notes (use --open to open in browser)");
+            System.Console.WriteLine("Date format: yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
             return 1;
         }
 
@@ -24,18 +27,6 @@ public class Program
 
         if (command == "fetch")
         {
-            if (args.Length < 3 || args[1] != "--days")
-            {
-                System.Console.WriteLine("Usage: PastNotes.Console fetch --days <days>");
-                return 1;
-            }
-
-            if (!int.TryParse(args[2], out int days))
-            {
-                System.Console.WriteLine("Error: days must be a number");
-                return 1;
-            }
-
             var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL") ?? "https://misskey.io";
             var apiToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
 
@@ -51,8 +42,44 @@ public class Program
 
             try
             {
-                var result = await fetchCommand.ExecuteAsync(days);
-                return result;
+                // Check if using --days option
+                if (args.Length >= 3 && args[1] == "--days")
+                {
+                    if (!int.TryParse(args[2], out int days))
+                    {
+                        System.Console.WriteLine("Error: days must be a number");
+                        return 1;
+                    }
+
+                    var result = await fetchCommand.ExecuteAsync(days);
+                    return result;
+                }
+                // Check if using --start and --end options
+                else if (args.Length >= 5 && args[1] == "--start" && args[3] == "--end")
+                {
+                    if (!DateTime.TryParse(args[2], out DateTime startDate))
+                    {
+                        System.Console.WriteLine("Error: Invalid start date format. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
+                        return 1;
+                    }
+
+                    if (!DateTime.TryParse(args[4], out DateTime endDate))
+                    {
+                        System.Console.WriteLine("Error: Invalid end date format. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
+                        return 1;
+                    }
+
+                    var isJst = args.Contains("--jst");
+                    var result = await fetchCommand.ExecuteAsync(startDate, endDate, isJst);
+                    return result;
+                }
+                else
+                {
+                    System.Console.WriteLine("Usage: PastNotes.Console fetch --days <days>");
+                    System.Console.WriteLine("   or: PastNotes.Console fetch --start <date> --end <date> [--jst]");
+                    System.Console.WriteLine("Date format: yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
+                    return 1;
+                }
             }
             catch (Exception ex)
             {

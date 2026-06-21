@@ -69,4 +69,46 @@ public class ConsoleAppTests
             File.Delete("notes.json");
         }
     }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task FetchCommand_WhenCalledWithDateRange_ReturnsSuccess()
+    {
+        // Arrange
+        var args = new[] { "fetch", "--start", "2024-01-01", "--end", "2024-01-31" };
+
+        // Act
+        var result = await Program.Main(args);
+
+        // Assert
+        Assert.Equal(0, result);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task FetchCommand_WhenCalledWithInvalidDateFormat_ReturnsFailure()
+    {
+        // Arrange
+        var args = new[] { "fetch", "--start", "invalid-date", "--end", "2024-01-31" };
+
+        // Act
+        var result = await Program.Main(args);
+
+        // Assert
+        Assert.NotEqual(0, result);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task FetchCommand_WhenCalledWithJstFlag_ReturnsSuccess()
+    {
+        // Arrange
+        var args = new[] { "fetch", "--start", "2024-01-01", "--end", "2024-01-31", "--jst" };
+
+        // Act
+        var result = await Program.Main(args);
+
+        // Assert
+        Assert.Equal(0, result);
+    }
 }
