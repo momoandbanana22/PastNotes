@@ -326,7 +326,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] FEAT-4. 環境変数以外での認証情報指定
+### [x] FEAT-4. 環境変数以外での認証情報指定
 
 **問題**: インスタンス URL と API トークンを環境変数でしか渡せない。初回利用者には設定方法がわかりにくく、`.env` ファイルや `--token` 引数での指定があると使いやすい。
 

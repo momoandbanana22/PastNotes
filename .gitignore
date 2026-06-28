@@ -372,3 +372,6 @@ launchSettings.json
 notes.json
 
 html_output/
+
+# 認証情報（APIトークンなど）
+.env

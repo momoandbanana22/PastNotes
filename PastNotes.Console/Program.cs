@@ -9,6 +9,9 @@ public class Program
 
     public static async Task<int> Main(string[] args)
     {
+        // .envファイルをロード（環境変数が未設定の場合のみ）
+        PastNotes.DotEnvLoader.Load(".env");
+
         if (args.Length == 0)
         {
             System.Console.WriteLine("Usage: PastNotes.Console <command> [options]");
@@ -26,8 +29,15 @@ public class Program
 
         if (command == "fetch")
         {
-            var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL") ?? "https://misskey.io";
-            var apiToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
+            // --instance-url / --token 引数を優先、なければ環境変数
+            var instanceUrlIdx = Array.IndexOf(args, "--instance-url");
+            var tokenIdx       = Array.IndexOf(args, "--token");
+            var instanceUrl = (instanceUrlIdx >= 0 && instanceUrlIdx + 1 < args.Length)
+                ? args[instanceUrlIdx + 1]
+                : Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL") ?? "https://misskey.io";
+            var apiToken = (tokenIdx >= 0 && tokenIdx + 1 < args.Length)
+                ? args[tokenIdx + 1]
+                : Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
 
             if (string.IsNullOrEmpty(apiToken))
             {
