@@ -32,6 +32,13 @@ public class MockHttpMessageHandler : HttpMessageHandler
         _simulateNewerNotesFirst = simulate;
     }
 
+    private bool _simulateAllOlderNotes = false;
+
+    public void SimulateAllOlderNotes(bool simulate)
+    {
+        _simulateAllOlderNotes = simulate;
+    }
+
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         RequestsSent++;
@@ -80,8 +87,30 @@ public class MockHttpMessageHandler : HttpMessageHandler
 
         string jsonResponse;
 
+        // 全ノートが対象期間より古いシミュレーション（TST-1）
+        if (_simulateAllOlderNotes)
+        {
+            if (_notesCallCount == 1)
+            {
+                // 100件の古いノート（2020年）を返す → Count<100にならず日付で終了判定
+                var notes = new List<string>();
+                for (int i = 0; i < 100; i++)
+                {
+                    notes.Add($@"{{
+                        ""id"": ""old-id-{i}"",
+                        ""text"": ""Old note {i}"",
+                        ""createdAt"": ""2020-01-15T10:00:00.000Z""
+                    }}");
+                }
+                jsonResponse = "[" + string.Join(",", notes) + "]";
+            }
+            else
+            {
+                jsonResponse = "[]";
+            }
+        }
         // 対象期間より新しいノートが先に来るシミュレーション（バグ#8の再現）
-        if (_simulateNewerNotesFirst)
+        else if (_simulateNewerNotesFirst)
         {
             if (_notesCallCount == 1)
             {
@@ -775,6 +804,30 @@ public class MisskeyApiClientTests
         var noteIds = notes.Select(n => n.Id).ToList();
         var uniqueNoteIds = noteIds.Distinct().ToList();
         Assert.Equal(noteIds.Count, uniqueNoteIds.Count);
+    }
+
+    // TDD: TST-1 - 全ノートが対象期間より古い場合に0件で終了する
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesAsync_WhenAllNotesAreOlderThanRange_ShouldReturnEmpty()
+    {
+        // Arrange
+        var mockHandler = new MockHttpMessageHandler();
+        mockHandler.SimulateAllOlderNotes(true);
+        var httpClient = new HttpClient(mockHandler);
+        var client = new MisskeyApiClient("https://misskey.io", "valid-token", httpClient);
+
+        // 2024年を指定するが、モックは2020年のノートを返す
+        var startDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var endDate = new DateTime(2024, 1, 31, 23, 59, 59, DateTimeKind.Utc);
+
+        // Act
+        var notes = await client.GetNotesAsync(startDate, endDate);
+
+        // Assert: 対象期間内にノートがないので0件
+        Assert.Empty(notes);
+        // 2ページ目を取りに行っていないこと（認証1回 + ノート1回 = 2リクエスト）
+        Assert.Equal(2, mockHandler.RequestsSent);
     }
 
     // TDD: BUG-8 - _callCountバグ

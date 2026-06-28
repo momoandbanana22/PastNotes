@@ -176,7 +176,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ## TST: テスト追加
 
-### [ ] TST-1. 対象期間より古いノートしかない場合のページネーション終了
+### [x] TST-1. 対象期間より古いノートしかない場合のページネーション終了
 
 **関係するユースケース**: `fetch --start/--end`（ページネーション）
 
