@@ -296,7 +296,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] DOC-3. README に運用上の重要事項を追記する
+### [x] DOC-3. README に運用上の重要事項を追記する
 
 **問題**:
 - `notes.json` がカレントディレクトリに保存されること、および上書きされることの説明がない
