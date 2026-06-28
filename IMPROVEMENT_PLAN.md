@@ -153,7 +153,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] BUG-15. `notes` が複数回列挙されてデシリアライズが重複する
+### [x] BUG-15. `notes` が複数回列挙されてデシリアライズが重複する
 
 **対象ファイル**: `PastNotes/MisskeyApiClient.cs`（315〜329行目）
 

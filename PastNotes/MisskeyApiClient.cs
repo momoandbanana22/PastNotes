@@ -304,28 +304,24 @@ public class MisskeyApiClient : IMisskeyApiClient
 
         while (hasMoreNotes)
         {
-            var notes = await GetNotesFromApiAsync(startDate, endDate, untilId);
-            
-            if (!notes.Any())
+            var notes = (await GetNotesFromApiAsync(startDate, endDate, untilId)).ToList();
+
+            if (notes.Count == 0)
             {
                 hasMoreNotes = false;
             }
             else
             {
-                // Filter notes by date range before adding
-                var filteredNotes = notes.Where(note => note.CreatedAt >= startDate && note.CreatedAt <= endDate).ToList();
+                var filteredNotes = notes.Where(note => note.CreatedAt >= startDate && note.CreatedAt <= endDate);
                 allNotes.AddRange(filteredNotes);
-                
-                // 次のページのためにuntilIdを更新（最後のノートのIDを使用）
+
                 untilId = notes.Last().Id;
-                
-                // 100件未満の場合はこれ以上ノートがない
-                if (notes.Count() < 100)
+
+                if (notes.Count < 100)
                 {
                     hasMoreNotes = false;
                 }
-                
-                // ページ最古ノートが startDate より前なら、これ以上遡っても範囲外なので終了
+
                 if (notes.Last().CreatedAt < startDate)
                 {
                     hasMoreNotes = false;
