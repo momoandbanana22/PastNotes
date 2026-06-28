@@ -320,7 +320,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] FEAT-3. `view`・`search` に日付絞り込みオプションを追加
+### [x] FEAT-3. `view`・`search` に日付絞り込みオプションを追加
 
 **問題**: `fetch` で広い期間を取得した後、`view` や `search` で日付を絞り込む手段がない。`view --start 2024-01-01 --end 2024-01-31` のようなオプションがあると、再 fetch なしで絞り込める。
 

@@ -97,7 +97,12 @@ public class Program
             }
 
             var repository = new NoteRepository();
-            var searchCommand = new SearchCommand(repository);
+            DateTime? searchStart = null, searchEnd = null;
+            var sStartIdx = Array.IndexOf(args, "--start");
+            var sEndIdx   = Array.IndexOf(args, "--end");
+            if (sStartIdx >= 0 && sStartIdx + 1 < args.Length && DateTime.TryParse(args[sStartIdx + 1], out var ss)) searchStart = ss;
+            if (sEndIdx   >= 0 && sEndIdx   + 1 < args.Length && DateTime.TryParse(args[sEndIdx   + 1], out var se)) searchEnd   = se;
+            var searchCommand = new SearchCommand(repository, startDate: searchStart, endDate: searchEnd);
             var keyword = args[1];
 
             try
@@ -116,7 +121,12 @@ public class Program
         {
             var repository = new NoteRepository();
             var showId = args.Contains("--show-id");
-            var viewCommand = new ViewCommand(repository, showId: showId);
+            DateTime? viewStart = null, viewEnd = null;
+            var startIdx = Array.IndexOf(args, "--start");
+            var endIdx   = Array.IndexOf(args, "--end");
+            if (startIdx >= 0 && startIdx + 1 < args.Length && DateTime.TryParse(args[startIdx + 1], out var vs)) viewStart = vs;
+            if (endIdx   >= 0 && endIdx   + 1 < args.Length && DateTime.TryParse(args[endIdx   + 1], out var ve)) viewEnd   = ve;
+            var viewCommand = new ViewCommand(repository, showId: showId, startDate: viewStart, endDate: viewEnd);
 
             try
             {
