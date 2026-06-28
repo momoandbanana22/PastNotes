@@ -163,7 +163,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] BUG-16. 未使用の死にコード
+### [x] BUG-16. 未使用の死にコード
 
 **対象ファイル**: `PastNotes/MisskeyApiClient.cs`（385〜391行目、274行目、279〜291行目）
 

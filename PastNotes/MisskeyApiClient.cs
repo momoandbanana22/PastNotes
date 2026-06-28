@@ -265,26 +265,6 @@ public class MisskeyApiClient : IMisskeyApiClient
         });
     }
 
-    public string GetAuthorizationHeader()
-    {
-        return $"Bearer {ApiToken}";
-    }
-
-    public void HandleErrorResponse(int statusCode, string message)
-    {
-        switch (statusCode)
-        {
-            case 404:
-                throw new NotFoundException(message);
-            case 429:
-                throw new RateLimitExceededException(message);
-            case 500:
-                throw new ApiException($"Server error: {message}");
-            default:
-                throw new ApiException($"HTTP error {statusCode}: {message}");
-        }
-    }
-
     public async Task<IEnumerable<Note>> GetNotesWithPagination(DateTime startDate, DateTime endDate)
     {
         if (_httpClient != null)
@@ -370,11 +350,4 @@ public class MisskeyApiClient : IMisskeyApiClient
 
         throw new RateLimitExceededException("Max retries exceeded");
     }
-}
-
-public class MisskeyApiResponse
-{
-    public string Id { get; set; } = string.Empty;
-    public string Text { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; }
 }

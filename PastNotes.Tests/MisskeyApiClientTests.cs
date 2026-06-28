@@ -365,46 +365,6 @@ public class MisskeyApiClientTests
     }
 
     [Fact]
-    [Trait("Category", "Unit")]
-    public void GetAuthorizationHeader_WhenCalled_ReturnsCorrectHeaderValue()
-    {
-        // Arrange
-        var instanceUrl = "https://misskey.io";
-        var apiToken = "test-token-123";
-        var client = new MisskeyApiClient(instanceUrl, apiToken);
-
-        // Act
-        var authHeader = client.GetAuthorizationHeader();
-
-        // Assert
-        Assert.Equal("Bearer test-token-123", authHeader);
-    }
-
-    [Fact]
-    [Trait("Category", "Unit")]
-    public void HandleErrorResponse_WhenStatusCode404_ThrowsNotFoundException()
-    {
-        // Arrange
-        var statusCode = 404;
-        var client = new MisskeyApiClient("https://misskey.io", "valid-token");
-
-        // Act & Assert
-        Assert.Throws<NotFoundException>(() => client.HandleErrorResponse(statusCode, "Not Found"));
-    }
-
-    [Fact]
-    [Trait("Category", "Unit")]
-    public void HandleErrorResponse_WhenStatusCode429_ThrowsRateLimitExceededException()
-    {
-        // Arrange
-        var statusCode = 429;
-        var client = new MisskeyApiClient("https://misskey.io", "valid-token");
-
-        // Act & Assert
-        Assert.Throws<RateLimitExceededException>(() => client.HandleErrorResponse(statusCode, "Rate limit exceeded"));
-    }
-
-    [Fact]
     [Trait("Category", "Integration")]
     public async Task GetNotesAsync_WhenCalledWithRealApi_ShouldFetchMoreThan100Notes()
     {
