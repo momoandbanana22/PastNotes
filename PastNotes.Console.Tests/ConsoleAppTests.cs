@@ -83,4 +83,37 @@ public class ConsoleAppTests
         // Assert
         Assert.NotEqual(0, result);
     }
+
+    // TDD: TST-10 - トークンなしでexit 1とエラーメッセージ
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task FetchCommand_WhenApiTokenMissing_ReturnsOneAndPrintsError()
+    {
+        // Arrange: 環境変数を一時的にクリア
+        var originalToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
+        Environment.SetEnvironmentVariable("MISSKEY_API_TOKEN", null);
+
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            var args = new[] { "fetch", "--days", "30" };
+
+            // Act
+            var result = await Program.Main(args);
+
+            System.Console.SetOut(originalOutput);
+
+            // Assert
+            Assert.Equal(1, result);
+            Assert.Contains("MISSKEY_API_TOKEN", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+            Environment.SetEnvironmentVariable("MISSKEY_API_TOKEN", originalToken);
+        }
+    }
 }

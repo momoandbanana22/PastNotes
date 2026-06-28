@@ -248,7 +248,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] TST-10. CLI レベルのトークンなしエラー
+### [x] TST-10. CLI レベルのトークンなしエラー
 
 **関係するユースケース**: `fetch`（エラー系）
 
