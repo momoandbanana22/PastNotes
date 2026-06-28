@@ -279,6 +279,86 @@ UTC 環境（CI や Linux サーバーなど）では同じ期間を指定して
 
 ---
 
+## その他の改善
+
+### [ ] 24. ユーザー向けに .exe で実行できるようにする
+
+**問題**: README の使用方法が `dotnet run --project ...` になっており、.NET SDK のインストールと長いコマンドが必要。エンドユーザーには不親切。
+
+**目標**: `dotnet publish` でシングルファイルの自己完結型 .exe をビルドし、README をそれで実行できる手順に更新する。
+
+**実装案**:
+
+```powershell
+dotnet publish PastNotes.Console/PastNotes.Console.csproj `
+  -c Release `
+  -r win-x64 `
+  --self-contained true `
+  -p:PublishSingleFile=true `
+  -o ./publish
+```
+
+実行後は `.\publish\PastNotes.Console.exe fetch --days 30` で動くようになる。
+
+**対応が必要なファイル**:
+- `README.md` — `dotnet run` をやめて `.\PastNotes.Console.exe` の手順に変更
+- `DEVELOPMENT.md` — publish 手順を追記
+- `.gitignore` — `publish/` ディレクトリを除外
+
+### [ ] 25. GitHub Actions でリリース自動化（exe 配布）
+
+**問題**: 項目 24 で .exe ビルドができるようになっても、リリースの作成・配布が手動では継続的なメンテナンスが負担になる。
+
+**目標**: `v*` タグをプッシュしたら自動で .exe をビルドし、GitHub Releases にアップロードされる CI/CD パイプラインを構築する。
+
+**実装案** (`.github/workflows/release.yml`):
+
+```yaml
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Run tests
+        run: dotnet test --filter "Category=Unit"
+
+      - name: Publish
+        run: |
+          dotnet publish PastNotes.Console/PastNotes.Console.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true -o ./publish
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./publish/PastNotes.Console.exe
+```
+
+**リリース手順（タグを切るだけ）**:
+
+```powershell
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+**対応が必要なファイル**:
+- `.github/workflows/release.yml` — 新規作成
+
+---
+
 ## ユースケース起点テストレビュー（2026-06-28）
 
 「機能を実装したらテストを書く」ではなく「どう使われるか → どんな入力が来うるか → その境界は何か」という観点で分析した結果。バグ #8 の根本原因（API が新着順に返すというユースケース上の前提がテスト設計に反映されていなかった）と同じ観点で、他に抜けているシナリオを洗い出した。
