@@ -240,7 +240,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] TST-9. ページネーション中のネットワーク断
+### [x] TST-9. ページネーション中のネットワーク断
 
 **関係するユースケース**: `fetch`（エラー系）
 

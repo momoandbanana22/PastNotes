@@ -39,6 +39,13 @@ public class MockHttpMessageHandler : HttpMessageHandler
         _simulateAllOlderNotes = simulate;
     }
 
+    private bool _simulateNetworkFailureOnSecondPage = false;
+
+    public void SimulateNetworkFailureOnSecondPage(bool simulate)
+    {
+        _simulateNetworkFailureOnSecondPage = simulate;
+    }
+
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         RequestsSent++;
@@ -83,6 +90,12 @@ public class MockHttpMessageHandler : HttpMessageHandler
         if (request.RequestUri?.AbsolutePath.Contains("/api/users/notes") == true)
         {
             _notesCallCount++;
+
+            // 2ページ目でネットワーク断をシミュレート（TST-9）
+            if (_simulateNetworkFailureOnSecondPage && _notesCallCount >= 2)
+            {
+                throw new HttpRequestException("Network failure during pagination");
+            }
         }
 
         string jsonResponse;
@@ -183,6 +196,20 @@ public class MockHttpMessageHandler : HttpMessageHandler
             {
                 jsonResponse = "[]";
             }
+        }
+        // ページネーション中ネットワーク断シミュレーション: 1ページ目は100件返してページネーションを継続させる
+        else if (_simulateNetworkFailureOnSecondPage)
+        {
+            var notes = new List<string>();
+            for (int i = 0; i < 100; i++)
+            {
+                notes.Add($@"{{
+                    ""id"": ""page1-id-{i}"",
+                    ""text"": ""Note {i}"",
+                    ""createdAt"": ""2024-01-15T10:00:00.000Z""
+                }}");
+            }
+            jsonResponse = "[" + string.Join(",", notes) + "]";
         }
         else
         {
@@ -828,6 +855,25 @@ public class MisskeyApiClientTests
         Assert.Empty(notes);
         // 2ページ目を取りに行っていないこと（認証1回 + ノート1回 = 2リクエスト）
         Assert.Equal(2, mockHandler.RequestsSent);
+    }
+
+    // TDD: TST-9 - ページネーション中のネットワーク断
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesAsync_WhenNetworkFailsDuringPagination_PropagatesHttpRequestException()
+    {
+        // Arrange
+        var mockHandler = new MockHttpMessageHandler();
+        mockHandler.SimulateNetworkFailureOnSecondPage(true);
+        var httpClient = new HttpClient(mockHandler);
+        var client = new MisskeyApiClient("https://misskey.io", "valid-token", httpClient);
+
+        var startDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var endDate = new DateTime(2024, 1, 31, 23, 59, 59, DateTimeKind.Utc);
+
+        // Act & Assert: リトライなしで例外がそのまま伝播することを確認
+        await Assert.ThrowsAsync<HttpRequestException>(
+            () => client.GetNotesAsync(startDate, endDate));
     }
 
     // TDD: BUG-8 - _callCountバグ
