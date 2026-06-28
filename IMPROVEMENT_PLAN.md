@@ -288,7 +288,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] DOC-2. DEVELOPMENT.md に削除済み `--jst` フラグの使用例が残っている
+### [x] DOC-2. DEVELOPMENT.md に削除済み `--jst` フラグの使用例が残っている
 
 **対象ファイル**: `DEVELOPMENT.md`（14 行目付近）
 

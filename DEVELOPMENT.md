@@ -11,7 +11,6 @@ dotnet build PastNotes.Console/PastNotes.Console.csproj
 # 実行
 .\PastNotes.Console\bin\Debug\net10.0\PastNotes.Console.exe fetch --days 30
 .\PastNotes.Console\bin\Debug\net10.0\PastNotes.Console.exe fetch --start 2024-01-01 --end 2024-01-31
-.\PastNotes.Console\bin\Debug\net10.0\PastNotes.Console.exe fetch --start 2024-01-01 --end 2024-01-31 --jst
 .\PastNotes.Console\bin\Debug\net10.0\PastNotes.Console.exe search <keyword>
 .\PastNotes.Console\bin\Debug\net10.0\PastNotes.Console.exe view
 ```
