@@ -28,8 +28,15 @@ public class SearchCommand
             return 1;
         }
 
+        if (_startDate.HasValue || _endDate.HasValue)
+        {
+            notes = _repository.FilterByDateRange(notes,
+                _startDate ?? DateTime.MinValue,
+                _endDate ?? DateTime.MaxValue);
+        }
+
         var results = _repository.SearchByKeyword(notes, keyword);
-        
+
         System.Console.WriteLine($"Found {results.Count()} notes matching '{keyword}':");
         foreach (var note in results)
         {
