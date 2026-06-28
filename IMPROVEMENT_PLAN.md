@@ -119,7 +119,7 @@ UTC 環境（CI や Linux サーバーなど）では同じ期間を指定して
 
 ---
 
-### [ ] BUG-12. NoteHtmlGenerator の XSS 脆弱性
+### [x] BUG-12. NoteHtmlGenerator の XSS 脆弱性
 
 **対象ファイル**: `PastNotes/NoteHtmlGenerator.cs`（50行目、123行目）
 
@@ -256,7 +256,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] TST-11. HTML 出力の XSS 対策テスト（→ BUG-12 のテスト）
+### [x] TST-11. HTML 出力の XSS 対策テスト（→ BUG-12 のテスト）
 
 **関係するユースケース**: `view-html`
 

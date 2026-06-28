@@ -1,3 +1,5 @@
+using System.Net;
+
 namespace PastNotes;
 
 public class NoteHtmlGenerator
@@ -47,14 +49,14 @@ public class NoteHtmlGenerator
 </head>
 <body>
     <div class=""note-date"">{jstTime:yyyy-MM-dd HH:mm:ss}</div>
-    <div class=""note-text"">{note.Text}</div>";
+    <div class=""note-text"">{WebUtility.HtmlEncode(note.Text)}</div>";
         
         if (note.Files.Any())
         {
             html += @"    <div class=""images"">";
             foreach (var file in note.Files)
             {
-                html += $@"        <img src=""{file.Url}"" alt=""{file.Name}"">";
+                html += $@"        <img src=""{WebUtility.HtmlEncode(file.Url)}"" alt=""{WebUtility.HtmlEncode(file.Name)}"">";
             }
             html += @"    </div>";
         }
@@ -120,14 +122,14 @@ public class NoteHtmlGenerator
             html += $@"
     <div class=""note"">
         <div class=""note-date"">{jstTime:yyyy-MM-dd HH:mm:ss}</div>
-        <div class=""note-text"">{note.Text}</div>";
+        <div class=""note-text"">{WebUtility.HtmlEncode(note.Text)}</div>";
             
             if (note.Files.Any())
             {
                 html += @"        <div class=""images"">";
                 foreach (var file in note.Files)
                 {
-                    html += $@"            <img src=""{file.Url}"" alt=""{file.Name}"">";
+                    html += $@"            <img src=""{WebUtility.HtmlEncode(file.Url)}"" alt=""{WebUtility.HtmlEncode(file.Name)}"">";
                 }
                 html += @"        </div>";
             }
