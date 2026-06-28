@@ -2,17 +2,33 @@
 
 ## コンソールアプリケーション
 
+### 認証情報の設定
+
+開発時の認証情報はプロジェクトルートに `.env` ファイルを作成するのが便利です（`.gitignore` で除外済み）。
+
+```
+MISSKEY_INSTANCE_URL=https://misskey.io
+MISSKEY_API_TOKEN=your-api-token
+```
+
+優先順位: CLI引数 `--token` > 環境変数 `MISSKEY_API_TOKEN` > `.env` ファイル
+
 ### ビルドと実行
 
 ```bash
 # ビルド
 dotnet build PastNotes.Console/PastNotes.Console.csproj
 
-# 実行
-.\PastNotes.Console\bin\Debug\net10.0\PastNotes.Console.exe fetch --days 30
-.\PastNotes.Console\bin\Debug\net10.0\PastNotes.Console.exe fetch --start 2024-01-01 --end 2024-01-31
-.\PastNotes.Console\bin\Debug\net10.0\PastNotes.Console.exe search <keyword>
-.\PastNotes.Console\bin\Debug\net10.0\PastNotes.Console.exe view
+# 実行（dotnet run 経由）
+dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --days 30
+dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --start 2024-01-01 --end 2024-01-31
+dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --days 30 --append
+dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --days 30 --token your-token --instance-url https://misskey.io
+dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- search <keyword>
+dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- search <keyword> --start 2024-01-01 --end 2024-01-31
+dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- view
+dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- view --show-id --start 2024-01-01 --end 2024-01-31
+dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- view-html --open
 ```
 
 ### テスト

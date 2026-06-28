@@ -53,8 +53,6 @@ MISSKEY_API_TOKEN=your-api-token
 
 APIトークンは Misskey の「設定 → API」から取得できます。
 
-#### コマンド
-
 #### 取得系コマンド
 
     # ノート取得（過去30日間）
@@ -87,15 +85,18 @@ APIトークンは Misskey の「設定 → API」から取得できます。
     # ノート表示（IDを含める）
     dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- view --show-id
 
-    # ノートをHTMLで表示（画像を含む）
+    # ノート表示（日付絞り込み + ID表示の組み合わせ）
+    dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- view --show-id --start 2024-01-01 --end 2024-01-31
+
+    # ノートをHTMLファイルに出力（html_output/notes.html に生成）
     dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- view-html
 
-    # ノートをHTMLで表示してブラウザで開く
+    # ノートをHTMLファイルに出力してブラウザで開く
     dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- view-html --open
 
 ノートに添付ファイルがある場合、ファイル名、タイプ、URLが表示されます。
 
-view-htmlコマンドを使用すると、すべてのノートを1つのHTMLファイルとして生成し、画像をブラウザで表示できます。
+`view-html` はカレントディレクトリの `html_output/notes.html` にHTMLファイルを生成します。`--open` を付けるとブラウザで自動的に開きます。
 
 #### 運用上の注意事項
 
