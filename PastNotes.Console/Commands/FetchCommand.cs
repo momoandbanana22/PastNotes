@@ -6,11 +6,13 @@ public class FetchCommand
 {
     private readonly IMisskeyApiClient _apiClient;
     private readonly NoteRepository _repository;
+    private readonly string _filePath;
 
-    public FetchCommand(IMisskeyApiClient apiClient, NoteRepository repository)
+    public FetchCommand(IMisskeyApiClient apiClient, NoteRepository repository, string filePath = "notes.json")
     {
         _apiClient = apiClient;
         _repository = repository;
+        _filePath = filePath;
     }
 
     public async Task<int> ExecuteAsync(int days)
@@ -52,8 +54,8 @@ public class FetchCommand
                 return 0;
             }
 
-            await _repository.SaveToFileAsync(notes, "notes.json");
-            System.Console.WriteLine($"Saved {notes.Count()} notes to notes.json");
+            await _repository.SaveToFileAsync(notes, _filePath);
+            System.Console.WriteLine($"Saved {notes.Count()} notes to {_filePath}");
             return 0;
         }
         catch (UnauthorizedException ex)

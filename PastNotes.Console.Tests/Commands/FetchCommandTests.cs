@@ -234,6 +234,44 @@ public class FetchCommandTests
         await Assert.ThrowsAsync<ArgumentException>(() => command.ExecuteAsync(startDate, endDate));
     }
 
+    // TDD: TST-13 - fetch 2回実行で notes.json が上書きされること
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ExecuteAsync_WhenCalledTwice_OverwritesExistingNotesFile()
+    {
+        // Arrange
+        var mockApiClient = new Mock<IMisskeyApiClient>();
+        var repository = new NoteRepository();
+        var testFilePath = $"test_overwrite_{Guid.NewGuid()}.json";
+        var command = new FetchCommand(mockApiClient.Object, repository, testFilePath);
+
+        var firstNotes = new List<Note>
+        {
+            new Note { Id = "first-1", Text = "First fetch note", CreatedAt = DateTime.UtcNow }
+        };
+        var secondNotes = new List<Note>
+        {
+            new Note { Id = "second-1", Text = "Second fetch note", CreatedAt = DateTime.UtcNow }
+        };
+
+        mockApiClient
+            .SetupSequence(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(firstNotes)
+            .ReturnsAsync(secondNotes);
+
+        // Act
+        await command.ExecuteAsync(30);
+        await command.ExecuteAsync(30);
+
+        // Assert: 2回目のfetchで上書きされ、1回目のノートは消えている
+        var loaded = (await repository.LoadFromFileAsync(testFilePath)).ToList();
+        Assert.Single(loaded);
+        Assert.Equal("second-1", loaded[0].Id);
+
+        // Cleanup
+        if (File.Exists(testFilePath)) File.Delete(testFilePath);
+    }
+
     // TDD: TST-8 - JST日付変更またぎの変換確認
     [Fact]
     [Trait("Category", "Unit")]

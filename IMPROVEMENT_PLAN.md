@@ -272,7 +272,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] TST-13. `fetch` を 2 回実行すると `notes.json` が上書きされることのテスト
+### [x] TST-13. `fetch` を 2 回実行すると `notes.json` が上書きされることのテスト
 
 **関係するユースケース**: `fetch`
 
