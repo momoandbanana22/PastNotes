@@ -16,12 +16,13 @@ public class Program
         {
             System.Console.WriteLine("Usage: PastNotes.Console <command> [options]");
             System.Console.WriteLine("Commands:");
-            System.Console.WriteLine("  fetch --days <days>                    Fetch notes from the last N days");
-            System.Console.WriteLine("  fetch --start <date> --end <date>      Fetch notes within date range (JST)");
-            System.Console.WriteLine("  search <keyword>                       Search notes by keyword");
-            System.Console.WriteLine("  view [--show-id]                       View all notes (use --show-id to display note IDs)");
-            System.Console.WriteLine("  view-html [--open]                      Generate HTML files for notes (use --open to open in browser)");
-            System.Console.WriteLine("Date format: yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
+            System.Console.WriteLine("  fetch --days <days> [--append] [--token <token>] [--instance-url <url>]");
+            System.Console.WriteLine("  fetch --start <date> --end <date> [--append] [--token <token>] [--instance-url <url>]");
+            System.Console.WriteLine("  search <keyword> [--start <date>] [--end <date>]");
+            System.Console.WriteLine("  view [--show-id] [--start <date>] [--end <date>]");
+            System.Console.WriteLine("  view-html [--open]");
+            System.Console.WriteLine("Date format: yyyy-MM-dd or yyyy-MM-dd HH:mm:ss (JST)");
+            System.Console.WriteLine("Auth: set MISSKEY_API_TOKEN env var, use --token arg, or create .env file");
             return 1;
         }
 
@@ -52,10 +53,13 @@ public class Program
 
             try
             {
-                // Check if using --days option
-                if (args.Length >= 3 && args[1] == "--days")
+                var daysIdx  = Array.IndexOf(args, "--days");
+                var sIdx     = Array.IndexOf(args, "--start");
+                var eIdx     = Array.IndexOf(args, "--end");
+
+                if (daysIdx >= 0 && daysIdx + 1 < args.Length)
                 {
-                    if (!int.TryParse(args[2], out int days))
+                    if (!int.TryParse(args[daysIdx + 1], out int days))
                     {
                         System.Console.WriteLine("Error: days must be a number");
                         return 1;
@@ -64,16 +68,15 @@ public class Program
                     var result = await fetchCommand.ExecuteAsync(days);
                     return result;
                 }
-                // Check if using --start and --end options
-                else if (args.Length >= 5 && args[1] == "--start" && args[3] == "--end")
+                else if (sIdx >= 0 && sIdx + 1 < args.Length && eIdx >= 0 && eIdx + 1 < args.Length)
                 {
-                    if (!DateTime.TryParse(args[2], out DateTime startDate))
+                    if (!DateTime.TryParse(args[sIdx + 1], out DateTime startDate))
                     {
                         System.Console.WriteLine("Error: Invalid start date format. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
                         return 1;
                     }
 
-                    if (!DateTime.TryParse(args[4], out DateTime endDate))
+                    if (!DateTime.TryParse(args[eIdx + 1], out DateTime endDate))
                     {
                         System.Console.WriteLine("Error: Invalid end date format. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
                         return 1;

@@ -85,6 +85,42 @@ public class ConsoleAppTests
     }
 
     // TDD: TST-10 - トークンなしでexit 1とエラーメッセージ
+    // TDD: fetch --append --start ... --end ... の順序でも正しく解析されること
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task FetchCommand_WhenAppendPrecedesStartEnd_ParsesArgsCorrectly()
+    {
+        // Arrange
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            // --append を --start/--end より前に置く（バグ再現）
+            var args = new[]
+            {
+                "fetch", "--append",
+                "--start", "2024-01-01",
+                "--end", "2024-01-31",
+                "--token", "faketoken",
+                "--instance-url", "http://localhost:1"
+            };
+
+            // Act
+            var result = await Program.Main(args);
+
+            System.Console.SetOut(originalOutput);
+
+            // Assert: 引数解析は成功するので「Usage:」ではなく network error になること
+            Assert.DoesNotContain("Usage: PastNotes.Console fetch --days", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+    }
+
     [Fact]
     [Trait("Category", "Unit")]
     public async Task FetchCommand_WhenApiTokenMissing_ReturnsOneAndPrintsError()

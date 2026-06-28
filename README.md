@@ -68,6 +68,7 @@ APIトークンは Misskey の「設定 → API」から取得できます。
 
     # ノート取得（既存のnotes.jsonにマージ・重複IDは新しい方を優先）
     dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --days 30 --append
+    dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --start 2024-01-01 --end 2024-01-31 --append
 
     # ノート検索（全期間）
     dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- search <keyword>
@@ -99,7 +100,7 @@ view-htmlコマンドを使用すると、すべてのノートを1つのHTMLフ
 #### 運用上の注意事項
 
 - **保存先**: `fetch` コマンドを実行したカレントディレクトリに `notes.json` として保存されます。
-- **上書き**: `fetch` を実行するたびに `notes.json` が**上書き**されます。以前の取得結果は失われます。
+- **上書き**: デフォルトでは `fetch` を実行するたびに `notes.json` が**上書き**されます。`--append` を指定すると既存データにマージします（重複IDは新しい方を優先）。
 - **`view` の表示順序**: `fetch` で保存した順序（新着順）で表示されます。
 - **`search` で 0 件の場合**: ヒットしなかった場合は `Found 0 notes matching '...'` と表示し、終了コード 0 を返します（`notes.json` が存在しない場合は終了コード 1）。
 
