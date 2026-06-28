@@ -216,7 +216,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] TST-6. 壊れた JSON ファイルの読み込み
+### [x] TST-6. 壊れた JSON ファイルの読み込み
 
 **関係するユースケース**: `view` / `search`
 

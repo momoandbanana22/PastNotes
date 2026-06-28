@@ -15,7 +15,6 @@ public class FetchCommand
 
     public async Task<int> ExecuteAsync(int days)
     {
-        // UTC基準で計算し、表示用にJSTに変換（--start/--endパスと一貫した動作）
         var utcNow = DateTime.UtcNow;
         var convertedStartDate = utcNow.AddDays(-days);
         var convertedEndDate = utcNow;
@@ -23,18 +22,7 @@ public class FetchCommand
         var jstNow = utcNow.AddHours(9);
         System.Console.WriteLine($"Fetching notes from {jstNow.AddDays(-days):yyyy-MM-dd} to {jstNow:yyyy-MM-dd} (JST)...");
 
-        var notes = await _apiClient.GetNotesAsync(convertedStartDate, convertedEndDate);
-        
-        if (notes == null || !notes.Any())
-        {
-            System.Console.WriteLine("No notes found.");
-            return 0;
-        }
-
-        await _repository.SaveToFileAsync(notes, "notes.json");
-        System.Console.WriteLine($"Saved {notes.Count()} notes to notes.json");
-
-        return 0;
+        return await FetchAndSaveAsync(convertedStartDate, convertedEndDate);
     }
 
     public async Task<int> ExecuteAsync(DateTime startDate, DateTime endDate)
@@ -44,23 +32,34 @@ public class FetchCommand
             throw new ArgumentException("Start date must be before or equal to end date");
         }
 
-        // Input dates are treated as JST (UTC+9), convert to UTC for API
         var convertedStartDate = startDate.AddHours(-9);
         var convertedEndDate = endDate.AddHours(-9);
 
         System.Console.WriteLine($"Fetching notes from {startDate:yyyy-MM-dd HH:mm:ss} (JST) to {endDate:yyyy-MM-dd HH:mm:ss} (JST)...");
 
-        var notes = await _apiClient.GetNotesAsync(convertedStartDate, convertedEndDate);
-        
-        if (notes == null || !notes.Any())
+        return await FetchAndSaveAsync(convertedStartDate, convertedEndDate);
+    }
+
+    private async Task<int> FetchAndSaveAsync(DateTime startDate, DateTime endDate)
+    {
+        try
         {
-            System.Console.WriteLine("No notes found.");
+            var notes = await _apiClient.GetNotesAsync(startDate, endDate);
+
+            if (notes == null || !notes.Any())
+            {
+                System.Console.WriteLine("No notes found.");
+                return 0;
+            }
+
+            await _repository.SaveToFileAsync(notes, "notes.json");
+            System.Console.WriteLine($"Saved {notes.Count()} notes to notes.json");
             return 0;
         }
-
-        await _repository.SaveToFileAsync(notes, "notes.json");
-        System.Console.WriteLine($"Saved {notes.Count()} notes to notes.json");
-
-        return 0;
+        catch (UnauthorizedException ex)
+        {
+            System.Console.Error.WriteLine($"Error: Unauthorized - {ex.Message}");
+            return 1;
+        }
     }
 }

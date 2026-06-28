@@ -226,11 +226,40 @@ public class FetchCommandTests
         var mockApiClient = new Mock<IMisskeyApiClient>();
         var repository = new NoteRepository();
         var command = new FetchCommand(mockApiClient.Object, repository);
-        
+
         var startDate = new DateTime(2024, 1, 31);
         var endDate = new DateTime(2024, 1, 1);
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(() => command.ExecuteAsync(startDate, endDate));
+    }
+
+    // TDD: TST-7 - 401 Unauthorized でexit 1とエラーメッセージ
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ExecuteAsync_WhenApiReturns401_ReturnsOneAndPrintsError()
+    {
+        // Arrange
+        var mockApiClient = new Mock<IMisskeyApiClient>();
+        var repository = new NoteRepository();
+        var command = new FetchCommand(mockApiClient.Object, repository);
+
+        mockApiClient
+            .Setup(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ThrowsAsync(new UnauthorizedException("Unauthorized access"));
+
+        var originalError = System.Console.Error;
+        using var stringWriter = new StringWriter();
+        System.Console.SetError(stringWriter);
+
+        // Act
+        var result = await command.ExecuteAsync(30);
+
+        System.Console.SetError(originalError);
+
+        // Assert
+        Assert.Equal(1, result);
+        var output = stringWriter.ToString();
+        Assert.Contains("Unauthorized", output, StringComparison.OrdinalIgnoreCase);
     }
 }
