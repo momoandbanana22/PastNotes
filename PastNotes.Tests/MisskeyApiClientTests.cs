@@ -32,7 +32,7 @@ public class MockHttpMessageHandler : HttpMessageHandler
         _simulateNewerNotesFirst = simulate;
     }
 
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         RequestsSent++;
         _callCount++;
@@ -40,30 +40,29 @@ public class MockHttpMessageHandler : HttpMessageHandler
         // リクエストボディを保存
         if (request.Content != null)
         {
-            var requestBody = request.Content.ReadAsStringAsync().Result;
+            var requestBody = await request.Content.ReadAsStringAsync();
             RequestBodies.Add(requestBody);
         }
 
         // カスタムエラーレスポンスが設定されている場合はそれを返す
         if (_customErrorResponse != null)
         {
-            return Task.FromResult(_customErrorResponse);
+            return _customErrorResponse;
         }
 
         // レート制限シミュレーション
         if (_simulateRateLimit && _callCount == 1)
         {
-            var rateLimitResponse = new HttpResponseMessage(System.Net.HttpStatusCode.TooManyRequests)
+            return new HttpResponseMessage(System.Net.HttpStatusCode.TooManyRequests)
             {
                 Content = new StringContent("Rate limit exceeded", System.Text.Encoding.UTF8, "application/json")
             };
-            return Task.FromResult(rateLimitResponse);
         }
 
         // /api/iエンドポイントの場合はユーザーオブジェクトを返す
         if (request.RequestUri?.AbsolutePath.Contains("/api/i") == true)
         {
-            var userResponse = new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
             {
                 Content = new StringContent(@"{
                     ""id"": ""test-user-id"",
@@ -71,7 +70,6 @@ public class MockHttpMessageHandler : HttpMessageHandler
                     ""username"": ""testuser""
                 }", System.Text.Encoding.UTF8, "application/json")
             };
-            return Task.FromResult(userResponse);
         }
 
         // /api/users/notesエンドポイントの場合はカウント
@@ -181,12 +179,10 @@ public class MockHttpMessageHandler : HttpMessageHandler
             }
         }
 
-        var response = new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
         {
             Content = new StringContent(jsonResponse, System.Text.Encoding.UTF8, "application/json")
         };
-
-        return Task.FromResult(response);
     }
 }
 

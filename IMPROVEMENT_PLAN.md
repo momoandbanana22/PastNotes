@@ -109,7 +109,7 @@ UTC 環境（CI や Linux サーバーなど）では同じ期間を指定して
 
 ---
 
-### [ ] BUG-11. テストモックの `.Result` によるデッドロックリスク
+### [x] BUG-11. テストモックの `.Result` によるデッドロックリスク
 
 **対象ファイル**: `PastNotes.Tests/MisskeyApiClientTests.cs`（約 36 行目）
 
