@@ -234,6 +234,37 @@ public class FetchCommandTests
         await Assert.ThrowsAsync<ArgumentException>(() => command.ExecuteAsync(startDate, endDate));
     }
 
+    // TDD: TST-8 - JST日付変更またぎの変換確認
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ExecuteAsync_WhenJstNewYear_PassesCorrectUtcToPreviousDay()
+    {
+        // Arrange
+        var mockApiClient = new Mock<IMisskeyApiClient>();
+        var repository = new NoteRepository();
+        var command = new FetchCommand(mockApiClient.Object, repository);
+
+        DateTime? capturedStart = null;
+        DateTime? capturedEnd = null;
+
+        mockApiClient
+            .Setup(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .Callback<DateTime, DateTime>((s, e) => { capturedStart = s; capturedEnd = e; })
+            .ReturnsAsync(new List<Note>());
+
+        // JST 2024-01-01 00:00:00 = UTC 2023-12-31 15:00:00（日付またぎ）
+        var jstStart = new DateTime(2024, 1, 1, 0, 0, 0);
+        var jstEnd   = new DateTime(2024, 1, 31, 23, 59, 59);
+
+        // Act
+        await command.ExecuteAsync(jstStart, jstEnd);
+
+        // Assert: JST→UTC で前年/前月/前日になることを明示的に検証
+        Assert.NotNull(capturedStart);
+        Assert.Equal(new DateTime(2023, 12, 31, 15, 0, 0), capturedStart);
+        Assert.Equal(new DateTime(2024, 1, 31, 14, 59, 59), capturedEnd);
+    }
+
     // TDD: TST-7 - 401 Unauthorized でexit 1とエラーメッセージ
     [Fact]
     [Trait("Category", "Unit")]

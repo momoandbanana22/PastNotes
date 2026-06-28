@@ -224,7 +224,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] TST-7. 401 Unauthorized での CLI 終了コードとメッセージ
+### [x] TST-7. 401 Unauthorized での CLI 終了コードとメッセージ
 
 **関係するユースケース**: `fetch`（エラー系）
 
