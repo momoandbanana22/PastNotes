@@ -1,5 +1,16 @@
 namespace PastNotes;
 
+public class TimeZoneHelperTests
+{
+    // BUG-13: Windows専用タイムゾーンIDの代わりにOS判定で取得したゾーンがUTC+9であることを確認
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Jst_ShouldBeUtcPlus9()
+    {
+        Assert.Equal(TimeSpan.FromHours(9), TimeZoneHelper.Jst.BaseUtcOffset);
+    }
+}
+
 public class NoteHtmlGeneratorTests
 {
     // TDD: TST-11 / BUG-12 - XSS対策テスト

@@ -131,7 +131,7 @@ UTC 環境（CI や Linux サーバーなど）では同じ期間を指定して
 
 ---
 
-### [ ] BUG-13. Windows 専用タイムゾーン ID
+### [x] BUG-13. Windows 専用タイムゾーン ID
 
 **対象ファイル**: `PastNotes.Console/Commands/ViewCommand.cs`（33行目）、`PastNotes/NoteHtmlGenerator.cs`（8行目）
 

@@ -8,7 +8,7 @@ public class NoteHtmlGenerator
     {
         var jstTime = TimeZoneInfo.ConvertTimeFromUtc(
             DateTime.SpecifyKind(note.CreatedAt, DateTimeKind.Utc), 
-            TimeZoneInfo.FindSystemTimeZoneById("Tokyo Standard Time"));
+            TimeZoneHelper.Jst);
         
         var html = $@"<!DOCTYPE html>
 <html lang=""ja"">
@@ -117,7 +117,7 @@ public class NoteHtmlGenerator
         {
             var jstTime = TimeZoneInfo.ConvertTimeFromUtc(
                 DateTime.SpecifyKind(note.CreatedAt, DateTimeKind.Utc), 
-                TimeZoneInfo.FindSystemTimeZoneById("Tokyo Standard Time"));
+                TimeZoneHelper.Jst);
             
             html += $@"
     <div class=""note"">
