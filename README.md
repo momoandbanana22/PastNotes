@@ -88,13 +88,13 @@ APIトークンは Misskey の「設定 → API」から取得できます。
     # ノート表示（日付絞り込み + ID表示の組み合わせ）
     dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- view --show-id --start 2024-01-01 --end 2024-01-31
 
+ノートに添付ファイルがある場合、ファイル名、タイプ、URLが表示されます。
+
     # ノートをHTMLファイルに出力（html_output/notes.html に生成）
     dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- view-html
 
     # ノートをHTMLファイルに出力してブラウザで開く
     dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- view-html --open
-
-ノートに添付ファイルがある場合、ファイル名、タイプ、URLが表示されます。
 
 `view-html` はカレントディレクトリの `html_output/notes.html` にHTMLファイルを生成します。`--open` を付けるとブラウザで自動的に開きます。
 
