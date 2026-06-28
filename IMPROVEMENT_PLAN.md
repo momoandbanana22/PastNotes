@@ -232,7 +232,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] TST-8. JST 日付変更またぎの変換確認
+### [x] TST-8. JST 日付変更またぎの変換確認
 
 **関係するユースケース**: `fetch --start/--end`
 
