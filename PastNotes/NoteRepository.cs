@@ -18,7 +18,14 @@ public class NoteRepository
         }
 
         var json = await File.ReadAllTextAsync(filePath);
-        return JsonSerializer.Deserialize<IEnumerable<Note>>(json) ?? Enumerable.Empty<Note>();
+        try
+        {
+            return JsonSerializer.Deserialize<IEnumerable<Note>>(json) ?? Enumerable.Empty<Note>();
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidDataException($"'{filePath}' は有効な JSON ではありません。", ex);
+        }
     }
 
     public IEnumerable<Note> SearchByKeyword(IEnumerable<Note> notes, string keyword)

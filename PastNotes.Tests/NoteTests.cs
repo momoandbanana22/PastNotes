@@ -533,4 +533,23 @@ public class NoteRepositoryTests
         Assert.NotNull(loadedNotes);
         Assert.Empty(loadedNotes);
     }
+
+    // TDD: TST-6 - 壊れたJSONファイルの読み込み
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task LoadFromFileAsync_WhenJsonIsCorrupted_ThrowsInvalidDataException()
+    {
+        // Arrange
+        var filePath = $"corrupted_{Guid.NewGuid()}.json";
+        await File.WriteAllTextAsync(filePath, "{ this is not valid json [[[");
+        var repository = new NoteRepository();
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<InvalidDataException>(
+            () => repository.LoadFromFileAsync(filePath));
+        Assert.Contains(filePath, ex.Message);
+
+        // Cleanup
+        if (File.Exists(filePath)) File.Delete(filePath);
+    }
 }

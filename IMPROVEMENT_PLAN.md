@@ -200,7 +200,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] TST-4. `CreatedAt` の `DateTimeKind` が save/load で保持されるか
+### [x] TST-4. `CreatedAt` の `DateTimeKind` が save/load で保持されるか
 
 **関係するユースケース**: `view` / `search`
 
