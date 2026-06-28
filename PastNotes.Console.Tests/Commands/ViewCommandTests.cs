@@ -395,7 +395,7 @@ public class ViewHtmlCommandTests
         var repository = new NoteRepository();
         var testFilePath = $"test_notes_{Guid.NewGuid()}.json";
         var outputDir = $"test_html_{Guid.NewGuid()}";
-        var command = new ViewHtmlCommand(repository, testFilePath, outputDir, openBrowser: true);
+        var command = new ViewHtmlCommand(repository, testFilePath, outputDir, openBrowser: false);
         
         var testNotes = new List<Note>
         {
