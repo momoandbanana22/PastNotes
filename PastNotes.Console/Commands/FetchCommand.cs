@@ -46,8 +46,7 @@ public class FetchCommand
 
         // Input dates are treated as JST (UTC+9), convert to UTC for API
         var convertedStartDate = startDate.AddHours(-9);
-        // Add 1 second to end date to make untilDate inclusive (API treats untilDate as exclusive)
-        var convertedEndDate = endDate.AddHours(-9).AddSeconds(1);
+        var convertedEndDate = endDate.AddHours(-9);
 
         System.Console.WriteLine($"Fetching notes from {startDate:yyyy-MM-dd HH:mm:ss} (JST) to {endDate:yyyy-MM-dd HH:mm:ss} (JST)...");
 

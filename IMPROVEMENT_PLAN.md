@@ -97,7 +97,7 @@ UTC 環境（CI や Linux サーバーなど）では同じ期間を指定して
 
 ---
 
-### [ ] BUG-10. `convertedEndDate` への +1 秒が stale なロジック
+### [x] BUG-10. `convertedEndDate` への +1 秒が stale なロジック
 
 **対象ファイル**: `PastNotes.Console/Commands/FetchCommand.cs`（約 47 行目）
 
@@ -208,7 +208,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] TST-5. `endDate` ちょうどのノートが含まれるか（上限境界）（→ BUG-10 のテスト）
+### [x] TST-5. `endDate` ちょうどのノートが含まれるか（上限境界）（→ BUG-10 のテスト）
 
 **関係するユースケース**: `fetch --start/--end`
 

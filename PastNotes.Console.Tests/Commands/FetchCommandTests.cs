@@ -57,8 +57,8 @@ public class FetchCommandTests
         Assert.Equal(0, result);
         // Verify that dates were converted from JST to UTC
         mockApiClient.Verify(x => x.GetNotesAsync(
-            It.Is<DateTime>(d => d == startDate.AddHours(-9)), 
-            It.Is<DateTime>(d => d == endDate.AddHours(-9).AddSeconds(1))), 
+            It.Is<DateTime>(d => d == startDate.AddHours(-9)),
+            It.Is<DateTime>(d => d == endDate.AddHours(-9))),
             Times.Once);
     }
 
@@ -90,8 +90,36 @@ public class FetchCommandTests
         Assert.Equal(0, result);
         // Verify that the dates were converted from JST to UTC by default
         mockApiClient.Verify(x => x.GetNotesAsync(
-            It.Is<DateTime>(d => d == jstStartDate.AddHours(-9)), 
-            It.Is<DateTime>(d => d == jstEndDate.AddHours(-9).AddSeconds(1))), 
+            It.Is<DateTime>(d => d == jstStartDate.AddHours(-9)),
+            It.Is<DateTime>(d => d == jstEndDate.AddHours(-9))),
+            Times.Once);
+    }
+
+    // TDD: TST-5 / BUG-10 - endDateちょうどのノートが含まれることを検証
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ExecuteAsync_WithDateRange_ShouldNotAddExtraSecondToEndDate()
+    {
+        // Arrange
+        var mockApiClient = new Mock<IMisskeyApiClient>();
+        var repository = new NoteRepository();
+        var command = new FetchCommand(mockApiClient.Object, repository);
+
+        var testNotes = new List<Note> { new Note { Id = "1", Text = "Test", CreatedAt = DateTime.UtcNow } };
+        mockApiClient
+            .Setup(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(testNotes);
+
+        var jstStartDate = new DateTime(2024, 1, 1, 0, 0, 0);
+        var jstEndDate = new DateTime(2024, 1, 31, 23, 59, 59);
+
+        // Act
+        await command.ExecuteAsync(jstStartDate, jstEndDate);
+
+        // Assert: endDateはJST→UTC変換のみ（+1秒不要・削除済みAPIパラメータの残骸）
+        mockApiClient.Verify(x => x.GetNotesAsync(
+            It.Is<DateTime>(d => d == jstStartDate.AddHours(-9)),
+            It.Is<DateTime>(d => d == jstEndDate.AddHours(-9))),
             Times.Once);
     }
 
