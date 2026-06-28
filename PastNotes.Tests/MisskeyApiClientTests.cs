@@ -159,8 +159,8 @@ public class MockHttpMessageHandler : HttpMessageHandler
         }
         else
         {
-            // 2回目以降の呼び出しでは空の結果を返す（ページネーション終了条件）
-            if (_callCount > 1)
+            // 2回目以降のノート呼び出しでは空の結果を返す（ページネーション終了条件）
+            if (_notesCallCount > 1)
             {
                 jsonResponse = "[]";
             }
@@ -815,6 +815,29 @@ public class MisskeyApiClientTests
         var noteIds = notes.Select(n => n.Id).ToList();
         var uniqueNoteIds = noteIds.Distinct().ToList();
         Assert.Equal(noteIds.Count, uniqueNoteIds.Count);
+    }
+
+    // TDD: BUG-8 - _callCountバグ
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesAsync_WithMockHttpClient_ShouldReturnNotesFromMock()
+    {
+        // Arrange
+        var instanceUrl = "https://misskey.io";
+        var apiToken = "valid-token";
+        var mockHandler = new MockHttpMessageHandler();
+        var httpClient = new HttpClient(mockHandler);
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
+        var startDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var endDate = new DateTime(2024, 1, 31, 23, 59, 59, DateTimeKind.Utc);
+
+        // Act
+        var notes = await client.GetNotesAsync(startDate, endDate);
+
+        // Assert
+        // MockHttpMessageHandlerは2件のノート(2024-01-15, 2024-01-20)を返すはず
+        // バグがあると認証の_callCountが加算されて[]が返り、0件になる
+        Assert.Equal(2, notes.Count());
     }
 
     // TDD: キャッシュ有効期限管理

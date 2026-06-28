@@ -68,7 +68,7 @@
 
 ---
 
-### [ ] BUG-8. モックの `_callCount` バグによりテストが常に空リストを返す
+### [x] BUG-8. モックの `_callCount` バグによりテストが常に空リストを返す
 
 **対象ファイル**: `PastNotes.Tests/MisskeyApiClientTests.cs`（`MockHttpMessageHandler`）
 
