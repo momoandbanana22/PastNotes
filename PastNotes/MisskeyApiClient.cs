@@ -295,6 +295,8 @@ public class MisskeyApiClient : IMisskeyApiClient
                 var filteredNotes = notes.Where(note => note.CreatedAt >= startDate && note.CreatedAt <= endDate);
                 allNotes.AddRange(filteredNotes);
 
+                System.Console.WriteLine($"  取得中... {allNotes.Count} 件");
+
                 untilId = notes.Last().Id;
 
                 if (notes.Count < 100)

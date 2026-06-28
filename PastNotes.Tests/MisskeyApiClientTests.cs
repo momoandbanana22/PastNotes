@@ -833,6 +833,41 @@ public class MisskeyApiClientTests
         Assert.Equal(noteIds.Count, uniqueNoteIds.Count);
     }
 
+    // TDD: FEAT-1 - ページネーション中の進捗表示
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesAsync_WhenPaginating_PrintsProgressMessages()
+    {
+        // Arrange
+        var mockHandler = new MockHttpMessageHandler();
+        mockHandler.SimulatePagination(true);
+        var httpClient = new HttpClient(mockHandler);
+        var client = new MisskeyApiClient("https://misskey.io", "valid-token", httpClient);
+
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            // Act
+            var notes = await client.GetNotesAsync(
+                new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                new DateTime(2024, 1, 31, 23, 59, 59, DateTimeKind.Utc));
+
+            System.Console.SetOut(originalOutput);
+
+            // Assert: 1ページ目(100件)、2ページ目(200件)の進捗が出力されること
+            var output = stringWriter.ToString();
+            Assert.Contains("100", output);
+            Assert.Contains("200", output);
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+    }
+
     // TDD: TST-1 - 全ノートが対象期間より古い場合に0件で終了する
     [Fact]
     [Trait("Category", "Unit")]

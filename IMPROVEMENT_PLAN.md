@@ -308,7 +308,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ## FEAT: 機能追加
 
-### [ ] FEAT-1. `fetch` 中の進捗表示
+### [x] FEAT-1. `fetch` 中の進捗表示
 
 **問題**: ノートが多い場合、ページネーションが何十回も走るが進捗が表示されない。ユーザーには無言の待機になる。ページ取得ごとに件数を出力するだけでも改善になる。
 
