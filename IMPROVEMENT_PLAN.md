@@ -264,7 +264,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] TST-12. `search` で 0 件ヒットしたときの終了コードと出力テスト
+### [x] TST-12. `search` で 0 件ヒットしたときの終了コードと出力テスト
 
 **関係するユースケース**: `search`
 
