@@ -4,9 +4,20 @@
 
 プロジェクトレビューで識別された問題点をTDD（テスト駆動開発）で改善する計画。
 
+## TDDルール
+
+各改善項目に対して以下の手順を守る：
+
+1. **テストファースト**: 失敗するテストを先に書く
+2. **小さなステップ**: 一度に小さな機能単位で実装
+3. **リファクタリング**: テストが通った後、コードの品質を改善
+4. **継続的統合**: 各ステップ後にテストを実行
+
+---
+
 ## 優先度: 高
 
-### 1. NoteRepositoryの非同期一貫性を改善する
+### [x] 1. NoteRepositoryの非同期一貫性を改善する
 
 **問題**: メソッド名に`Async`が付いているのに同期実装
 
@@ -36,7 +47,7 @@ public IEnumerable<Note> LoadFromFileAsync(string filePath)
 
 ---
 
-### 2. HttpClientのライフサイクル管理を改善する
+### [x] 2. HttpClientのライフサイクル管理を改善する
 
 **問題**: `Program.cs`で`new HttpClient()`を使用しており、ソケット枯渇のリスク
 
@@ -59,7 +70,7 @@ var httpClient = new HttpClient();  // 毎回新しいインスタンス
 
 ## 優先度: 中
 
-### 3. MisskeyApiClientのTODOコメントを整理する
+### [x] 3. MisskeyApiClientのTODOコメントを整理する
 
 **問題**: 実装が不完全なTODOコメントが残っている
 
@@ -84,7 +95,7 @@ var httpClient = new HttpClient();  // 毎回新しいインスタンス
 
 ## 優先度: 低
 
-### 4. キャッシュの有効期限管理を実装する
+### [x] 4. キャッシュの有効期限管理を実装する
 
 **問題**: キャッシュに有効期限チェックがない
 
@@ -108,7 +119,7 @@ if (_cache.ContainsKey(cacheKey))
 
 ---
 
-### 5. エラーハンドリングを改善する
+### [x] 5. エラーハンドリングを改善する
 
 **問題**: `GetNotesFromApiAsync`でHTTPエラー時の詳細なエラーハンドリングが不足
 
@@ -128,7 +139,7 @@ response.EnsureSuccessStatusCode();  // 例外の詳細が失われる
 
 ---
 
-### 6. IMisskeyApiClientインターフェースを拡張する
+### [x] 6. IMisskeyApiClientインターフェースを拡張する
 
 **問題**: インターフェースが`GetNotesAsync`のみ定義
 
@@ -152,7 +163,7 @@ public interface IMisskeyApiClient
 
 ---
 
-### 7. コンソールアプリの非同期呼び出しを改善する
+### [x] 7. コンソールアプリの非同期呼び出しを改善する
 
 **問題**: 非同期メソッドを`.GetAwaiter().GetResult()`で同期的に呼び出し
 
@@ -173,41 +184,13 @@ var result = fetchCommand.ExecuteAsync(days).GetAwaiter().GetResult();
 
 ---
 
-## 実装順序
-
-1. **優先度高**: NoteRepositoryの非同期一貫性
-2. **優先度高**: HttpClientのライフサイクル管理
-3. **優先度中**: TODOコメントの整理
-4. **優先度低**: 残りの項目（順次実施）
-
-## TDDルール
-
-各改善項目に対して以下の手順を守る：
-
-1. **テストファースト**: 失敗するテストを先に書く
-2. **小さなステップ**: 一度に小さな機能単位で実装
-3. **リファクタリング**: テストが通った後、コードの品質を改善
-4. **継続的統合**: 各ステップ後にテストを実行
-
-## 進捗管理
-
-- [x] 1. NoteRepositoryの非同期一貫性を改善する
-- [x] 2. HttpClientのライフサイクル管理を改善する
-- [x] 3. MisskeyApiClientのTODOコメントを整理する
-- [x] 4. キャッシュの有効期限管理を実装する
-- [x] 5. エラーハンドリングを改善する
-- [x] 6. IMisskeyApiClientインターフェースを拡張する
-- [x] 7. コンソールアプリの非同期呼び出しを改善する
-
----
-
 ## コードレビュー指摘事項（2026-06-28）
 
 fetchコマンドへの日付範囲指定機能追加（`--start`/`--end`）のレビューで発見されたバグ。
 
 ### 優先度: 高（バグ）
 
-#### 8. ページネーション早期終了バグ
+#### [ ] 8. ページネーション早期終了バグ
 
 **対象ファイル**: `PastNotes/MisskeyApiClient.cs`（`GetNotesWithPaginationFromApiAsync` 内）
 
@@ -237,7 +220,7 @@ if (oldestNoteOnPage.CreatedAt < startDate)
 
 ---
 
-#### 9. モックの `_callCount` バグによりテストが常に空リストを返す
+#### [ ] 9. モックの `_callCount` バグによりテストが常に空リストを返す
 
 **対象ファイル**: `PastNotes.Tests/MisskeyApiClientTests.cs`（`MockHttpMessageHandler`）
 
@@ -254,7 +237,7 @@ if (oldestNoteOnPage.CreatedAt < startDate)
 
 ### 優先度: 中（バグ）
 
-#### 10. `--days` と `--start/--end` のタイムゾーン処理の不整合
+#### [ ] 10. `--days` と `--start/--end` のタイムゾーン処理の不整合
 
 **対象ファイル**: `PastNotes.Console/Commands/FetchCommand.cs`
 
@@ -266,7 +249,7 @@ UTC 環境（CI や Linux サーバーなど）では同じ期間を指定して
 
 ---
 
-#### 11. `convertedEndDate` への +1 秒が stale なロジック
+#### [ ] 11. `convertedEndDate` への +1 秒が stale なロジック
 
 **対象ファイル**: `PastNotes.Console/Commands/FetchCommand.cs`（約 47 行目）
 
@@ -278,29 +261,18 @@ UTC 環境（CI や Linux サーバーなど）では同じ期間を指定して
 
 ### 優先度: 低
 
-#### 12. テストモックの `.Result` によるデッドロックリスク
+#### [ ] 12. テストモックの `.Result` によるデッドロックリスク
 
 **対象ファイル**: `PastNotes.Tests/MisskeyApiClientTests.cs`（約 36 行目）
 
-**問題**: `request.Content.ReadAsStringAsync().Result` が非同期コンテキスト内でブロッキング待機を行っており、シングルスレッドの同期コンテキストではデッドロードが発生しうる。
+**問題**: `request.Content.ReadAsStringAsync().Result` が非同期コンテキスト内でブロッキング待機を行っており、シングルスレッドの同期コンテキストではデッドロックが発生しうる。
 
 **修正案**: `SendAsync` を `async Task<HttpResponseMessage>` に変更し `await request.Content.ReadAsStringAsync()` を使用する。
 
 ---
 
-#### 13. DEVELOPMENT.md に削除済み `--jst` フラグの使用例が残っている
+#### [ ] 13. DEVELOPMENT.md に削除済み `--jst` フラグの使用例が残っている
 
 **対象ファイル**: `DEVELOPMENT.md`（14 行目付近）
 
 **問題**: `fetch --start 2024-01-01 --end 2024-01-31 --jst` という例が残っているが、`--jst` フラグは削除済み。実行すると `--jst` は無視されて処理は続行されるが、JST 変換が行われると誤解させる。
-
----
-
-### 進捗管理（レビュー指摘分）
-
-- [ ] 8. ページネーション早期終了バグを修正する
-- [ ] 9. MockHttpMessageHandler の `_callCount` バグを修正する
-- [ ] 10. `--days` と `--start/--end` のタイムゾーン処理を統一する
-- [ ] 11. `convertedEndDate` の不要な +1 秒を削除する
-- [ ] 12. テストモックの `.Result` を `await` に変更する
-- [ ] 13. DEVELOPMENT.md の `--jst` 使用例を削除する
