@@ -192,7 +192,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] TST-3. 対象期間内にノートが 0 件の場合の FetchCommand 動作
+### [x] TST-3. 対象期間内にノートが 0 件の場合の FetchCommand 動作
 
 **関係するユースケース**: `fetch --start/--end`
 

@@ -160,6 +160,64 @@ public class FetchCommandTests
             $"startDateはUTC 30日前であるべきだが {capturedStartDate} が渡された");
     }
 
+    // TDD: TST-3 - 0件の場合のFetchCommand動作
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ExecuteAsync_WithDateRange_WhenNoNotesFound_ReturnsZeroAndPrintsMessage()
+    {
+        // Arrange
+        var mockApiClient = new Mock<IMisskeyApiClient>();
+        var repository = new NoteRepository();
+        var command = new FetchCommand(mockApiClient.Object, repository);
+
+        mockApiClient
+            .Setup(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<Note>());
+
+        var startDate = new DateTime(2024, 1, 1);
+        var endDate = new DateTime(2024, 1, 31);
+
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        // Act
+        var result = await command.ExecuteAsync(startDate, endDate);
+
+        System.Console.SetOut(originalOutput);
+
+        // Assert
+        Assert.Equal(0, result);
+        Assert.Contains("No notes found.", stringWriter.ToString());
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ExecuteAsync_WithDays_WhenNoNotesFound_ReturnsZeroAndPrintsMessage()
+    {
+        // Arrange
+        var mockApiClient = new Mock<IMisskeyApiClient>();
+        var repository = new NoteRepository();
+        var command = new FetchCommand(mockApiClient.Object, repository);
+
+        mockApiClient
+            .Setup(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<Note>());
+
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        // Act
+        var result = await command.ExecuteAsync(30);
+
+        System.Console.SetOut(originalOutput);
+
+        // Assert
+        Assert.Equal(0, result);
+        Assert.Contains("No notes found.", stringWriter.ToString());
+    }
+
     [Fact]
     [Trait("Category", "Unit")]
     public async Task ExecuteAsync_WhenStartDateAfterEndDate_ThrowsArgumentException()
