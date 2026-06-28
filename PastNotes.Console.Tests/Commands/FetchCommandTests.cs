@@ -95,6 +95,43 @@ public class FetchCommandTests
             Times.Once);
     }
 
+    // TDD: TST-2 / BUG-9 - --daysパスもUTCを渡すことを検証
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ExecuteAsync_WithDays_ShouldPassUtcTimesToApi()
+    {
+        // Arrange
+        var mockApiClient = new Mock<IMisskeyApiClient>();
+        var repository = new NoteRepository();
+        var command = new FetchCommand(mockApiClient.Object, repository);
+
+        DateTime? capturedStartDate = null;
+        DateTime? capturedEndDate = null;
+
+        var testNotes = new List<Note> { new Note { Id = "1", Text = "Test", CreatedAt = DateTime.UtcNow } };
+        mockApiClient
+            .Setup(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .Callback<DateTime, DateTime>((s, e) => { capturedStartDate = s; capturedEndDate = e; })
+            .ReturnsAsync(testNotes);
+
+        var beforeUtc = DateTime.UtcNow;
+
+        // Act
+        await command.ExecuteAsync(30);
+
+        var afterUtc = DateTime.UtcNow;
+
+        // Assert: APIにはUTC時刻が渡されるべき（DateTime.Nowはタイムゾーン依存で最大±14h ずれる）
+        Assert.NotNull(capturedEndDate);
+        Assert.NotNull(capturedStartDate);
+        Assert.True(
+            capturedEndDate >= beforeUtc.AddMinutes(-1) && capturedEndDate <= afterUtc.AddMinutes(1),
+            $"endDateはUTC nowであるべきだが {capturedEndDate} が渡された（UTC: {beforeUtc}〜{afterUtc}）");
+        Assert.True(
+            capturedStartDate >= beforeUtc.AddDays(-30).AddMinutes(-1) && capturedStartDate <= afterUtc.AddDays(-30).AddMinutes(1),
+            $"startDateはUTC 30日前であるべきだが {capturedStartDate} が渡された");
+    }
+
     [Fact]
     [Trait("Category", "Unit")]
     public async Task ExecuteAsync_WhenStartDateAfterEndDate_ThrowsArgumentException()

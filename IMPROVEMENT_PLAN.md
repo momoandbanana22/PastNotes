@@ -83,7 +83,7 @@
 
 ---
 
-### [ ] BUG-9. `--days` と `--start/--end` のタイムゾーン処理の不整合
+### [x] BUG-9. `--days` と `--start/--end` のタイムゾーン処理の不整合
 
 **対象ファイル**: `PastNotes.Console/Commands/FetchCommand.cs`
 
@@ -184,7 +184,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] TST-2. `--days` と `--start/--end` の変換ロジック比較テスト（→ BUG-9 のテスト）
+### [x] TST-2. `--days` と `--start/--end` の変換ロジック比較テスト（→ BUG-9 のテスト）
 
 **関係するユースケース**: `fetch --days` / `fetch --start/--end`
 

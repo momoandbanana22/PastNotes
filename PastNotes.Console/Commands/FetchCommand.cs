@@ -15,12 +15,15 @@ public class FetchCommand
 
     public async Task<int> ExecuteAsync(int days)
     {
-        var startDate = DateTime.Now.AddDays(-days);
-        var endDate = DateTime.Now;
+        // UTC基準で計算し、表示用にJSTに変換（--start/--endパスと一貫した動作）
+        var utcNow = DateTime.UtcNow;
+        var convertedStartDate = utcNow.AddDays(-days);
+        var convertedEndDate = utcNow;
 
-        System.Console.WriteLine($"Fetching notes from {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}...");
+        var jstNow = utcNow.AddHours(9);
+        System.Console.WriteLine($"Fetching notes from {jstNow.AddDays(-days):yyyy-MM-dd} to {jstNow:yyyy-MM-dd} (JST)...");
 
-        var notes = await _apiClient.GetNotesAsync(startDate, endDate);
+        var notes = await _apiClient.GetNotesAsync(convertedStartDate, convertedEndDate);
         
         if (notes == null || !notes.Any())
         {
