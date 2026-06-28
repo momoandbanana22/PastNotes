@@ -198,3 +198,109 @@ var result = fetchCommand.ExecuteAsync(days).GetAwaiter().GetResult();
 - [x] 5. エラーハンドリングを改善する
 - [x] 6. IMisskeyApiClientインターフェースを拡張する
 - [x] 7. コンソールアプリの非同期呼び出しを改善する
+
+---
+
+## コードレビュー指摘事項（2026-06-28）
+
+fetchコマンドへの日付範囲指定機能追加（`--start`/`--end`）のレビューで発見されたバグ。
+
+### 優先度: 高（バグ）
+
+#### 8. ページネーション早期終了バグ
+
+**対象ファイル**: `PastNotes/MisskeyApiClient.cs`（`GetNotesWithPaginationFromApiAsync` 内）
+
+**問題**: `if (!filteredNotes.Any()) hasMoreNotes = false;` という終了条件が不正。Misskey は新着順にノートを返すため、対象期間より新しいノートしか含まないページで誤って終了してしまう。
+
+**具体的な失敗シナリオ**:
+- ユーザーが 2026 年のノートを持ち、`--start 2024-01-01 --end 2024-01-31` を指定した場合
+- 最初のページが 2026 年のノート 100 件 → `filteredNotes` が空 → ループ終了
+- 2024 年のノートが存在しても 0 件が返される
+
+**正しい終了条件**: 「現在ページの最古ノートが `startDate` より前になった場合に終了」とすべき。
+
+```csharp
+// 現在（バグあり）
+if (!filteredNotes.Any())
+{
+    hasMoreNotes = false;
+}
+
+// 修正案
+var oldestNoteOnPage = notes.Last();
+if (oldestNoteOnPage.CreatedAt < startDate)
+{
+    hasMoreNotes = false;
+}
+```
+
+---
+
+#### 9. モックの `_callCount` バグによりテストが常に空リストを返す
+
+**対象ファイル**: `PastNotes.Tests/MisskeyApiClientTests.cs`（`MockHttpMessageHandler`）
+
+**問題**: 非ページネーションモードで `_callCount > 1` を空配列の返却条件にしているが、`_callCount` は `/api/i`（認証）リクエストでも加算される。そのため `/api/users/notes` への最初のリクエスト到達時には既に `_callCount == 2` となり、常に `[]` が返される。
+
+**具体的な失敗シナリオ**:
+1. `/api/i` リクエスト → `_callCount = 1`
+2. `/api/users/notes` リクエスト → `_callCount = 2` → `if (_callCount > 1)` が true → `[]` 返却
+3. ノート件数を検証するテストが誤った前提で通過してしまう
+
+**修正案**: `/api/users/notes` 呼び出しのみカウントする `_notesCallCount`（既に追加済み）を非ページネーションモードでも使用する。
+
+---
+
+### 優先度: 中（バグ）
+
+#### 10. `--days` と `--start/--end` のタイムゾーン処理の不整合
+
+**対象ファイル**: `PastNotes.Console/Commands/FetchCommand.cs`
+
+**問題**:
+- `ExecuteAsync(int days)` は `DateTime.Now`（マシンローカル時刻）をそのまま API に渡す
+- `ExecuteAsync(DateTime, DateTime)` は入力を JST として扱い 9 時間引いて UTC に変換する
+
+UTC 環境（CI や Linux サーバーなど）では同じ期間を指定しても取得されるノートが異なる。
+
+---
+
+#### 11. `convertedEndDate` への +1 秒が stale なロジック
+
+**対象ファイル**: `PastNotes.Console/Commands/FetchCommand.cs`（約 47 行目）
+
+**問題**: `endDate.AddHours(-9).AddSeconds(1)` の +1 秒は、API の `untilDate` パラメータを inclusive にするための補正だった。しかしそのパラメータは削除済みであり、現在はクライアント側の `note.CreatedAt <= endDate` フィルタに余分な 1 秒が混入している。
+
+ユーザーが `--end "2024-01-31 23:59:59"` と指定した場合、`2024-02-01 00:00:00 JST` 丁度のノートがフィルタを通過してしまう。
+
+---
+
+### 優先度: 低
+
+#### 12. テストモックの `.Result` によるデッドロックリスク
+
+**対象ファイル**: `PastNotes.Tests/MisskeyApiClientTests.cs`（約 36 行目）
+
+**問題**: `request.Content.ReadAsStringAsync().Result` が非同期コンテキスト内でブロッキング待機を行っており、シングルスレッドの同期コンテキストではデッドロードが発生しうる。
+
+**修正案**: `SendAsync` を `async Task<HttpResponseMessage>` に変更し `await request.Content.ReadAsStringAsync()` を使用する。
+
+---
+
+#### 13. DEVELOPMENT.md に削除済み `--jst` フラグの使用例が残っている
+
+**対象ファイル**: `DEVELOPMENT.md`（14 行目付近）
+
+**問題**: `fetch --start 2024-01-01 --end 2024-01-31 --jst` という例が残っているが、`--jst` フラグは削除済み。実行すると `--jst` は無視されて処理は続行されるが、JST 変換が行われると誤解させる。
+
+---
+
+### 進捗管理（レビュー指摘分）
+
+- [ ] 8. ページネーション早期終了バグを修正する
+- [ ] 9. MockHttpMessageHandler の `_callCount` バグを修正する
+- [ ] 10. `--days` と `--start/--end` のタイムゾーン処理を統一する
+- [ ] 11. `convertedEndDate` の不要な +1 秒を削除する
+- [ ] 12. テストモックの `.Result` を `await` に変更する
+- [ ] 13. DEVELOPMENT.md の `--jst` 使用例を削除する

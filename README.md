@@ -64,5 +64,5 @@ $env:MISSKEY_API_TOKEN = "your-api-token"
 
 view-htmlコマンドを使用すると、すべてのノートを1つのHTMLファイルとして生成し、画像をブラウザで表示できます。
 
-詳細なテスト計画は [TEST_PLAN.md](TEST_PLAN.md) を参照してください。
+改善計画・既知の問題は [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) を参照してください。
 開発者向けドキュメントは [DEVELOPMENT.md](DEVELOPMENT.md) を参照してください。
