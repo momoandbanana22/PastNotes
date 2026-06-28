@@ -491,6 +491,33 @@ public class NoteRepositoryTests
         File.Delete(filePath);
     }
 
+    // TDD: TST-4 - DateTimeKindがsave/loadで保持されるか
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task SaveAndLoad_WhenCreatedAtIsUtc_PreservesDateTimeKind()
+    {
+        // Arrange
+        var utcTime = new DateTime(2024, 1, 15, 10, 30, 45, DateTimeKind.Utc);
+        var notes = new List<Note>
+        {
+            new Note { Id = "1", Text = "Test", CreatedAt = utcTime }
+        };
+        var filePath = $"test_datetimekind_{Guid.NewGuid()}.json";
+        var repository = new NoteRepository();
+
+        // Act
+        await repository.SaveToFileAsync(notes, filePath);
+        var loaded = (await repository.LoadFromFileAsync(filePath)).ToList();
+
+        // Assert
+        Assert.Single(loaded);
+        Assert.Equal(DateTimeKind.Utc, loaded[0].CreatedAt.Kind);
+        Assert.Equal(utcTime, loaded[0].CreatedAt);
+
+        // Cleanup
+        if (File.Exists(filePath)) File.Delete(filePath);
+    }
+
     [Fact]
     [Trait("Category", "Unit")]
     public async Task LoadFromFileAsync_WhenCalledWithInvalidFile_ReturnsEmptyListAsync()
