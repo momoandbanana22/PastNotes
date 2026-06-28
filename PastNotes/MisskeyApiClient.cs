@@ -331,8 +331,8 @@ public class MisskeyApiClient : IMisskeyApiClient
                     hasMoreNotes = false;
                 }
                 
-                // 全てのノートが日付範囲外の場合は終了
-                if (!filteredNotes.Any())
+                // ページ最古ノートが startDate より前なら、これ以上遡っても範囲外なので終了
+                if (notes.Last().CreatedAt < startDate)
                 {
                     hasMoreNotes = false;
                 }

@@ -25,6 +25,13 @@ public class MockHttpMessageHandler : HttpMessageHandler
         _simulatePagination = simulate;
     }
 
+    private bool _simulateNewerNotesFirst = false;
+
+    public void SimulateNewerNotesFirst(bool simulate)
+    {
+        _simulateNewerNotesFirst = simulate;
+    }
+
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         RequestsSent++;
@@ -74,9 +81,47 @@ public class MockHttpMessageHandler : HttpMessageHandler
         }
 
         string jsonResponse;
-        
+
+        // 対象期間より新しいノートが先に来るシミュレーション（バグ#8の再現）
+        if (_simulateNewerNotesFirst)
+        {
+            if (_notesCallCount == 1)
+            {
+                // 1ページ目: 対象期間(2024-01)より新しい2026年のノートを100件返す
+                var notes = new List<string>();
+                for (int i = 0; i < 100; i++)
+                {
+                    notes.Add($@"{{
+                        ""id"": ""recent-id-{i}"",
+                        ""text"": ""Recent note {i}"",
+                        ""createdAt"": ""2026-06-28T10:00:00.000Z""
+                    }}");
+                }
+                jsonResponse = "[" + string.Join(",", notes) + "]";
+            }
+            else if (_notesCallCount == 2)
+            {
+                // 2ページ目: 対象期間(2024-01)内のノートを2件返す
+                jsonResponse = @"[
+                    {
+                        ""id"": ""target-id-1"",
+                        ""text"": ""Target note 1"",
+                        ""createdAt"": ""2024-01-15T10:00:00.000Z""
+                    },
+                    {
+                        ""id"": ""target-id-2"",
+                        ""text"": ""Target note 2"",
+                        ""createdAt"": ""2024-01-10T10:00:00.000Z""
+                    }
+                ]";
+            }
+            else
+            {
+                jsonResponse = "[]";
+            }
+        }
         // ページネーションシミュレーション
-        if (_simulatePagination)
+        else if (_simulatePagination)
         {
             // 3回呼び出しをシミュレート（1ページ目100件、2ページ目100件、3ページ目で空）
             if (_notesCallCount == 1)
@@ -674,6 +719,36 @@ public class MisskeyApiClientTests
         // ページネーションが実行されていれば、4回呼び出されるはず（認証1回 + 1ページ目 + 2ページ目 + 3ページ目で空）
         Assert.Equal(4, mockHandler.RequestsSent);
         Assert.Equal(200, notes.Count()); // 2ページ × 100件 = 200件
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesWithPagination_WhenFirstPageHasOnlyNewerNotes_ShouldContinuePaginatingToFindInRangeNotes()
+    {
+        // Arrange
+        var instanceUrl = "https://misskey.io";
+        var apiToken = "valid-token";
+
+        // 1ページ目が対象期間より新しいノートで埋まるシナリオ
+        var mockHandler = new MockHttpMessageHandler();
+        mockHandler.SimulateNewerNotesFirst(true);
+        var httpClient = new HttpClient(mockHandler);
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
+
+        var startDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var endDate = new DateTime(2024, 1, 31, 23, 59, 59, DateTimeKind.Utc);
+
+        // Act
+        var notes = await client.GetNotesAsync(startDate, endDate);
+
+        // Assert
+        // 1ページ目(2026年ノート)はフィルタ対象外、2ページ目(2024-01)の2件が返るべき
+        Assert.Equal(2, notes.Count());
+        Assert.All(notes, note =>
+        {
+            Assert.True(note.CreatedAt >= startDate && note.CreatedAt <= endDate,
+                $"範囲外のノートが含まれています: {note.CreatedAt}");
+        });
     }
 
     [Fact]
