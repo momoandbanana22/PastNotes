@@ -174,6 +174,26 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
+### [ ] BUG-17. `AuthenticateAsync` にテスト用文字列判定が残っている（BUG-14 の残り）
+
+**対象ファイル**: `PastNotes/MisskeyApiClient.cs`（75行目）
+
+**問題**: HttpClient なしコンストラクタを使用した場合の `AuthenticateAsync` で `ApiToken != "invalid-token"` という特定文字列による判定が残っている。BUG-14 で `"invalid-instance"` チェックは削除されたが、同種の問題がこのコンストラクタとダミーデータ返却（lines 223-230）に残存。
+
+**修正案**: HttpClient なしのコンストラクタを削除するか、テスト専用であることをより明示し、本番コードから切り離す。
+
+---
+
+### [ ] BUG-18. `GetNotesWithRetry` が実装されているが使われていない
+
+**対象ファイル**: `PastNotes/MisskeyApiClient.cs`（317行目〜）
+
+**問題**: リトライ機能（指数バックオフ）が実装され、テストも存在するが、`FetchCommand` は `GetNotesAsync` を直接呼んでおり `GetNotesWithRetry` は一切使われていない。ページネーション中のネットワーク障害時（TST-9）にリトライが行われず例外がそのまま伝播する。
+
+**修正案**: `FetchCommand` で `GetNotesWithRetry` を使うか、または使われないなら `GetNotesWithRetry` とそのテストを削除する。
+
+---
+
 ## TST: テスト追加
 
 ### [x] TST-1. 対象期間より古いノートしかない場合のページネーション終了
@@ -277,6 +297,14 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 **関係するユースケース**: `fetch`
 
 **問題**: 既存の `notes.json` がある状態で `fetch` を実行すると無条件に上書きされるが、そのことを確認するテストがない。
+
+---
+
+### [ ] TST-14. `ViewCommand.Execute()`（同期版）の日付フィルタリングテストがない
+
+**関係するユースケース**: `view --start/--end`
+
+**問題**: `ExecuteAsync` の日付フィルタリングはテスト済みだが、同期版 `Execute()` への同等テストがない。`SearchCommand` では同様の欠落が実際のバグ（同期版フィルタリング未適用）として発覚した前例があり、`ViewCommand` も同一リスクを持つ。
 
 ---
 
