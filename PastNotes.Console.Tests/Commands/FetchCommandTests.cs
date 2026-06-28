@@ -234,6 +234,87 @@ public class FetchCommandTests
         await Assert.ThrowsAsync<ArgumentException>(() => command.ExecuteAsync(startDate, endDate));
     }
 
+    // TDD: FEAT-2 - --appendモードで既存ノートにマージ
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ExecuteAsync_WhenAppendMode_MergesWithExistingNotes()
+    {
+        // Arrange
+        var mockApiClient = new Mock<IMisskeyApiClient>();
+        var repository = new NoteRepository();
+        var testFilePath = $"test_append_{Guid.NewGuid()}.json";
+
+        // 既存ファイルを作成（note A）
+        var existingNotes = new List<Note>
+        {
+            new Note { Id = "existing-1", Text = "Existing note", CreatedAt = DateTime.UtcNow.AddDays(-5) }
+        };
+        await repository.SaveToFileAsync(existingNotes, testFilePath);
+
+        // 新規取得ノート（note B）
+        var newNotes = new List<Note>
+        {
+            new Note { Id = "new-1", Text = "New note", CreatedAt = DateTime.UtcNow }
+        };
+        mockApiClient
+            .Setup(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(newNotes);
+
+        var command = new FetchCommand(mockApiClient.Object, repository, testFilePath, append: true);
+
+        // Act
+        await command.ExecuteAsync(30);
+
+        // Assert: 既存1件 + 新規1件 = 2件
+        var loaded = (await repository.LoadFromFileAsync(testFilePath)).ToList();
+        Assert.Equal(2, loaded.Count);
+        Assert.Contains(loaded, n => n.Id == "existing-1");
+        Assert.Contains(loaded, n => n.Id == "new-1");
+
+        // Cleanup
+        if (File.Exists(testFilePath)) File.Delete(testFilePath);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ExecuteAsync_WhenAppendMode_DeduplicatesByNoteId()
+    {
+        // Arrange
+        var mockApiClient = new Mock<IMisskeyApiClient>();
+        var repository = new NoteRepository();
+        var testFilePath = $"test_dedup_{Guid.NewGuid()}.json";
+
+        // 既存ファイル（重複IDを含む）
+        var existingNotes = new List<Note>
+        {
+            new Note { Id = "dup-1", Text = "Old version", CreatedAt = DateTime.UtcNow.AddDays(-5) }
+        };
+        await repository.SaveToFileAsync(existingNotes, testFilePath);
+
+        // 新規取得に同じIDが含まれる
+        var newNotes = new List<Note>
+        {
+            new Note { Id = "dup-1", Text = "New version", CreatedAt = DateTime.UtcNow },
+            new Note { Id = "new-2", Text = "Another note", CreatedAt = DateTime.UtcNow }
+        };
+        mockApiClient
+            .Setup(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(newNotes);
+
+        var command = new FetchCommand(mockApiClient.Object, repository, testFilePath, append: true);
+
+        // Act
+        await command.ExecuteAsync(30);
+
+        // Assert: 重複IDは新しい方のみ残る → 2件
+        var loaded = (await repository.LoadFromFileAsync(testFilePath)).ToList();
+        Assert.Equal(2, loaded.Count);
+        Assert.DoesNotContain(loaded, n => n.Text == "Old version");
+
+        // Cleanup
+        if (File.Exists(testFilePath)) File.Delete(testFilePath);
+    }
+
     // TDD: TST-13 - fetch 2回実行で notes.json が上書きされること
     [Fact]
     [Trait("Category", "Unit")]

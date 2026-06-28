@@ -7,12 +7,14 @@ public class FetchCommand
     private readonly IMisskeyApiClient _apiClient;
     private readonly NoteRepository _repository;
     private readonly string _filePath;
+    private readonly bool _append;
 
-    public FetchCommand(IMisskeyApiClient apiClient, NoteRepository repository, string filePath = "notes.json")
+    public FetchCommand(IMisskeyApiClient apiClient, NoteRepository repository, string filePath = "notes.json", bool append = false)
     {
         _apiClient = apiClient;
         _repository = repository;
         _filePath = filePath;
+        _append = append;
     }
 
     public async Task<int> ExecuteAsync(int days)
@@ -54,8 +56,20 @@ public class FetchCommand
                 return 0;
             }
 
-            await _repository.SaveToFileAsync(notes, _filePath);
-            System.Console.WriteLine($"Saved {notes.Count()} notes to {_filePath}");
+            IEnumerable<Note> toSave = notes;
+            if (_append)
+            {
+                var existing = await _repository.LoadFromFileAsync(_filePath);
+                // 新規ノートを優先して重複IDを排除しマージ
+                var merged = notes.Concat(existing)
+                    .GroupBy(n => n.Id)
+                    .Select(g => g.First())
+                    .ToList();
+                toSave = merged;
+            }
+
+            await _repository.SaveToFileAsync(toSave, _filePath);
+            System.Console.WriteLine($"Saved {toSave.Count()} notes to {_filePath}");
             return 0;
         }
         catch (UnauthorizedException ex)

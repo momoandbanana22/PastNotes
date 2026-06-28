@@ -314,7 +314,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] FEAT-2. `fetch` の追記モード（上書きではなくマージ）
+### [x] FEAT-2. `fetch` の追記モード（上書きではなくマージ）
 
 **問題**: `fetch` を実行するたびに `notes.json` を完全上書きする。異なる期間を複数回 fetch して統合する手段がない。`--append` フラグで既存データにマージする機能があるとよい。
 

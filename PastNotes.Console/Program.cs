@@ -37,7 +37,8 @@ public class Program
 
             var apiClient = new MisskeyApiClient(instanceUrl, apiToken, _sharedHttpClient);
             var repository = new NoteRepository();
-            var fetchCommand = new FetchCommand(apiClient, repository);
+            var append = args.Contains("--append");
+            var fetchCommand = new FetchCommand(apiClient, repository, append: append);
 
             try
             {
