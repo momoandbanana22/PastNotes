@@ -145,7 +145,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] BUG-14. テスト用コードが本番ロジックに混入
+### [x] BUG-14. テスト用コードが本番ロジックに混入
 
 **対象ファイル**: `PastNotes/MisskeyApiClient.cs`（202〜205行目）
 

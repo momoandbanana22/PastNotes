@@ -265,14 +265,18 @@ public class MisskeyApiClientTests
     public async Task GetNotesAsync_WhenApiCallFails_ThrowsApiException()
     {
         // Arrange
-        var instanceUrl = "https://invalid-instance.example.com";
-        var apiToken = "valid-token";
-        var client = new MisskeyApiClient(instanceUrl, apiToken);
+        var mockHandler = new MockHttpMessageHandler();
+        mockHandler.SetErrorResponse(new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError)
+        {
+            Content = new StringContent("Server Error", System.Text.Encoding.UTF8, "application/json")
+        });
+        var httpClient = new HttpClient(mockHandler);
+        var client = new MisskeyApiClient("https://misskey.io", "valid-token", httpClient);
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 31);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<ApiException>(() => client.GetNotesAsync(startDate, endDate));
+        // Act & Assert: 500はServerErrorException（ApiExceptionのサブクラス）
+        await Assert.ThrowsAsync<ServerErrorException>(() => client.GetNotesAsync(startDate, endDate));
     }
 
     [Fact]

@@ -198,12 +198,6 @@ public class MisskeyApiClient : IMisskeyApiClient
             throw new ArgumentException("Start date must be before end date");
         }
 
-        // 無効なインスタンスURLの場合は例外をスロー
-        if (InstanceUrl.Contains("invalid-instance"))
-        {
-            throw new ApiException("Invalid instance URL");
-        }
-
         // キャッシュキーを生成
         var cacheKey = $"notes_{startDate:o}_{endDate:o}";
 
