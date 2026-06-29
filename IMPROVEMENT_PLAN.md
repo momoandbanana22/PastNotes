@@ -269,6 +269,55 @@ BUG-18 の修正で `FetchCommand` が `GetNotesAsync` から `GetNotesWithRetry
 
 ---
 
+### [ ] BUG-25. 新規テストで `Console.SetOut` の復元が `finally` 外（BUG-20 のテスト追加分）
+
+**対象ファイル**: `PastNotes.Console.Tests/Commands/SearchCommandTests.cs`（`Execute_WhenCalledWithUtcDateTime_ConvertsToJst`、`Execute_WhenCalledWithExistingNotes_DisplaysDateTimeWithSeconds`）
+
+**問題**: 両テストとも以下のパターンで `Console.Out` を退避・復元している。
+
+```csharp
+System.Console.SetOut(stringWriter);
+command.Execute("Test");
+var output = stringWriter.ToString();
+System.Console.SetOut(originalOutput);
+```
+
+`command.Execute` が例外を投げた場合、`Console.SetOut(originalOutput)` が実行されず `Console.Out` が `using` で破棄済みの `StringWriter` を指したままになる。`PastNotes.Console.Tests` は `DisableTestParallelization = true` のため並列干渉はないが、同一プロセス内で後続に実行されるテストが `Console.Out` への書き込み時に `ObjectDisposedException` を起こす可能性がある。
+
+**修正案**: `try/finally` で `Console.SetOut(originalOutput)` を保証する（同ファイル内の他のテストも同様のパターンのため棚卸しが必要）。
+
+---
+
+### [ ] BUG-26. `SearchCommand.Execute`/`ExecuteAsync` で検索結果を二重に列挙している
+
+**対象ファイル**: `PastNotes.Console/Commands/SearchCommand.cs`（`Execute()` 約40行目、`ExecuteAsync()` 約69行目）
+
+**問題**: `_repository.SearchByKeyword(notes, keyword)` は遅延評価の `IEnumerable<Note>` を返す。`results.Count()` で1回列挙した後、続く `foreach (var note in results)` で再度列挙しており、検索処理が実質2回走る。BUG-15 で `MisskeyApiClient` 側の同種の問題（多重列挙によるデシリアライズ重複）を修正した際と同じパターン。
+
+**修正案**: `results` を `.ToList()` で確定させてから `Count` プロパティと `foreach` を使う。
+
+---
+
+### [ ] BUG-27. JST⇔UTC変換のオフセットが `TimeZoneHelper` を介さず複数箇所にハードコードされている
+
+**対象ファイル**: `PastNotes.Console/Commands/SearchCommand.cs`（コンストラクタ、17〜18行目）、`PastNotes.Console/Commands/ViewCommand.cs`（コンストラクタ、20〜21行目）、`PastNotes.Console/Commands/FetchCommand.cs`（39〜40行目、BUG-24 参照）
+
+**問題**: `SearchCommand`・`ViewCommand` のコンストラクタはユーザー入力（JST想定）を `AddHours(-9)` で直接 UTC に変換している。表示側では `TimeZoneInfo.ConvertTimeFromUtc` と `TimeZoneHelper.Jst` を使っているにもかかわらず、入力側の変換だけ `TimeZoneHelper` を経由しない別ロジックになっており、同じ「JSTオフセット」の知識が複数箇所に分散している。BUG-24 と根本原因は同じ。
+
+**修正案**: `TimeZoneInfo.ConvertTimeToUtc(value, TimeZoneHelper.Jst)` を使うヘルパーを `TimeZoneHelper` に追加し、`SearchCommand`・`ViewCommand`・`FetchCommand` の入力変換を統一する。
+
+---
+
+### [ ] BUG-28. `GetNotesWithRetryFromApiAsync` の2つの `catch` ブロックが完全に同一処理
+
+**対象ファイル**: `PastNotes/MisskeyApiClient.cs`（328〜339行目）
+
+**問題**: `catch (HttpRequestException) when (...)` と `catch (RateLimitExceededException) when (...)` の本体（`retryCount++`、`await Task.Delay(delay)`、バックオフ計算）が完全に同一。リトライ処理を変更する際に2箇所を同時に直す必要があり、片方だけ修正漏れするリスクがある。
+
+**修正案**: `catch (Exception ex) when ((ex is HttpRequestException || ex is RateLimitExceededException) && retryCount < maxRetries)` のように1つの `catch` に統合する。
+
+---
+
 ## TST: テスト追加
 
 ### [x] TST-1. 対象期間より古いノートしかない場合のページネーション終了
