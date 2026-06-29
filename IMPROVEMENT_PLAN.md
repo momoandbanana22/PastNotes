@@ -304,7 +304,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] TST-14. `ViewCommand.Execute()`（同期版）の日付フィルタリングテストがない
+### [x] TST-14. `ViewCommand.Execute()`（同期版）の日付フィルタリングテストがない
 
 **関係するユースケース**: `view --start/--end`
 
