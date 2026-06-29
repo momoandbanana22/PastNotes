@@ -23,7 +23,7 @@ public class FetchCommand
         var convertedStartDate = utcNow.AddDays(-days);
         var convertedEndDate = utcNow;
 
-        var jstNow = utcNow.AddHours(9);
+        var jstNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, TimeZoneHelper.Jst);
         System.Console.WriteLine($"Fetching notes from {jstNow.AddDays(-days):yyyy-MM-dd} to {jstNow:yyyy-MM-dd} (JST)...");
 
         return await FetchAndSaveAsync(convertedStartDate, convertedEndDate);

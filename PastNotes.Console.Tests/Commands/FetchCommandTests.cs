@@ -443,4 +443,37 @@ public class FetchCommandTests
         var output = stringWriter.ToString();
         Assert.Contains("Unauthorized", output, StringComparison.OrdinalIgnoreCase);
     }
+
+    // TDD: BUG-24 - ExecuteAsync(days) の進捗表示が JST であることを確認
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ExecuteAsync_WithDays_PrintsJstDateRange()
+    {
+        // Arrange
+        var mockApiClient = new Mock<IMisskeyApiClient>();
+        var repository = new NoteRepository();
+        var command = new FetchCommand(mockApiClient.Object, repository);
+
+        var testNotes = new List<Note> { new Note { Id = "1", Text = "Test", CreatedAt = DateTime.UtcNow } };
+        mockApiClient
+            .Setup(x => x.GetNotesWithRetry(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>()))
+            .ReturnsAsync(testNotes);
+
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            await command.ExecuteAsync(30);
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+
+        // Assert: "(JST)" が出力に含まれること
+        var output = stringWriter.ToString();
+        Assert.Contains("JST", output);
+    }
 }

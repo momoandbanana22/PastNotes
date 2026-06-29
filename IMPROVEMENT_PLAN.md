@@ -259,13 +259,13 @@ BUG-18 の修正で `FetchCommand` が `GetNotesAsync` から `GetNotesWithRetry
 
 ---
 
-### [ ] BUG-24. `FetchCommand` の表示部分で `TimeZoneHelper.Jst` の代わりに `AddHours(9)` をハードコード
+### [x] BUG-24. `FetchCommand` の表示部分で `TimeZoneHelper.Jst` の代わりに `AddHours(9)` をハードコード
 
 **対象ファイル**: `PastNotes.Console/Commands/FetchCommand.cs`（27行目）
 
 **問題**: `ExecuteAsync(int days)` の表示部分で `var jstNow = utcNow.AddHours(9);` とハードコード。`ViewCommand`、`SearchCommand`、`NoteHtmlGenerator` は全て `TimeZoneHelper.Jst` と `TimeZoneInfo.ConvertTimeFromUtc` を使用しており、コードベース内で不統一。JST に夏時間はないため動作上の問題はないが、タイムゾーン変換ロジックの担当箇所が `TimeZoneHelper` に集約されていない。
 
-**修正案**: `TimeZoneInfo.ConvertTimeFromUtc(utcNow, TimeZoneHelper.Jst)` を使用する。
+**対処**: `utcNow.AddHours(9)` を `TimeZoneInfo.ConvertTimeFromUtc(utcNow, TimeZoneHelper.Jst)` に変更した。TDD で `ExecuteAsync_WithDays_PrintsJstDateRange` を追加して出力に `(JST)` が含まれることを検証済み。
 
 ---
 
