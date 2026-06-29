@@ -35,9 +35,9 @@ public class SearchCommand
                 _endDate ?? DateTime.MaxValue);
         }
 
-        var results = _repository.SearchByKeyword(notes, keyword);
+        var results = _repository.SearchByKeyword(notes, keyword).ToList();
 
-        System.Console.WriteLine($"Found {results.Count()} notes matching '{keyword}':");
+        System.Console.WriteLine($"Found {results.Count} notes matching '{keyword}':");
         foreach (var note in results)
         {
             var jstTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(note.CreatedAt, DateTimeKind.Utc), TimeZoneHelper.Jst);
@@ -64,9 +64,9 @@ public class SearchCommand
                 _endDate ?? DateTime.MaxValue);
         }
 
-        var results = _repository.SearchByKeyword(notes, keyword);
+        var results = _repository.SearchByKeyword(notes, keyword).ToList();
 
-        System.Console.WriteLine($"Found {results.Count()} notes matching '{keyword}':");
+        System.Console.WriteLine($"Found {results.Count} notes matching '{keyword}':");
         foreach (var note in results)
         {
             var jstTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(note.CreatedAt, DateTimeKind.Utc), TimeZoneHelper.Jst);

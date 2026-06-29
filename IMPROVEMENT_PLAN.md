@@ -288,13 +288,13 @@ System.Console.SetOut(originalOutput);
 
 ---
 
-### [ ] BUG-26. `SearchCommand.Execute`/`ExecuteAsync` で検索結果を二重に列挙している
+### [x] BUG-26. `SearchCommand.Execute`/`ExecuteAsync` で検索結果を二重に列挙している
 
 **対象ファイル**: `PastNotes.Console/Commands/SearchCommand.cs`（`Execute()` 約40行目、`ExecuteAsync()` 約69行目）
 
 **問題**: `_repository.SearchByKeyword(notes, keyword)` は遅延評価の `IEnumerable<Note>` を返す。`results.Count()` で1回列挙した後、続く `foreach (var note in results)` で再度列挙しており、検索処理が実質2回走る。BUG-15 で `MisskeyApiClient` 側の同種の問題（多重列挙によるデシリアライズ重複）を修正した際と同じパターン。
 
-**修正案**: `results` を `.ToList()` で確定させてから `Count` プロパティと `foreach` を使う。
+**対処**: `Execute()`・`ExecuteAsync()` 両方で `SearchByKeyword(...).ToList()` に変更し、`results.Count()`（拡張メソッド）を `results.Count`（プロパティ）に変更。TDD で `Execute_FoundCountMatchesActualOutputLines` を追加して件数と出力行数の一致を検証済み。
 
 ---
 
