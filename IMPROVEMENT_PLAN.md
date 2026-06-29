@@ -269,7 +269,7 @@ BUG-18 の修正で `FetchCommand` が `GetNotesAsync` から `GetNotesWithRetry
 
 ---
 
-### [ ] BUG-25. 新規テストで `Console.SetOut` の復元が `finally` 外（BUG-20 のテスト追加分）
+### [x] BUG-25. 新規テストで `Console.SetOut` の復元が `finally` 外（BUG-20 のテスト追加分）
 
 **対象ファイル**: `PastNotes.Console.Tests/Commands/SearchCommandTests.cs`（`Execute_WhenCalledWithUtcDateTime_ConvertsToJst`、`Execute_WhenCalledWithExistingNotes_DisplaysDateTimeWithSeconds`）
 
@@ -284,7 +284,7 @@ System.Console.SetOut(originalOutput);
 
 `command.Execute` が例外を投げた場合、`Console.SetOut(originalOutput)` が実行されず `Console.Out` が `using` で破棄済みの `StringWriter` を指したままになる。`PastNotes.Console.Tests` は `DisableTestParallelization = true` のため並列干渉はないが、同一プロセス内で後続に実行されるテストが `Console.Out` への書き込み時に `ObjectDisposedException` を起こす可能性がある。
 
-**修正案**: `try/finally` で `Console.SetOut(originalOutput)` を保証する（同ファイル内の他のテストも同様のパターンのため棚卸しが必要）。
+**対処**: `Execute_WhenDateRangeSpecified_ShowsOnlyNotesInRange`・`Execute_WhenCalledWithUtcDateTime_ConvertsToJst`・`Execute_WhenCalledWithExistingNotes_DisplaysDateTimeWithSeconds`・`ExecuteAsync_WhenNotesExistButNoMatch_ReturnsZero` の4テストすべてで `Console.SetOut(originalOutput)` を `finally` ブロックに移動した。
 
 ---
 

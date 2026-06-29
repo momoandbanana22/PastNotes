@@ -88,10 +88,15 @@ public class SearchCommandTests
         using var stringWriter = new StringWriter();
         System.Console.SetOut(stringWriter);
 
-        // Act
-        var result = command.Execute("note");
-
-        System.Console.SetOut(originalOutput);
+        int result;
+        try
+        {
+            result = command.Execute("note");
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
 
         // Assert
         Assert.Equal(0, result);
@@ -142,11 +147,16 @@ public class SearchCommandTests
         using var stringWriter = new StringWriter();
         System.Console.SetOut(stringWriter);
 
-        command.Execute("Test");
+        try
+        {
+            command.Execute("Test");
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
 
         var output = stringWriter.ToString();
-        System.Console.SetOut(originalOutput);
-
         Assert.Contains("19:30:45", output);
         Assert.DoesNotContain("10:30:45", output);
 
@@ -173,11 +183,16 @@ public class SearchCommandTests
         using var stringWriter = new StringWriter();
         System.Console.SetOut(stringWriter);
 
-        command.Execute("Test");
+        try
+        {
+            command.Execute("Test");
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
 
         var output = stringWriter.ToString();
-        System.Console.SetOut(originalOutput);
-
         Assert.Matches(@"\d{2}:\d{2}:\d{2}", output);
 
         if (File.Exists(testFilePath)) File.Delete(testFilePath);
@@ -243,10 +258,15 @@ public class SearchCommandTests
         using var stringWriter = new StringWriter();
         System.Console.SetOut(stringWriter);
 
-        // Act
-        var result = await command.ExecuteAsync("xyznotfound");
-
-        System.Console.SetOut(originalOutput);
+        int result;
+        try
+        {
+            result = await command.ExecuteAsync("xyznotfound");
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
 
         // Assert: ヒット0件 → exit 0（ファイルなしとは異なる）
         Assert.Equal(0, result);
