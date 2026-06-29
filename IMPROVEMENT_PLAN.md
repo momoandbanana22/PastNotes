@@ -461,6 +461,32 @@ git push origin v1.0.0
 
 ---
 
+### [x] BUG-20. `SearchCommand` が UTC を JST に変換せずに表示する
+
+**対象ファイル**: `PastNotes.Console/Commands/SearchCommand.cs`（`Execute()` 約44行目、`ExecuteAsync()` 約66行目）
+
+**問題**:
+- `note.CreatedAt`（UTC）をそのまま `{note.CreatedAt:yyyy-MM-dd HH:mm}` で表示している
+- `ViewCommand` は `TimeZoneInfo.ConvertTimeFromUtc` で JST に変換してから `{jstTime:yyyy-MM-dd HH:mm:ss}` で表示している
+- README の技術仕様「UTCからJSTに変換して表示」と一致していない
+- フォーマットも `HH:mm`（秒なし）と `HH:mm:ss`（秒あり）で一致していない
+
+**修正案**: `ViewCommand` と同様に UTC→JST 変換と `HH:mm:ss` フォーマットを適用する。`Execute()` と `ExecuteAsync()` 両方に修正が必要。
+
+---
+
+### [ ] TST-15. `UnitTest1.cs` のプレースホルダーテストが両テストプロジェクトに残っている
+
+**対象ファイル**:
+- `PastNotes.Tests/UnitTest1.cs`（`true == true` を検証するだけの無意味なテスト）
+- `PastNotes.Console.Tests/UnitTest1.cs`（メソッドが空の無意味なテスト）
+
+**問題**: プロジェクトテンプレートのまま残っており、テストカバレッジのノイズになる。テスト結果の可読性を下げ、将来のコントリビューターに誤解を与える可能性がある。
+
+**修正案**: 両ファイルを削除する（あるいはファイルごと削除する）。
+
+---
+
 ## RETRO: ふりかえり・プロセス上の問題
 
 ### RETRO-1. リリースチェックリスト作成時に「設計品質」「テスト品質」の観点が欠落していた

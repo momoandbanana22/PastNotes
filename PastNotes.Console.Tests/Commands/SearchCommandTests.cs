@@ -120,6 +120,69 @@ public class SearchCommandTests
         Assert.Equal(1, result);
     }
 
+    // TDD: BUG-20 - Execute が UTC を JST に変換して表示するか
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Execute_WhenCalledWithUtcDateTime_ConvertsToJst()
+    {
+        // Arrange
+        var repository = new NoteRepository();
+        var testFilePath = $"test_notes_{Guid.NewGuid()}.json";
+        var command = new SearchCommand(repository, testFilePath);
+
+        // UTC 10:30:45 → JST 19:30:45
+        var utcDateTime = new DateTime(2024, 1, 15, 10, 30, 45, DateTimeKind.Utc);
+        var testNotes = new List<Note>
+        {
+            new Note { Id = "1", Text = "Test note", CreatedAt = utcDateTime }
+        };
+        await repository.SaveToFileAsync(testNotes, testFilePath);
+
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        command.Execute("Test");
+
+        var output = stringWriter.ToString();
+        System.Console.SetOut(originalOutput);
+
+        Assert.Contains("19:30:45", output);
+        Assert.DoesNotContain("10:30:45", output);
+
+        if (File.Exists(testFilePath)) File.Delete(testFilePath);
+    }
+
+    // TDD: BUG-20 - Execute が秒数まで表示するか（HH:mm:ss）
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Execute_WhenCalledWithExistingNotes_DisplaysDateTimeWithSeconds()
+    {
+        // Arrange
+        var repository = new NoteRepository();
+        var testFilePath = $"test_notes_{Guid.NewGuid()}.json";
+        var command = new SearchCommand(repository, testFilePath);
+
+        var testNotes = new List<Note>
+        {
+            new Note { Id = "1", Text = "Test note", CreatedAt = DateTime.UtcNow }
+        };
+        await repository.SaveToFileAsync(testNotes, testFilePath);
+
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        command.Execute("Test");
+
+        var output = stringWriter.ToString();
+        System.Console.SetOut(originalOutput);
+
+        Assert.Matches(@"\d{2}:\d{2}:\d{2}", output);
+
+        if (File.Exists(testFilePath)) File.Delete(testFilePath);
+    }
+
     [Fact]
     [Trait("Category", "Unit")]
     public async Task ExecuteAsync_WhenNotesExistButNoMatch_ReturnsZero()

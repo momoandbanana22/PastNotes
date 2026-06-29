@@ -40,7 +40,8 @@ public class SearchCommand
         System.Console.WriteLine($"Found {results.Count()} notes matching '{keyword}':");
         foreach (var note in results)
         {
-            System.Console.WriteLine($"[{note.CreatedAt:yyyy-MM-dd HH:mm}] {note.Text}");
+            var jstTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(note.CreatedAt, DateTimeKind.Utc), TimeZoneHelper.Jst);
+            System.Console.WriteLine($"[{jstTime:yyyy-MM-dd HH:mm:ss}] {note.Text}");
         }
 
         return 0;
@@ -64,11 +65,12 @@ public class SearchCommand
         }
 
         var results = _repository.SearchByKeyword(notes, keyword);
-        
+
         System.Console.WriteLine($"Found {results.Count()} notes matching '{keyword}':");
         foreach (var note in results)
         {
-            System.Console.WriteLine($"[{note.CreatedAt:yyyy-MM-dd HH:mm}] {note.Text}");
+            var jstTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(note.CreatedAt, DateTimeKind.Utc), TimeZoneHelper.Jst);
+            System.Console.WriteLine($"[{jstTime:yyyy-MM-dd HH:mm:ss}] {note.Text}");
         }
 
         return 0;
