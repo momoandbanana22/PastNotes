@@ -198,6 +198,21 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
+### [ ] BUG-19. `GetNotesAsync` 他でテスト用ダミーデータを返すパスが残存（BUG-14/BUG-17 の残り）
+
+**対象ファイル**: `PastNotes/MisskeyApiClient.cs`（222〜230行目、276行目、325行目）
+
+**問題**: HttpClient なしで生成した場合に以下3メソッドがテスト専用ダミーデータを返すか、それに依存する:
+- `GetNotesAsync`: ハードコードされたダミーノート2件を返す
+- `GetNotesWithPagination`: `GetNotesAsync` にフォールスルーし間接的にダミーデータを返す
+- `GetNotesWithRetry`: 同上
+
+本番コードに「HttpClient なし = ダミーデータ」という特殊ケースが存在するべきでない。BUG-14 で `invalid-instance`、BUG-17 で `invalid-token` と同種の問題を修正したが、このパスは見落としていた（RETRO-1 の原因のひとつ）。
+
+**修正案**: 3メソッドの HttpClient なしパスでダミーデータを返す代わりに `InvalidOperationException` をスローする。依存しているテスト `GetNotesAsync_WhenCalledWithValidDateRange_ReturnsNotesWithinRange` はモック HttpClient を使うよう書き直す。
+
+---
+
 ## TST: テスト追加
 
 ### [x] TST-1. 対象期間より古いノートしかない場合のページネーション終了
