@@ -475,7 +475,7 @@ git push origin v1.0.0
 
 ---
 
-### [ ] TST-15. `UnitTest1.cs` のプレースホルダーテストが両テストプロジェクトに残っている
+### [x] TST-15. `UnitTest1.cs` のプレースホルダーテストが両テストプロジェクトに残っている
 
 **対象ファイル**:
 - `PastNotes.Tests/UnitTest1.cs`（`true == true` を検証するだけの無意味なテスト）
