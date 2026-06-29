@@ -184,13 +184,17 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] BUG-18. `GetNotesWithRetry` が実装されているが使われていない
+### [x] BUG-18. `GetNotesWithRetry` が実装されているが使われていない
 
 **対象ファイル**: `PastNotes/MisskeyApiClient.cs`（317行目〜）
 
 **問題**: リトライ機能（指数バックオフ）が実装され、テストも存在するが、`FetchCommand` は `GetNotesAsync` を直接呼んでおり `GetNotesWithRetry` は一切使われていない。ページネーション中のネットワーク障害時（TST-9）にリトライが行われず例外がそのまま伝播する。
 
-**修正案**: `FetchCommand` で `GetNotesWithRetry` を使うか、または使われないなら `GetNotesWithRetry` とそのテストを削除する。
+**修正案（選択肢）**:
+- A: `FetchCommand` で `GetNotesWithRetry` を使う（リトライ機能を有効にする）
+- B: `GetNotesWithRetry` とそのテストを削除する（死にコードを消す）
+
+**対処（A を採用）**: リトライ機能が必要なため A を選択。`FetchCommand.FetchAndSaveAsync` で `GetNotesAsync` の代わりに `GetNotesWithRetry(maxRetries: 3)` を呼ぶよう変更。ネットワーク障害時・レート制限時に指数バックオフで最大3回リトライされる。`FetchCommandTests` の全モック設定も `GetNotesWithRetry` に更新。
 
 ---
 

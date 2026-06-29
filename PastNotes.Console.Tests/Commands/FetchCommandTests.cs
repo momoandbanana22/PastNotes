@@ -20,7 +20,7 @@ public class FetchCommandTests
             new Note { Id = "1", Text = "Test note", CreatedAt = DateTime.Now }
         };
         
-        mockApiClient.Setup(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+        mockApiClient.Setup(x => x.GetNotesWithRetry(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>()))
                    .ReturnsAsync(testNotes);
 
         // Act
@@ -47,7 +47,7 @@ public class FetchCommandTests
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 31);
         
-        mockApiClient.Setup(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+        mockApiClient.Setup(x => x.GetNotesWithRetry(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>()))
                    .ReturnsAsync(testNotes);
 
         // Act
@@ -56,9 +56,10 @@ public class FetchCommandTests
         // Assert
         Assert.Equal(0, result);
         // Verify that dates were converted from JST to UTC
-        mockApiClient.Verify(x => x.GetNotesAsync(
+        mockApiClient.Verify(x => x.GetNotesWithRetry(
             It.Is<DateTime>(d => d == startDate.AddHours(-9)),
-            It.Is<DateTime>(d => d == endDate.AddHours(-9))),
+            It.Is<DateTime>(d => d == endDate.AddHours(-9)),
+            It.IsAny<int>()),
             Times.Once);
     }
 
@@ -80,7 +81,7 @@ public class FetchCommandTests
         var jstStartDate = new DateTime(2024, 1, 1, 0, 0, 0);
         var jstEndDate = new DateTime(2024, 1, 31, 23, 59, 59);
         
-        mockApiClient.Setup(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+        mockApiClient.Setup(x => x.GetNotesWithRetry(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>()))
                    .ReturnsAsync(testNotes);
 
         // Act
@@ -89,9 +90,10 @@ public class FetchCommandTests
         // Assert
         Assert.Equal(0, result);
         // Verify that the dates were converted from JST to UTC by default
-        mockApiClient.Verify(x => x.GetNotesAsync(
+        mockApiClient.Verify(x => x.GetNotesWithRetry(
             It.Is<DateTime>(d => d == jstStartDate.AddHours(-9)),
-            It.Is<DateTime>(d => d == jstEndDate.AddHours(-9))),
+            It.Is<DateTime>(d => d == jstEndDate.AddHours(-9)),
+            It.IsAny<int>()),
             Times.Once);
     }
 
@@ -107,7 +109,7 @@ public class FetchCommandTests
 
         var testNotes = new List<Note> { new Note { Id = "1", Text = "Test", CreatedAt = DateTime.UtcNow } };
         mockApiClient
-            .Setup(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .Setup(x => x.GetNotesWithRetry(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>()))
             .ReturnsAsync(testNotes);
 
         var jstStartDate = new DateTime(2024, 1, 1, 0, 0, 0);
@@ -117,10 +119,39 @@ public class FetchCommandTests
         await command.ExecuteAsync(jstStartDate, jstEndDate);
 
         // Assert: endDateはJST→UTC変換のみ（+1秒不要・削除済みAPIパラメータの残骸）
-        mockApiClient.Verify(x => x.GetNotesAsync(
+        mockApiClient.Verify(x => x.GetNotesWithRetry(
             It.Is<DateTime>(d => d == jstStartDate.AddHours(-9)),
-            It.Is<DateTime>(d => d == jstEndDate.AddHours(-9))),
+            It.Is<DateTime>(d => d == jstEndDate.AddHours(-9)),
+            It.IsAny<int>()),
             Times.Once);
+    }
+
+    // TDD: BUG-18 - FetchCommand が GetNotesWithRetry を使っていることを検証
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ExecuteAsync_WhenCalled_UsesGetNotesWithRetryForFetching()
+    {
+        // Arrange
+        var mockApiClient = new Mock<IMisskeyApiClient>();
+        var repository = new NoteRepository();
+        var command = new FetchCommand(mockApiClient.Object, repository);
+
+        var testNotes = new List<Note>
+        {
+            new Note { Id = "1", Text = "Test note", CreatedAt = DateTime.UtcNow }
+        };
+
+        mockApiClient
+            .Setup(x => x.GetNotesWithRetry(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>()))
+            .ReturnsAsync(testNotes);
+
+        // Act
+        var result = await command.ExecuteAsync(30);
+
+        // Assert
+        Assert.Equal(0, result);
+        mockApiClient.Verify(x => x.GetNotesWithRetry(
+            It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>()), Times.Once);
     }
 
     // TDD: TST-2 / BUG-9 - --daysパスもUTCを渡すことを検証
@@ -138,8 +169,8 @@ public class FetchCommandTests
 
         var testNotes = new List<Note> { new Note { Id = "1", Text = "Test", CreatedAt = DateTime.UtcNow } };
         mockApiClient
-            .Setup(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
-            .Callback<DateTime, DateTime>((s, e) => { capturedStartDate = s; capturedEndDate = e; })
+            .Setup(x => x.GetNotesWithRetry(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>()))
+            .Callback<DateTime, DateTime, int>((s, e, r) => { capturedStartDate = s; capturedEndDate = e; })
             .ReturnsAsync(testNotes);
 
         var beforeUtc = DateTime.UtcNow;
@@ -171,7 +202,7 @@ public class FetchCommandTests
         var command = new FetchCommand(mockApiClient.Object, repository);
 
         mockApiClient
-            .Setup(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .Setup(x => x.GetNotesWithRetry(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>()))
             .ReturnsAsync(new List<Note>());
 
         var startDate = new DateTime(2024, 1, 1);
@@ -201,7 +232,7 @@ public class FetchCommandTests
         var command = new FetchCommand(mockApiClient.Object, repository);
 
         mockApiClient
-            .Setup(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .Setup(x => x.GetNotesWithRetry(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>()))
             .ReturnsAsync(new List<Note>());
 
         var originalOutput = System.Console.Out;
@@ -257,7 +288,7 @@ public class FetchCommandTests
             new Note { Id = "new-1", Text = "New note", CreatedAt = DateTime.UtcNow }
         };
         mockApiClient
-            .Setup(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .Setup(x => x.GetNotesWithRetry(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>()))
             .ReturnsAsync(newNotes);
 
         var command = new FetchCommand(mockApiClient.Object, repository, testFilePath, append: true);
@@ -298,7 +329,7 @@ public class FetchCommandTests
             new Note { Id = "new-2", Text = "Another note", CreatedAt = DateTime.UtcNow }
         };
         mockApiClient
-            .Setup(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .Setup(x => x.GetNotesWithRetry(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>()))
             .ReturnsAsync(newNotes);
 
         var command = new FetchCommand(mockApiClient.Object, repository, testFilePath, append: true);
@@ -336,7 +367,7 @@ public class FetchCommandTests
         };
 
         mockApiClient
-            .SetupSequence(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .SetupSequence(x => x.GetNotesWithRetry(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>()))
             .ReturnsAsync(firstNotes)
             .ReturnsAsync(secondNotes);
 
@@ -367,8 +398,8 @@ public class FetchCommandTests
         DateTime? capturedEnd = null;
 
         mockApiClient
-            .Setup(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
-            .Callback<DateTime, DateTime>((s, e) => { capturedStart = s; capturedEnd = e; })
+            .Setup(x => x.GetNotesWithRetry(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>()))
+            .Callback<DateTime, DateTime, int>((s, e, r) => { capturedStart = s; capturedEnd = e; })
             .ReturnsAsync(new List<Note>());
 
         // JST 2024-01-01 00:00:00 = UTC 2023-12-31 15:00:00（日付またぎ）
@@ -395,7 +426,7 @@ public class FetchCommandTests
         var command = new FetchCommand(mockApiClient.Object, repository);
 
         mockApiClient
-            .Setup(x => x.GetNotesAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .Setup(x => x.GetNotesWithRetry(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>()))
             .ThrowsAsync(new UnauthorizedException("Unauthorized access"));
 
         var originalError = System.Console.Error;
