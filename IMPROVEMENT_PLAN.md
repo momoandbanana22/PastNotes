@@ -227,7 +227,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] BUG-21. `PastNotes.csproj` が `OutputType=Exe` のままでライブラリとして不適切
+### [x] BUG-21. `PastNotes.csproj` が `OutputType=Exe` のままでライブラリとして不適切
 
 **対象ファイル**: `PastNotes/PastNotes.csproj`（4行目）、`PastNotes/Program.cs`
 
