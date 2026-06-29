@@ -46,6 +46,20 @@ public class MockHttpMessageHandler : HttpMessageHandler
         _simulateNetworkFailureOnSecondPage = simulate;
     }
 
+    private bool _simulateNetworkFailureOnFirstNotesCall = false;
+
+    public void SimulateNetworkFailureOnFirstNotesCall(bool simulate)
+    {
+        _simulateNetworkFailureOnFirstNotesCall = simulate;
+    }
+
+    private bool _simulateNetworkFailureAlways = false;
+
+    public void SimulateNetworkFailureAlways(bool simulate)
+    {
+        _simulateNetworkFailureAlways = simulate;
+    }
+
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         RequestsSent++;
@@ -95,6 +109,18 @@ public class MockHttpMessageHandler : HttpMessageHandler
             if (_simulateNetworkFailureOnSecondPage && _notesCallCount >= 2)
             {
                 throw new HttpRequestException("Network failure during pagination");
+            }
+
+            // 1回目のノート取得でネットワーク断をシミュレート（BUG-28テスト用）
+            if (_simulateNetworkFailureOnFirstNotesCall && _notesCallCount == 1)
+            {
+                throw new HttpRequestException("Simulated network failure");
+            }
+
+            // 毎回ネットワーク断をシミュレート（BUG-28テスト用）
+            if (_simulateNetworkFailureAlways)
+            {
+                throw new HttpRequestException("Simulated network failure");
             }
         }
 
@@ -941,6 +967,46 @@ public class MisskeyApiClientTests
         var endDate = new DateTime(2024, 1, 31);
 
         // Act & Assert: リトライを使い果たした後は元の例外ではなく "Max retries exceeded" を投げるべき
+        var ex = await Assert.ThrowsAsync<RateLimitExceededException>(
+            () => client.GetNotesWithRetry(startDate, endDate, maxRetries: 1));
+        Assert.Equal("Max retries exceeded", ex.Message);
+    }
+
+    // TDD: BUG-28 - HttpRequestException 発生時もリトライして成功するか
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesWithRetry_WhenHttpRequestExceptionThenSucceeds_RetriesAndReturnsNotes()
+    {
+        // Arrange: 1回目の /api/users/notes は HttpRequestException、2回目は成功
+        var mockHandler = new MockHttpMessageHandler();
+        mockHandler.SimulateNetworkFailureOnFirstNotesCall(true);
+        var httpClient = new HttpClient(mockHandler);
+        var client = new MisskeyApiClient("https://misskey.io", "valid-token", httpClient);
+        var startDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var endDate = new DateTime(2024, 1, 31, 23, 59, 59, DateTimeKind.Utc);
+
+        // Act: maxRetries=3 なので1回失敗してもリトライして完了するはず
+        var notes = await client.GetNotesWithRetry(startDate, endDate, maxRetries: 3);
+
+        // Assert: 例外を投げずに完了し、リトライのためリクエスト数は 認証+失敗+リトライ = 3 以上
+        Assert.NotNull(notes);
+        Assert.True(mockHandler.RequestsSent >= 3);
+    }
+
+    // TDD: BUG-28 - HttpRequestException でリトライ上限到達時に "Max retries exceeded" を投げるか
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesWithRetry_WhenHttpRequestExceptionExhaustsMaxRetries_ThrowsMaxRetriesExceededMessage()
+    {
+        // Arrange: 常に HttpRequestException を投げるモックで全リトライを使い果たさせる
+        var mockHandler = new MockHttpMessageHandler();
+        mockHandler.SimulateNetworkFailureAlways(true);
+        var httpClient = new HttpClient(mockHandler);
+        var client = new MisskeyApiClient("https://misskey.io", "valid-token", httpClient);
+        var startDate = new DateTime(2024, 1, 1);
+        var endDate = new DateTime(2024, 1, 31);
+
+        // Act & Assert: リトライ上限後は "Max retries exceeded" を投げるべき
         var ex = await Assert.ThrowsAsync<RateLimitExceededException>(
             () => client.GetNotesWithRetry(startDate, endDate, maxRetries: 1));
         Assert.Equal("Max retries exceeded", ex.Message);

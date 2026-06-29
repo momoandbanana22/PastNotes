@@ -325,25 +325,18 @@ public class MisskeyApiClient : IMisskeyApiClient
             {
                 return await GetNotesWithPaginationFromApiAsync(startDate, endDate);
             }
-            catch (HttpRequestException) when (retryCount < maxRetries)
+            catch (Exception ex) when (ex is HttpRequestException || ex is RateLimitExceededException)
             {
-                retryCount++;
-                await Task.Delay(delay);
-                delay = TimeSpan.FromSeconds(delay.TotalSeconds * 2); // 指数バックオフ
-            }
-            catch (RateLimitExceededException) when (retryCount < maxRetries)
-            {
-                retryCount++;
-                await Task.Delay(delay);
-                delay = TimeSpan.FromSeconds(delay.TotalSeconds * 2); // 指数バックオフ
-            }
-            catch (HttpRequestException)
-            {
-                throw new RateLimitExceededException("Max retries exceeded");
-            }
-            catch (RateLimitExceededException)
-            {
-                throw new RateLimitExceededException("Max retries exceeded");
+                if (retryCount < maxRetries)
+                {
+                    retryCount++;
+                    await Task.Delay(delay);
+                    delay = TimeSpan.FromSeconds(delay.TotalSeconds * 2); // 指数バックオフ
+                }
+                else
+                {
+                    throw new RateLimitExceededException("Max retries exceeded");
+                }
             }
         }
     }

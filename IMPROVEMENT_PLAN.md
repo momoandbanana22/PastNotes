@@ -308,13 +308,13 @@ System.Console.SetOut(originalOutput);
 
 ---
 
-### [ ] BUG-28. `GetNotesWithRetryFromApiAsync` の2つの `catch` ブロックが完全に同一処理
+### [x] BUG-28. `GetNotesWithRetryFromApiAsync` の2つの `catch` ブロックが完全に同一処理
 
 **対象ファイル**: `PastNotes/MisskeyApiClient.cs`（328〜339行目）
 
 **問題**: `catch (HttpRequestException) when (...)` と `catch (RateLimitExceededException) when (...)` の本体（`retryCount++`、`await Task.Delay(delay)`、バックオフ計算）が完全に同一。リトライ処理を変更する際に2箇所を同時に直す必要があり、片方だけ修正漏れするリスクがある。
 
-**修正案**: `catch (Exception ex) when ((ex is HttpRequestException || ex is RateLimitExceededException) && retryCount < maxRetries)` のように1つの `catch` に統合する。
+**対処**: 4つの `catch` ブロックを `catch (Exception ex) when (ex is HttpRequestException || ex is RateLimitExceededException)` の1つに統合し、ブロック内の `if/else` でリトライか `MaxRetriesExceeded` スローかを分岐するよう変更。TDD で `GetNotesWithRetry_WhenHttpRequestExceptionThenSucceeds_RetriesAndReturnsNotes` および `GetNotesWithRetry_WhenHttpRequestExceptionExhaustsMaxRetries_ThrowsMaxRetriesExceededMessage` を追加して `HttpRequestException` パスを検証済み。
 
 ---
 
