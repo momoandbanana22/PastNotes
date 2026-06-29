@@ -213,21 +213,12 @@ public class MisskeyApiClient : IMisskeyApiClient
             _cache.Remove(cacheKey);
         }
 
-        // HttpClientが提供されている場合は実際のAPI呼び出しを実行
-        IEnumerable<Note> notes;
-        if (_httpClient != null)
+        if (_httpClient == null)
         {
-            notes = await GetNotesWithPaginationFromApiAsync(startDate, endDate);
+            throw new InvalidOperationException("HttpClient is required to call the Misskey API");
         }
-        else
-        {
-            // HttpClientが提供されていない場合は簡易的な実装としてダミーデータを返す
-            notes = new List<Note>
-            {
-                new Note { CreatedAt = new DateTime(2024, 1, 15), Id = "1", Text = "Test note 1" },
-                new Note { CreatedAt = new DateTime(2024, 1, 20), Id = "2", Text = "Test note 2" }
-            }.Where(note => note.CreatedAt >= startDate && note.CreatedAt <= endDate);
-        }
+
+        var notes = await GetNotesWithPaginationFromApiAsync(startDate, endDate);
 
         // キャッシュに保存（タイムスタンプ付き）
         _cache[cacheKey] = (notes, DateTime.Now);
@@ -267,13 +258,12 @@ public class MisskeyApiClient : IMisskeyApiClient
 
     public async Task<IEnumerable<Note>> GetNotesWithPagination(DateTime startDate, DateTime endDate)
     {
-        if (_httpClient != null)
+        if (_httpClient == null)
         {
-            return await GetNotesWithPaginationFromApiAsync(startDate, endDate);
+            throw new InvalidOperationException("HttpClient is required to call the Misskey API");
         }
 
-        // HttpClientが提供されていない場合は簡易的な実装として既存のGetNotesAsyncを使用
-        return await GetNotesAsync(startDate, endDate);
+        return await GetNotesWithPaginationFromApiAsync(startDate, endDate);
     }
 
     private async Task<IEnumerable<Note>> GetNotesWithPaginationFromApiAsync(DateTime startDate, DateTime endDate)
@@ -316,13 +306,12 @@ public class MisskeyApiClient : IMisskeyApiClient
 
     public async Task<IEnumerable<Note>> GetNotesWithRetry(DateTime startDate, DateTime endDate, int maxRetries)
     {
-        if (_httpClient != null)
+        if (_httpClient == null)
         {
-            return await GetNotesWithRetryFromApiAsync(startDate, endDate, maxRetries);
+            throw new InvalidOperationException("HttpClient is required to call the Misskey API");
         }
 
-        // HttpClientが提供されていない場合は簡易的な実装として既存のGetNotesAsyncを使用
-        return await GetNotesAsync(startDate, endDate);
+        return await GetNotesWithRetryFromApiAsync(startDate, endDate, maxRetries);
     }
 
     private async Task<IEnumerable<Note>> GetNotesWithRetryFromApiAsync(DateTime startDate, DateTime endDate, int maxRetries)

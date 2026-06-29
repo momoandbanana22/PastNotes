@@ -198,7 +198,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] BUG-19. `GetNotesAsync` 他でテスト用ダミーデータを返すパスが残存（BUG-14/BUG-17 の残り）
+### [x] BUG-19. `GetNotesAsync` 他でテスト用ダミーデータを返すパスが残存（BUG-14/BUG-17 の残り）
 
 **対象ファイル**: `PastNotes/MisskeyApiClient.cs`（222〜230行目、276行目、325行目）
 

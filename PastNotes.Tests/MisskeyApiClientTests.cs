@@ -295,25 +295,18 @@ public class MisskeyApiClientTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task GetNotesAsync_WhenCalledWithValidDateRange_ReturnsNotesWithinRange()
+    public async Task GetNotesAsync_WhenCalledWithoutHttpClient_ThrowsInvalidOperationException()
     {
+        // HttpClient なしで API メソッドを呼ぶことは設計上できないはず。
+        // ダミーデータを返す特殊ケースは本番コードに存在すべきでない（BUG-19）。
         // Arrange
-        var instanceUrl = "https://misskey.io";
-        var apiToken = "valid-token";
-        var client = new MisskeyApiClient(instanceUrl, apiToken);
+        var client = new MisskeyApiClient("https://misskey.io", "valid-token");
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 31);
 
-        // Act
-        var notes = await client.GetNotesAsync(startDate, endDate);
-
-        // Assert
-        Assert.NotNull(notes);
-        Assert.All(notes, note => 
-        {
-            Assert.True(note.CreatedAt >= startDate);
-            Assert.True(note.CreatedAt <= endDate);
-        });
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => client.GetNotesAsync(startDate, endDate));
     }
 
     [Fact]
