@@ -904,6 +904,26 @@ public class MisskeyApiClientTests
             () => client.GetNotesAsync(startDate, endDate));
     }
 
+    // TDD: BUG-22 - GetNotesWithRetry がページネーションで全件取得するか
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesWithRetry_WhenApiReturnsMultiplePages_ShouldFetchAllNotes()
+    {
+        // Arrange
+        var mockHandler = new MockHttpMessageHandler();
+        mockHandler.SimulatePagination(true); // 1ページ目100件、2ページ目100件、3ページ目空
+        var httpClient = new HttpClient(mockHandler);
+        var client = new MisskeyApiClient("https://misskey.io", "valid-token", httpClient);
+        var startDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var endDate   = new DateTime(2024, 1, 31, 23, 59, 59, DateTimeKind.Utc);
+
+        // Act
+        var notes = await client.GetNotesWithRetry(startDate, endDate, maxRetries: 3);
+
+        // Assert: ページネーションが動くなら 2ページ × 100件 = 200件
+        Assert.Equal(200, notes.Count());
+    }
+
     // TDD: BUG-8 - _callCountバグ
     [Fact]
     [Trait("Category", "Unit")]

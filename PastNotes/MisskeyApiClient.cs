@@ -323,7 +323,7 @@ public class MisskeyApiClient : IMisskeyApiClient
         {
             try
             {
-                return await GetNotesFromApiAsync(startDate, endDate);
+                return await GetNotesWithPaginationFromApiAsync(startDate, endDate);
             }
             catch (HttpRequestException) when (retryCount < maxRetries)
             {

@@ -237,7 +237,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] BUG-22. `GetNotesWithRetry` が1ページ（最大100件）しか取得しない（BUG-18 の退行）
+### [x] BUG-22. `GetNotesWithRetry` が1ページ（最大100件）しか取得しない（BUG-18 の退行）
 
 **対象ファイル**: `PastNotes/MisskeyApiClient.cs`（`GetNotesWithRetryFromApiAsync` メソッド）
 
