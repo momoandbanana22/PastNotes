@@ -174,7 +174,7 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
-### [ ] BUG-17. `AuthenticateAsync` にテスト用文字列判定が残っている（BUG-14 の残り）
+### [x] BUG-17. `AuthenticateAsync` にテスト用文字列判定が残っている（BUG-14 の残り）
 
 **対象ファイル**: `PastNotes/MisskeyApiClient.cs`（75行目）
 

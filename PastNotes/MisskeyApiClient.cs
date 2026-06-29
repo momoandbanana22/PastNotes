@@ -71,8 +71,8 @@ public class MisskeyApiClient : IMisskeyApiClient
             return await AuthenticateWithApiAsync();
         }
 
-        // HttpClientが提供されていない場合は簡易的な実装としてトークンの有無で判定
-        return !string.IsNullOrEmpty(ApiToken) && ApiToken != "invalid-token";
+        // HttpClientが提供されていない場合はトークンの有無のみで判定（コンストラクタ検証済み）
+        return !string.IsNullOrEmpty(ApiToken);
     }
 
     private async Task<bool> AuthenticateWithApiAsync()

@@ -279,18 +279,18 @@ public class MisskeyApiClientTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task AuthenticateAsync_WhenCalledWithInvalidToken_ReturnsFailure()
+    public async Task AuthenticateAsync_WhenTokenNameHappensToBeInvalidToken_IsNotSpecialCased()
     {
+        // "invalid-token" は本番コードで特別扱いされるべきでない。
+        // 任意の非空文字列トークンで HttpClient なし認証は同じ結果（true）を返すべき。
         // Arrange
-        var instanceUrl = "https://misskey.io";
-        var apiToken = "invalid-token";
-        var client = new MisskeyApiClient(instanceUrl, apiToken);
+        var client = new MisskeyApiClient("https://misskey.io", "invalid-token");
 
         // Act
         var result = await client.AuthenticateAsync();
 
         // Assert
-        Assert.False(result);
+        Assert.True(result);
     }
 
     [Fact]
