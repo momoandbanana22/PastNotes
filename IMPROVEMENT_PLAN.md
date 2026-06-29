@@ -444,13 +444,13 @@ System.Console.SetOut(originalOutput);
 
 ---
 
-### [ ] TST-16. `PastNotes.Tests` に `DisableTestParallelization` がない（TST-15 の作業漏れ）
+### [x] TST-16. `PastNotes.Tests` に `DisableTestParallelization` がない（TST-15 の作業漏れ）
 
 **対象ファイル**: `PastNotes.Tests/`（AssemblyConfig.cs が存在しない）
 
 **問題**: TST-15 の修正で `PastNotes.Console.Tests/UnitTest1.cs` 削除時に `AssemblyConfig.cs` を作成して `DisableTestParallelization` を保持したが、`PastNotes.Tests/UnitTest1.cs` 削除時には同様の対応を行わなかった。`MisskeyApiClient.GetNotesWithPaginationFromApiAsync` は `System.Console.WriteLine` でプログレスを出力する（グローバル状態への書き込み）。`GetNotesAsync_WhenPaginating_PrintsProgressMessages` はこの出力を `Console.SetOut(stringWriter)` で捕捉して検証しており、並列実行時に他のテストのプログレスメッセージが意図しない StringWriter に混入する可能性がある。
 
-**修正案**: `PastNotes.Tests/AssemblyConfig.cs` を作成して `[assembly: Xunit.CollectionBehavior(DisableTestParallelization = true)]` を追加する。
+**対処**: `PastNotes.Tests/AssemblyConfig.cs` を作成し `[assembly: Xunit.CollectionBehavior(DisableTestParallelization = true)]` を追加した。`PastNotes.Console.Tests/AssemblyConfig.cs` と同一フォーマット。
 
 ---
 
