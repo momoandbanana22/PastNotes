@@ -237,6 +237,18 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
+### [ ] BUG-22. `GetNotesWithRetry` が1ページ（最大100件）しか取得しない（BUG-18 の退行）
+
+**対象ファイル**: `PastNotes/MisskeyApiClient.cs`（`GetNotesWithRetryFromApiAsync` メソッド）
+
+**問題**: `GetNotesWithRetryFromApiAsync` は内部で `GetNotesFromApiAsync`（1ページ取得）を呼んでいる。`GetNotesWithPaginationFromApiAsync`（全ページ取得）を呼んでいないため、`GetNotesWithRetry` で取得できるノートが最大100件に制限される。
+
+BUG-18 の修正で `FetchCommand` が `GetNotesAsync` から `GetNotesWithRetry` に切り替わった結果、`fetch` コマンドが最大100件しか取得できないという退行が発生した。`GetNotesAsync` と `GetNotesWithPagination` は正しく `GetNotesWithPaginationFromApiAsync` を呼んでいるが、`GetNotesWithRetry` だけが呼んでいない。
+
+**修正案**: `GetNotesWithRetryFromApiAsync` 内の `GetNotesFromApiAsync` を `GetNotesWithPaginationFromApiAsync` に変更する。リトライのロジック（指数バックオフ）は変更しない。
+
+---
+
 ## TST: テスト追加
 
 ### [x] TST-1. 対象期間より古いノートしかない場合のページネーション終了
