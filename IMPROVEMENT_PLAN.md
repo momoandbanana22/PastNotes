@@ -213,6 +213,30 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 
 ---
 
+### [x] BUG-20. `SearchCommand` が UTC を JST に変換せずに表示する
+
+**対象ファイル**: `PastNotes.Console/Commands/SearchCommand.cs`（`Execute()` 約44行目、`ExecuteAsync()` 約66行目）
+
+**問題**:
+- `note.CreatedAt`（UTC）をそのまま `{note.CreatedAt:yyyy-MM-dd HH:mm}` で表示している
+- `ViewCommand` は `TimeZoneInfo.ConvertTimeFromUtc` で JST に変換してから `{jstTime:yyyy-MM-dd HH:mm:ss}` で表示している
+- README の技術仕様「UTCからJSTに変換して表示」と一致していない
+- フォーマットも `HH:mm`（秒なし）と `HH:mm:ss`（秒あり）で一致していない
+
+**修正案**: `ViewCommand` と同様に UTC→JST 変換と `HH:mm:ss` フォーマットを適用する。`Execute()` と `ExecuteAsync()` 両方に修正が必要。
+
+---
+
+### [ ] BUG-21. `PastNotes.csproj` が `OutputType=Exe` のままでライブラリとして不適切
+
+**対象ファイル**: `PastNotes/PastNotes.csproj`（4行目）、`PastNotes/Program.cs`
+
+**問題**: `PastNotes` プロジェクトは `PastNotes.Console` から参照されるクラスライブラリとして機能しているが、`<OutputType>Exe</OutputType>` と宣言されており、`Program.cs` にテンプレートの `Hello, World!` エントリポイントが残存している。ライブラリを Exe として宣言することは意図を誤解させ、`dotnet run --project PastNotes` が誤って実行できてしまう。
+
+**修正案**: `<OutputType>Exe</OutputType>` を削除（デフォルトは Library）し、`PastNotes/Program.cs` を削除する。
+
+---
+
 ## TST: テスト追加
 
 ### [x] TST-1. 対象期間より古いノートしかない場合のページネーション終了
@@ -324,6 +348,18 @@ var jstZone = TimeZoneInfo.FindSystemTimeZoneById(
 **関係するユースケース**: `view --start/--end`
 
 **問題**: `ExecuteAsync` の日付フィルタリングはテスト済みだが、同期版 `Execute()` への同等テストがない。`SearchCommand` では同様の欠落が実際のバグ（同期版フィルタリング未適用）として発覚した前例があり、`ViewCommand` も同一リスクを持つ。
+
+---
+
+### [x] TST-15. `UnitTest1.cs` のプレースホルダーテストが両テストプロジェクトに残っている
+
+**対象ファイル**:
+- `PastNotes.Tests/UnitTest1.cs`（`true == true` を検証するだけの無意味なテスト）
+- `PastNotes.Console.Tests/UnitTest1.cs`（メソッドが空の無意味なテスト）
+
+**問題**: プロジェクトテンプレートのまま残っており、テストカバレッジのノイズになる。テスト結果の可読性を下げ、将来のコントリビューターに誤解を与える可能性がある。
+
+**修正案**: 両ファイルを削除する（あるいはファイルごと削除する）。
 
 ---
 
@@ -458,32 +494,6 @@ git push origin v1.0.0
 
 **対応が必要なファイル**:
 - `.github/workflows/release.yml` — 新規作成
-
----
-
-### [x] BUG-20. `SearchCommand` が UTC を JST に変換せずに表示する
-
-**対象ファイル**: `PastNotes.Console/Commands/SearchCommand.cs`（`Execute()` 約44行目、`ExecuteAsync()` 約66行目）
-
-**問題**:
-- `note.CreatedAt`（UTC）をそのまま `{note.CreatedAt:yyyy-MM-dd HH:mm}` で表示している
-- `ViewCommand` は `TimeZoneInfo.ConvertTimeFromUtc` で JST に変換してから `{jstTime:yyyy-MM-dd HH:mm:ss}` で表示している
-- README の技術仕様「UTCからJSTに変換して表示」と一致していない
-- フォーマットも `HH:mm`（秒なし）と `HH:mm:ss`（秒あり）で一致していない
-
-**修正案**: `ViewCommand` と同様に UTC→JST 変換と `HH:mm:ss` フォーマットを適用する。`Execute()` と `ExecuteAsync()` 両方に修正が必要。
-
----
-
-### [x] TST-15. `UnitTest1.cs` のプレースホルダーテストが両テストプロジェクトに残っている
-
-**対象ファイル**:
-- `PastNotes.Tests/UnitTest1.cs`（`true == true` を検証するだけの無意味なテスト）
-- `PastNotes.Console.Tests/UnitTest1.cs`（メソッドが空の無意味なテスト）
-
-**問題**: プロジェクトテンプレートのまま残っており、テストカバレッジのノイズになる。テスト結果の可読性を下げ、将来のコントリビューターに誤解を与える可能性がある。
-
-**修正案**: 両ファイルを削除する（あるいはファイルごと削除する）。
 
 ---
 
