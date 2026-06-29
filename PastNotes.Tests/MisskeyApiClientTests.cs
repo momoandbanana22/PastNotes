@@ -924,6 +924,28 @@ public class MisskeyApiClientTests
         Assert.Equal(200, notes.Count());
     }
 
+    // TDD: BUG-23 - リトライ上限到達時に "Max retries exceeded" を投げるか
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesWithRetry_WhenMaxRetriesExceeded_ThrowsMaxRetriesExceededMessage()
+    {
+        // Arrange: 常に429を返すモックで全リトライを使い果たさせる
+        var mockHandler = new MockHttpMessageHandler();
+        mockHandler.SetErrorResponse(new HttpResponseMessage(System.Net.HttpStatusCode.TooManyRequests)
+        {
+            Content = new StringContent("Rate limit exceeded", System.Text.Encoding.UTF8, "application/json")
+        });
+        var httpClient = new HttpClient(mockHandler);
+        var client = new MisskeyApiClient("https://misskey.io", "valid-token", httpClient);
+        var startDate = new DateTime(2024, 1, 1);
+        var endDate = new DateTime(2024, 1, 31);
+
+        // Act & Assert: リトライを使い果たした後は元の例外ではなく "Max retries exceeded" を投げるべき
+        var ex = await Assert.ThrowsAsync<RateLimitExceededException>(
+            () => client.GetNotesWithRetry(startDate, endDate, maxRetries: 1));
+        Assert.Equal("Max retries exceeded", ex.Message);
+    }
+
     // TDD: BUG-8 - _callCountバグ
     [Fact]
     [Trait("Category", "Unit")]

@@ -319,7 +319,7 @@ public class MisskeyApiClient : IMisskeyApiClient
         int retryCount = 0;
         TimeSpan delay = TimeSpan.FromSeconds(1);
 
-        while (retryCount <= maxRetries)
+        while (true)
         {
             try
             {
@@ -337,8 +337,14 @@ public class MisskeyApiClient : IMisskeyApiClient
                 await Task.Delay(delay);
                 delay = TimeSpan.FromSeconds(delay.TotalSeconds * 2); // 指数バックオフ
             }
+            catch (HttpRequestException)
+            {
+                throw new RateLimitExceededException("Max retries exceeded");
+            }
+            catch (RateLimitExceededException)
+            {
+                throw new RateLimitExceededException("Max retries exceeded");
+            }
         }
-
-        throw new RateLimitExceededException("Max retries exceeded");
     }
 }

@@ -249,13 +249,13 @@ BUG-18 の修正で `FetchCommand` が `GetNotesAsync` から `GetNotesWithRetry
 
 ---
 
-### [ ] BUG-23. `GetNotesWithRetryFromApiAsync` 末尾の `throw` が到達不可能な dead code
+### [x] BUG-23. `GetNotesWithRetryFromApiAsync` 末尾の `throw` が到達不可能な dead code
 
 **対象ファイル**: `PastNotes/MisskeyApiClient.cs`（342行目）
 
 **問題**: `throw new RateLimitExceededException("Max retries exceeded");` は実行されない dead code。最後のリトライ（`retryCount == maxRetries`）で例外が発生した場合、`catch` の `when (retryCount < maxRetries)` が false になるため例外は捕捉されず、while ループ外へ直接伝播する。コードの意図（最大リトライ超過時に特定メッセージを投げる）と実装が一致していない。
 
-**修正案**: 最後の試行の例外を `throw new RateLimitExceededException("Max retries exceeded")` でラップするか、ループ構造を `for` に書き直して最後の例外を明示的に再スローする。
+**対処**: `while (retryCount <= maxRetries)` を `while (true)` に変更し、`when` ガードなしの `catch (HttpRequestException)` / `catch (RateLimitExceededException)` を追加して、リトライ上限到達時の最後の例外を明示的に `RateLimitExceededException("Max retries exceeded")` に変換するようにした。これにより末尾の到達不可能な `throw` も不要になり削除した。TDDで `GetNotesWithRetry_WhenMaxRetriesExceeded_ThrowsMaxRetriesExceededMessage` を追加して検証済み。
 
 ---
 
