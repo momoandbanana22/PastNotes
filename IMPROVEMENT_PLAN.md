@@ -249,6 +249,26 @@ BUG-18 の修正で `FetchCommand` が `GetNotesAsync` から `GetNotesWithRetry
 
 ---
 
+### [ ] BUG-23. `GetNotesWithRetryFromApiAsync` 末尾の `throw` が到達不可能な dead code
+
+**対象ファイル**: `PastNotes/MisskeyApiClient.cs`（342行目）
+
+**問題**: `throw new RateLimitExceededException("Max retries exceeded");` は実行されない dead code。最後のリトライ（`retryCount == maxRetries`）で例外が発生した場合、`catch` の `when (retryCount < maxRetries)` が false になるため例外は捕捉されず、while ループ外へ直接伝播する。コードの意図（最大リトライ超過時に特定メッセージを投げる）と実装が一致していない。
+
+**修正案**: 最後の試行の例外を `throw new RateLimitExceededException("Max retries exceeded")` でラップするか、ループ構造を `for` に書き直して最後の例外を明示的に再スローする。
+
+---
+
+### [ ] BUG-24. `FetchCommand` の表示部分で `TimeZoneHelper.Jst` の代わりに `AddHours(9)` をハードコード
+
+**対象ファイル**: `PastNotes.Console/Commands/FetchCommand.cs`（27行目）
+
+**問題**: `ExecuteAsync(int days)` の表示部分で `var jstNow = utcNow.AddHours(9);` とハードコード。`ViewCommand`、`SearchCommand`、`NoteHtmlGenerator` は全て `TimeZoneHelper.Jst` と `TimeZoneInfo.ConvertTimeFromUtc` を使用しており、コードベース内で不統一。JST に夏時間はないため動作上の問題はないが、タイムゾーン変換ロジックの担当箇所が `TimeZoneHelper` に集約されていない。
+
+**修正案**: `TimeZoneInfo.ConvertTimeFromUtc(utcNow, TimeZoneHelper.Jst)` を使用する。
+
+---
+
 ## TST: テスト追加
 
 ### [x] TST-1. 対象期間より古いノートしかない場合のページネーション終了
@@ -372,6 +392,16 @@ BUG-18 の修正で `FetchCommand` が `GetNotesAsync` から `GetNotesWithRetry
 **問題**: プロジェクトテンプレートのまま残っており、テストカバレッジのノイズになる。テスト結果の可読性を下げ、将来のコントリビューターに誤解を与える可能性がある。
 
 **修正案**: 両ファイルを削除する（あるいはファイルごと削除する）。
+
+---
+
+### [ ] TST-16. `PastNotes.Tests` に `DisableTestParallelization` がない（TST-15 の作業漏れ）
+
+**対象ファイル**: `PastNotes.Tests/`（AssemblyConfig.cs が存在しない）
+
+**問題**: TST-15 の修正で `PastNotes.Console.Tests/UnitTest1.cs` 削除時に `AssemblyConfig.cs` を作成して `DisableTestParallelization` を保持したが、`PastNotes.Tests/UnitTest1.cs` 削除時には同様の対応を行わなかった。`MisskeyApiClient.GetNotesWithPaginationFromApiAsync` は `System.Console.WriteLine` でプログレスを出力する（グローバル状態への書き込み）。`GetNotesAsync_WhenPaginating_PrintsProgressMessages` はこの出力を `Console.SetOut(stringWriter)` で捕捉して検証しており、並列実行時に他のテストのプログレスメッセージが意図しない StringWriter に混入する可能性がある。
+
+**修正案**: `PastNotes.Tests/AssemblyConfig.cs` を作成して `[assembly: Xunit.CollectionBehavior(DisableTestParallelization = true)]` を追加する。
 
 ---
 
