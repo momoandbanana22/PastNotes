@@ -113,8 +113,13 @@ public class Program
             DateTime? searchStart = null, searchEnd = null;
             var sStartIdx = Array.IndexOf(args, "--start");
             var sEndIdx   = Array.IndexOf(args, "--end");
-            if (sStartIdx >= 0 && sStartIdx + 1 < args.Length)
+            if (sStartIdx >= 0)
             {
+                if (sStartIdx + 1 >= args.Length)
+                {
+                    System.Console.WriteLine("Error: --start requires a date value. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
+                    return 1;
+                }
                 if (!DateTime.TryParse(args[sStartIdx + 1], out var ss))
                 {
                     System.Console.WriteLine("Error: Invalid start date format. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
@@ -122,8 +127,13 @@ public class Program
                 }
                 searchStart = ss;
             }
-            if (sEndIdx >= 0 && sEndIdx + 1 < args.Length)
+            if (sEndIdx >= 0)
             {
+                if (sEndIdx + 1 >= args.Length)
+                {
+                    System.Console.WriteLine("Error: --end requires a date value. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
+                    return 1;
+                }
                 if (!DateTime.TryParse(args[sEndIdx + 1], out var se))
                 {
                     System.Console.WriteLine("Error: Invalid end date format. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
@@ -153,8 +163,13 @@ public class Program
             DateTime? viewStart = null, viewEnd = null;
             var startIdx = Array.IndexOf(args, "--start");
             var endIdx   = Array.IndexOf(args, "--end");
-            if (startIdx >= 0 && startIdx + 1 < args.Length)
+            if (startIdx >= 0)
             {
+                if (startIdx + 1 >= args.Length)
+                {
+                    System.Console.WriteLine("Error: --start requires a date value. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
+                    return 1;
+                }
                 if (!DateTime.TryParse(args[startIdx + 1], out var vs))
                 {
                     System.Console.WriteLine("Error: Invalid start date format. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
@@ -162,8 +177,13 @@ public class Program
                 }
                 viewStart = vs;
             }
-            if (endIdx >= 0 && endIdx + 1 < args.Length)
+            if (endIdx >= 0)
             {
+                if (endIdx + 1 >= args.Length)
+                {
+                    System.Console.WriteLine("Error: --end requires a date value. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
+                    return 1;
+                }
                 if (!DateTime.TryParse(args[endIdx + 1], out var ve))
                 {
                     System.Console.WriteLine("Error: Invalid end date format. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");

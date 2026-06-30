@@ -378,7 +378,7 @@ System.Console.SetOut(originalOutput);
 
 ---
 
-### [ ] BUG-34. `search`・`view` で `--start`/`--end` に値を指定しないとエラーなく無視される
+### [x] BUG-34. `search`・`view` で `--start`/`--end` に値を指定しないとエラーなく無視される
 
 **対象ファイル**: `PastNotes.Console/Program.cs`（116行目、125行目、156行目、165行目付近）
 
@@ -387,6 +387,8 @@ System.Console.SetOut(originalOutput);
 **具体的な失敗シナリオ**: `pastnotes search keyword --end` を実行すると `--end` が無視されて全期間を検索し、ユーザーは絞り込みが効いていないことに気づけない。
 
 **修正案**: `search`・`view` の各 `if (idx >= 0 ...)` ブロックを、`idx >= 0 && idx + 1 >= args.Length` の場合にもエラーを返すよう拡張する（例: `"Error: --end requires a date value"`）。または `--start`/`--end` が存在するときは値も必須とし、なければ exit 1 する。
+
+**対処**: `Program.cs` の `search`（116行目）と `view`（156行目）の両ブロックで `if (idx >= 0)` を外側の条件とし、値が存在しない場合に `"Error: --start/--end requires a date value"` を出力して return 1 するよう変更。TDD で `SearchCommand_WhenStartFlagHasNoValue_ReturnsOneAndPrintsError`・`ViewCommand_WhenEndFlagHasNoValue_ReturnsOneAndPrintsError` を追加して検証済み。109件ユニットテスト全件パス。
 
 ---
 

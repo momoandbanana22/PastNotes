@@ -121,6 +121,49 @@ public class ConsoleAppTests
         }
     }
 
+    // TDD: BUG-34 - search/view で --start/--end に値を渡さないとエラーを返すか
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task SearchCommand_WhenStartFlagHasNoValue_ReturnsOneAndPrintsError()
+    {
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            var args = new[] { "search", "keyword", "--start" };
+            var result = await Program.Main(args);
+            Assert.Equal(1, result);
+            Assert.Contains("--start", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ViewCommand_WhenEndFlagHasNoValue_ReturnsOneAndPrintsError()
+    {
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            var args = new[] { "view", "--start", "2024-01-01", "--end" };
+            var result = await Program.Main(args);
+            Assert.Equal(1, result);
+            Assert.Contains("--end", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+    }
+
     // TDD: BUG-32 - search/view で不正な日付を指定するとエラーを返すか
     [Fact]
     [Trait("Category", "Unit")]
