@@ -404,6 +404,18 @@ System.Console.SetOut(originalOutput);
 
 ---
 
+### [ ] BUG-36. `fetch` の `--token` / `--instance-url` に値を指定しないとエラーなく環境変数にフォールバックする
+
+**対象ファイル**: `PastNotes.Console/Program.cs`（34〜41行目）
+
+**問題**: BUG-34 で `search`・`view` の `--start`/`--end` に値がない場合のエラー処理を追加したが、`fetch` の `--token` と `--instance-url` は同じ状況でエラーを返さない。例えば `pastnotes fetch --days 30 --token` と実行すると `--token` の値が取得できず、環境変数 `MISSKEY_API_TOKEN` への暗黙のフォールバックが行われる。ユーザーが意図したトークンが使われないまま処理が進む。
+
+**具体的な失敗シナリオ**: `pastnotes fetch --days 30 --token` → `--token` が無視されて環境変数のトークンで認証が行われ、ユーザーは気づけない。
+
+**修正案**: `--token`・`--instance-url` の各ブロックで `idx >= 0 && idx + 1 >= args.Length` の場合に `"Error: --token/--instance-url requires a value"` を出力して return 1 する（BUG-34 と同一パターン）。
+
+---
+
 ## REFACTOR: リファクタリング
 
 *動作を変えずにコード構造・一貫性を改善する変更。*
@@ -429,6 +441,22 @@ System.Console.SetOut(originalOutput);
 **変更**: `if (notes == null || !notes.Any())` → `if (!notes.Any())`（1箇所）。動作不変。
 
 **対処**: REFACTOR-1 と同一コミットで対処。
+
+---
+
+### [ ] REFACTOR-3. `FetchCommand` の到達不能な `notes == null` チェックを削除
+
+**対象ファイル**: `PastNotes.Console/Commands/FetchCommand.cs`（54行目）
+
+**背景**: REFACTOR-1 で `SearchCommand`、REFACTOR-2 で `ViewHtmlCommand` の `notes == null` チェックを削除したが、`FetchCommand.FetchAndSaveAsync` には同じパターンが残存している。
+
+```csharp
+if (notes == null || !notes.Any())
+```
+
+`GetNotesWithRetry` は内部で `List<Note>` を返すため null にはならない。
+
+**変更**: `if (notes == null || !notes.Any())` → `if (!notes.Any())`。動作不変。
 
 ---
 
@@ -617,6 +645,29 @@ System.Console.SetOut(originalOutput);
 **修正案**: try ブロック内の `System.Console.SetOut(originalOutput)` 186行目を削除する。
 
 **対処**: 229行目の重複 `System.Console.SetOut(originalOutput)` を削除。BUG-35/36 と同一コミットで対処。109件ユニットテスト全件パス。
+
+---
+
+### [ ] TST-20. `ConsoleAppTests.FetchCommand_WhenAppendPrecedesStartEnd_ParsesArgsCorrectly` の try ブロック内に `SetOut` 復元が重複（TST-19 の適用漏れ）
+
+**対象ファイル**: `PastNotes.Console.Tests/ConsoleAppTests.cs`（113行目）
+
+**問題**: TST-19 で `FetchCommand_WhenApiTokenMissing_ReturnsOneAndPrintsError` の try ブロック内 `Console.SetOut(originalOutput)` を削除したが、同一ファイルの `FetchCommand_WhenAppendPrecedesStartEnd_ParsesArgsCorrectly` に同じパターンが残っている。113行目（try ブロック内）と120行目（finally ブロック）の両方で `System.Console.SetOut(originalOutput)` を呼んでいる。
+
+**修正案**: 113行目の try ブロック内の `System.Console.SetOut(originalOutput)` を削除する（finally ブロックで保証されているため不要）。
+
+---
+
+### [ ] TST-21. `FetchCommand_WhenAppendPrecedesStartEnd_ParsesArgsCorrectly` が接続失敗 + 3回リトライでテストが遅い
+
+**対象ファイル**: `PastNotes.Console.Tests/ConsoleAppTests.cs`（`FetchCommand_WhenAppendPrecedesStartEnd_ParsesArgsCorrectly` テスト）
+
+**問題**: このテストは `--instance-url http://localhost:1` を指定して `Program.Main` を呼ぶ。`FetchCommand` は `GetNotesWithRetry(maxRetries: 3)` を使用しており、接続失敗時に指数バックオフ（1秒 + 2秒 + 4秒 = 最低7秒）でリトライする。その結果、このテスト1件だけで~7秒以上かかり、Console テストスイート全体の24秒の大半を占めている。
+
+**修正案（選択肢）**:
+- A: `FetchCommand` のコンストラクタで `maxRetries` をデフォルト引数として受け取れるようにし、テストでは `maxRetries: 0` を指定できるようにする
+- B: テストの `--instance-url` を変更せず、テスト専用のフェイク `IMisskeyApiClient` に差し替えて接続そのものをスキップする（より根本的な解決）
+- C: `Program.cs` を変更して `--max-retries` CLI オプションを追加する（スコープ外の変更になるため非推奨）
 
 ---
 
