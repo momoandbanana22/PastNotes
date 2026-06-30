@@ -366,6 +366,58 @@ System.Console.SetOut(originalOutput);
 
 ---
 
+### [ ] BUG-33. `NoteHtmlGenerator.GenerateHtml` で `note.Id` が HTML エンコードされていない（XSS）
+
+**対象ファイル**: `PastNotes/NoteHtmlGenerator.cs`（18行目）
+
+**問題**: `GenerateHtml` の `<title>` タグで `note.Id` を `WebUtility.HtmlEncode` せずに直接埋め込んでいる。同メソッド内の `note.Text`・`file.Url`・`file.Name` はすべて `WebUtility.HtmlEncode` を通しており、`note.Id` だけが漏れている。Misskey の ID は英数字のみのため実害は低いが、`</title><script>alert(1)</script>` のような値が入ると HTML 構造の破壊またはスクリプト注入が発生しうる。
+
+**修正案**: `note.Id` を `WebUtility.HtmlEncode(note.Id)` に変更する。
+
+---
+
+### [ ] BUG-34. `search`・`view` で `--start`/`--end` に値を指定しないとエラーなく無視される
+
+**対象ファイル**: `PastNotes.Console/Program.cs`（116行目、125行目、156行目、165行目付近）
+
+**問題**: BUG-32 で「不正な日付フォーマット」のエラー処理を追加したが、`--start`/`--end` オプション自体に後続の値が存在しない場合（例: `pastnotes search keyword --end`）はエラーが出ない。`sEndIdx + 1 < args.Length` の条件が偽になり if ブロックをスキップし、日付フィルタが `null` のまま全件処理が走る。`fetch` コマンドは `sIdx >= 0 && sIdx + 1 < args.Length && eIdx >= 0 && eIdx + 1 < args.Length` の複合条件で「どちらかが欠けたら Usage 表示」になっており、`search`・`view` との扱いが非対称。
+
+**具体的な失敗シナリオ**: `pastnotes search keyword --end` を実行すると `--end` が無視されて全期間を検索し、ユーザーは絞り込みが効いていないことに気づけない。
+
+**修正案**: `search`・`view` の各 `if (idx >= 0 ...)` ブロックを、`idx >= 0 && idx + 1 >= args.Length` の場合にもエラーを返すよう拡張する（例: `"Error: --end requires a date value"`）。または `--start`/`--end` が存在するときは値も必須とし、なければ exit 1 する。
+
+---
+
+### [ ] BUG-35. `SearchCommand` に到達不能な `notes == null` チェックが残存（BUG-31 適用漏れ）
+
+**対象ファイル**: `PastNotes.Console/Commands/SearchCommand.cs`（25行目、54行目）
+
+**問題**: BUG-31 で `ViewCommand` の `notes == null ||` を削除したのと同じ理由で、`SearchCommand.Execute()`（25行目）と `ExecuteAsync()`（54行目）にも同チェックが残っている。`NoteRepository.LoadFromFileAsync` はファイル不在時に `Enumerable.Empty<Note>()`、JSON 破損時に `InvalidDataException` を返すため null にはならない。死コードがコードの一貫性を損なう。
+
+**修正案**: `if (notes == null || !notes.Any())` を `if (!notes.Any())` に変更する（2箇所）。
+
+---
+
+### [ ] BUG-36. `ViewHtmlCommand` に到達不能な `notes == null` チェックが残存（同上）
+
+**対象ファイル**: `PastNotes.Console/Commands/ViewHtmlCommand.cs`（24行目）
+
+**問題**: BUG-35 と同一の原因。`ViewHtmlCommand.Execute()` 24行目の `if (notes == null || !notes.Any())` で `notes == null` が到達不能。`ViewCommand` は BUG-31 修正済みだが `ViewHtmlCommand` には適用されていない。
+
+**修正案**: `notes == null ||` を削除する（1箇所）。
+
+---
+
+### [ ] BUG-37. `MisskeyApiClient` がライブラリ内で直接 `System.Console.WriteLine` を呼び出している
+
+**対象ファイル**: `PastNotes/MisskeyApiClient.cs`（288行目）
+
+**問題**: `GetNotesWithPaginationFromApiAsync` のページネーションループ内で `System.Console.WriteLine($"  取得中... {allNotes.Count} 件")` を直接呼び出している。`PastNotes` はライブラリプロジェクトであり、コンソール出力を直接持つべきではない（Console に依存するとコンソールアプリ以外での再利用が困難、テスト出力が汚れる）。`FetchCommandTests` 等で `Console.SetOut` を差し替えてもこのメッセージは通常出力として混入し続ける。
+
+**修正案**: `IProgress<string>` やコールバック Action などを引数として受け取る形に変更し、進捗出力の責任を呼び出し元（`FetchCommand`）に委ねる。または `System.Console.WriteLine` を条件付きコンパイルまたは設定フラグで無効化できるようにする。
+
+---
+
 ## TST: テスト追加
 
 ### [x] TST-1. 対象期間より古いノートしかない場合のページネーション終了
@@ -539,6 +591,16 @@ System.Console.SetOut(originalOutput);
 **修正案**: `PastNotes.Console.Tests.csproj` の `coverlet.collector` を `10.0.1` に更新し、`coverlet.msbuild 10.0.1` を追加する。
 
 **対処**: `coverlet.collector` を `6.0.4` → `10.0.1` に更新し `IncludeAssets`/`PrivateAssets` を追加。`coverlet.msbuild 10.0.1` を追加。`CollectCoverage`・`CoverletOutputFormat`・`CoverletOutput` の PropertyGroup を追加し `PastNotes.Tests.csproj` と完全に統一した。`dotnet restore` 後にビルド警告ゼロ、104件ユニットテスト全件パス、両プロジェクトのカバレッジ合算集計が動作することを確認済み。
+
+---
+
+### [ ] TST-19. `ConsoleAppTests.FetchCommand_WhenApiTokenMissing` の try ブロック内に `SetOut` 復元が重複（TST-17 の適用漏れ）
+
+**対象ファイル**: `PastNotes.Console.Tests/ConsoleAppTests.cs`（186行目）
+
+**問題**: TST-17 で `FetchCommandTests`・`ViewCommandTests` の `Console.SetOut/SetError` 復元を `finally` ブロックへ移動したが、`ConsoleAppTests` の `FetchCommand_WhenApiTokenMissing_ReturnsOneAndPrintsError` テストには同じパターンが残っている。try ブロック内 186行目と finally ブロックで `System.Console.SetOut(originalOutput)` を二重に呼んでいる。同ファイルの他のテスト（`SearchCommand_WhenInvalidStartDate_ReturnsOneAndPrintsError` 等）は finally のみで復元しており不一致。
+
+**修正案**: try ブロック内の `System.Console.SetOut(originalOutput)` 186行目を削除する。
 
 ---
 
