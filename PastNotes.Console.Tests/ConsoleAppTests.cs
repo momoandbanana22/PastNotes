@@ -153,8 +153,6 @@ public class ConsoleAppTests
             // Act
             var result = await Program.Main(args);
 
-            System.Console.SetOut(originalOutput);
-
             // Assert: 引数解析は成功するので「Usage:」ではなく network error になること
             Assert.DoesNotContain("Usage: PastNotes.Console fetch --days", stringWriter.ToString());
         }

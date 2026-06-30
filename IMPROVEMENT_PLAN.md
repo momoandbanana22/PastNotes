@@ -648,7 +648,7 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] TST-20. `ConsoleAppTests.FetchCommand_WhenAppendPrecedesStartEnd_ParsesArgsCorrectly` の try ブロック内に `SetOut` 復元が重複（TST-19 の適用漏れ）
+### [x] TST-20. `ConsoleAppTests.FetchCommand_WhenAppendPrecedesStartEnd_ParsesArgsCorrectly` の try ブロック内に `SetOut` 復元が重複（TST-19 の適用漏れ）
 
 **対象ファイル**: `PastNotes.Console.Tests/ConsoleAppTests.cs`（113行目）
 
