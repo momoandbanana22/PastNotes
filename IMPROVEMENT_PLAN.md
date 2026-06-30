@@ -458,6 +458,24 @@ catch (Exception ex)
 
 ---
 
+### [ ] BUG-39. `--max-retries 0` 時のエラーメッセージが誤解を招く
+
+**対象ファイル**: `PastNotes/MisskeyApiClient.cs`（`GetNotesWithRetryFromApiAsync` の else ブロック）
+
+**問題**: `maxRetries=0`（リトライ無効）のとき、最初のリクエストが失敗すると `RateLimitExceededException("Max retries exceeded")` を投げる。README は「`--max-retries 0` でリトライを無効化できる」と説明しているが、受け取るエラーメッセージは「リトライ回数を超過した」と主張しており矛盾する。また `HttpRequestException` などの元のエラーメッセージも失われる。
+
+**修正案**: `retryCount == 0`（一度もリトライしていない）のときは元の例外メッセージをそのまま使用する。
+
+```csharp
+else
+{
+    string message = retryCount == 0 ? ex.Message : "Max retries exceeded";
+    throw new RateLimitExceededException(message);
+}
+```
+
+---
+
 ## REFACTOR: リファクタリング
 
 *動作を変えずにコード構造・一貫性を改善する変更。*

@@ -61,3 +61,4 @@
 | 利用者向け使い方 | `README.md` |
 
 - `RELEASE_CHECKLIST.md` には理由・説明を書かない。確認基準と証拠は `IMPROVEMENT_PLAN.md` に記録する。
+- `RELEASE_CHECKLIST.md` は、全ての問題がなくなってリリース可能な状態になったときの**最終確認専用**である。開発中に使用・更新してはならない。
