@@ -14,8 +14,8 @@ public class SearchCommand
     {
         _repository = repository;
         _filePath = filePath;
-        _startDate = startDate.HasValue ? startDate.Value.AddHours(-9) : null;
-        _endDate   = endDate.HasValue   ? endDate.Value.AddHours(-9)   : null;
+        _startDate = startDate.HasValue ? TimeZoneHelper.ConvertToUtc(startDate.Value) : null;
+        _endDate   = endDate.HasValue   ? TimeZoneHelper.ConvertToUtc(endDate.Value)   : null;
     }
 
     public int Execute(string keyword)

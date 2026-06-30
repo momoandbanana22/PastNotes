@@ -36,8 +36,8 @@ public class FetchCommand
             throw new ArgumentException("Start date must be before or equal to end date");
         }
 
-        var convertedStartDate = startDate.AddHours(-9);
-        var convertedEndDate = endDate.AddHours(-9);
+        var convertedStartDate = TimeZoneHelper.ConvertToUtc(startDate);
+        var convertedEndDate = TimeZoneHelper.ConvertToUtc(endDate);
 
         System.Console.WriteLine($"Fetching notes from {startDate:yyyy-MM-dd HH:mm:ss} (JST) to {endDate:yyyy-MM-dd HH:mm:ss} (JST)...");
 

@@ -298,13 +298,13 @@ System.Console.SetOut(originalOutput);
 
 ---
 
-### [ ] BUG-27. JST⇔UTC変換のオフセットが `TimeZoneHelper` を介さず複数箇所にハードコードされている
+### [x] BUG-27. JST⇔UTC変換のオフセットが `TimeZoneHelper` を介さず複数箇所にハードコードされている
 
 **対象ファイル**: `PastNotes.Console/Commands/SearchCommand.cs`（コンストラクタ、17〜18行目）、`PastNotes.Console/Commands/ViewCommand.cs`（コンストラクタ、20〜21行目）、`PastNotes.Console/Commands/FetchCommand.cs`（39〜40行目、BUG-24 参照）
 
 **問題**: `SearchCommand`・`ViewCommand` のコンストラクタはユーザー入力（JST想定）を `AddHours(-9)` で直接 UTC に変換している。表示側では `TimeZoneInfo.ConvertTimeFromUtc` と `TimeZoneHelper.Jst` を使っているにもかかわらず、入力側の変換だけ `TimeZoneHelper` を経由しない別ロジックになっており、同じ「JSTオフセット」の知識が複数箇所に分散している。BUG-24 と根本原因は同じ。
 
-**修正案**: `TimeZoneInfo.ConvertTimeToUtc(value, TimeZoneHelper.Jst)` を使うヘルパーを `TimeZoneHelper` に追加し、`SearchCommand`・`ViewCommand`・`FetchCommand` の入力変換を統一する。
+**対処**: `TimeZoneHelper.ConvertToUtc(DateTime jstTime)` を追加し（`TimeZoneInfo.ConvertTimeToUtc` でラップ）、`SearchCommand`・`ViewCommand`・`FetchCommand` の `AddHours(-9)` を全て `TimeZoneHelper.ConvertToUtc` に統一した。TDD で `ConvertToUtc_WhenJstNewYearMidnight_ReturnsPreviousDayUtc` / `ConvertToUtc_WhenJstNoon_ReturnsUtcMorning` を追加して検証済み。
 
 ---
 
