@@ -10,20 +10,20 @@
 
 ## コード品質
 
-- [x] 全ユニットテストが通過している（`dotnet test --filter "Category=Unit"`）
-- [x] ビルドエラー・警告がゼロ（`dotnet build`）
-- [x] APIトークンがコードにハードコードされていない
+- [ ] 全ユニットテストが通過している（`dotnet test --filter "Category=Unit"`）
+- [ ] ビルドエラー・警告がゼロ（`dotnet build`）
+- [ ] APIトークンがコードにハードコードされていない
 
 ## ドキュメント
 
-- [x] README.md が完成している（コマンド・オプション・認証方法が網羅されている）
-- [x] DEVELOPMENT.md が完成している（認証設定・ビルド手順・テスト手順）
-- [x] IMPROVEMENT_PLAN.md の全項目（BUG/TST/DOC/FEAT）が `[x]`
+- [ ] README.md が完成している（コマンド・オプション・認証方法が網羅されている）
+- [ ] DEVELOPMENT.md が完成している（認証設定・ビルド手順・テスト手順）
+- [ ] IMPROVEMENT_PLAN.md の全項目（BUG/TST/DOC/FEAT/REFACTOR）が `[X]`
 
 ## セキュリティ・除外設定
 
-- [x] `.env` が `.gitignore` に含まれている
-- [x] `publish/` が `.gitignore` に含まれている
+- [ ] `.env` が `.gitignore` に含まれている
+- [ ] `publish/` が `.gitignore` に含まれている
 
 ## REL-1: シングルファイル .exe のビルドと配布
 
