@@ -328,6 +328,28 @@ System.Console.SetOut(originalOutput);
 
 **修正案**: `Execute()` と `ExecuteAsync()` 両方で、`FilterByDateRange` 呼び出し後に `.ToList()` を適用し、`notes.Count()` を `notes.Count`（プロパティ）に変更する。
 
+**対処（部分）**: `FilterByDateRange` 後の `.ToList()` 適用のみ実施。`notes.Count()` → `notes.Count` への変更は未適用（BUG-31 参照）。
+
+---
+
+### [ ] BUG-30. 統合テストの `Assert.True(false, message)` がビルド警告を発生させている
+
+**対象ファイル**: `PastNotes.Tests/MisskeyApiClientTests.cs`（478・509・538・578 行目）
+
+**問題**: 統合テストで環境変数が未設定のときに `Assert.True(false, message)` を使用しており、`xUnit2020` アナライザー警告が 4 件発生している。RELEASE_CHECKLIST の「ビルドエラー・警告がゼロ（`dotnet build`）」が `[x]` 済みになっているが、実際は 4 件の警告が存在する状態。xUnit 2.9.0 以降では `Assert.Fail(message)` を使用すべきと静的解析が警告している。
+
+**修正案**: 4 箇所の `Assert.True(false, message)` を `Assert.Fail(message)` に置き換える。RELEASE_CHECKLIST の「警告がゼロ」のチェックも外し、修正後に再チェックする。
+
+---
+
+### [ ] BUG-31. BUG-29 の残り作業: `ViewCommand` の `notes.Count()` が `notes.Count` プロパティになっていない
+
+**対象ファイル**: `PastNotes.Console/Commands/ViewCommand.cs`（`Execute()` 41行目、`ExecuteAsync()` 84行目）
+
+**問題**: BUG-29 の修正コミット（"fix: ViewCommand の FilterByDateRange 後に .ToList() を適用"）で `FilterByDateRange` 後の `.ToList()` 適用は行われたが、IMPROVEMENT_PLAN に記載していた `notes.Count()` → `notes.Count`（プロパティ）への変更が未適用のまま残っている。`notes` の宣言型が `IEnumerable<Note>` のため `.Count` プロパティが直接呼べず、拡張メソッド `Count()` が残存している。動作上の問題は生じないが（`ICollection<T>` の最適化により O(1)）、`SearchCommand` が `results.Count`（プロパティ）を使用しているのと実装が一致しない。
+
+**修正案**: `notes` の宣言型を `List<Note>` に変更し（`LoadFromFileAsync` 結果に即座に `.ToList()` を適用）、`notes.Count()` を `notes.Count` に変更する。`FilterByDateRange` 後の `.ToList()` は維持する。
+
 ---
 
 ## TST: テスト追加
@@ -463,6 +485,42 @@ System.Console.SetOut(originalOutput);
 **問題**: TST-15 の修正で `PastNotes.Console.Tests/UnitTest1.cs` 削除時に `AssemblyConfig.cs` を作成して `DisableTestParallelization` を保持したが、`PastNotes.Tests/UnitTest1.cs` 削除時には同様の対応を行わなかった。`MisskeyApiClient.GetNotesWithPaginationFromApiAsync` は `System.Console.WriteLine` でプログレスを出力する（グローバル状態への書き込み）。`GetNotesAsync_WhenPaginating_PrintsProgressMessages` はこの出力を `Console.SetOut(stringWriter)` で捕捉して検証しており、並列実行時に他のテストのプログレスメッセージが意図しない StringWriter に混入する可能性がある。
 
 **対処**: `PastNotes.Tests/AssemblyConfig.cs` を作成し `[assembly: Xunit.CollectionBehavior(DisableTestParallelization = true)]` を追加した。`PastNotes.Console.Tests/AssemblyConfig.cs` と同一フォーマット。
+
+---
+
+### [ ] TST-17. `Console.SetOut`/`SetError` が `finally` 外（BUG-25 の適用漏れ）
+
+**対象ファイル**:
+- `PastNotes.Console.Tests/Commands/FetchCommandTests.cs`（3 テスト）
+- `PastNotes.Console.Tests/Commands/ViewCommandTests.cs`（7 テスト）
+
+**問題**: BUG-25 で `SearchCommandTests` の 4 テストについて `Console.SetOut(originalOutput)` を `finally` ブロックへ移動したが、同じパターンが `FetchCommandTests` と `ViewCommandTests` に残存している。テストが予期しない例外を投げた場合、`Console.Out`（または `Console.Error`）が破棄済みの `StringWriter` を指したままになり、後続テストが `ObjectDisposedException` で失敗しうる。`DisableTestParallelization = true` のため並列干渉はないが、例外発生時のリスクは BUG-25 と同一。
+
+**FetchCommandTests で未対応のテスト**:
+- `ExecuteAsync_WithDateRange_WhenNoNotesFound_ReturnsZeroAndPrintsMessage`
+- `ExecuteAsync_WithDays_WhenNoNotesFound_ReturnsZeroAndPrintsMessage`
+- `ExecuteAsync_WhenApiReturns401_ReturnsOneAndPrintsError`（`Console.SetError`）
+
+**ViewCommandTests で未対応のテスト**:
+- `Execute_WhenCalledWithExistingNotes_DisplaysDateTimeWithSeconds`
+- `Execute_WhenCalledWithExistingNotes_HidesIdByDefault`
+- `Execute_WhenCalledWithShowIdOption_DisplaysId`
+- `Execute_WhenCalledWithUtcDateTime_ConvertsToJst`
+- `Execute_WhenDateRangeSpecified_ShowsOnlyNotesInRange`
+- `ExecuteAsync_WhenDateRangeSpecified_ShowsOnlyNotesInRange`
+- `Execute_WhenNoteHasFiles_DisplaysFileInformation`
+
+**修正案**: 各テストの `Console.SetOut(originalOutput)` / `Console.SetError(originalError)` を `finally` ブロックに移動する（BUG-25 と同一パターン）。
+
+---
+
+### [ ] TST-18. `PastNotes.Console.Tests` の `coverlet.collector` バージョンが古い（TST-16 との不整合）
+
+**対象ファイル**: `PastNotes.Console.Tests/PastNotes.Console.Tests.csproj`
+
+**問題**: `PastNotes.Tests` は `coverlet.collector 10.0.1` と `coverlet.msbuild 10.0.1` を使用しているが、`PastNotes.Console.Tests` は `coverlet.collector 6.0.4` のみで `coverlet.msbuild` が未追加。カバレッジ収集方法・バージョンが 2 プロジェクト間で一致していない。TST-16 の際に `PastNotes.Tests` の `csproj` を更新したが、`PastNotes.Console.Tests` の更新が漏れた可能性がある。
+
+**修正案**: `PastNotes.Console.Tests.csproj` の `coverlet.collector` を `10.0.1` に更新し、`coverlet.msbuild 10.0.1` を追加する。
 
 ---
 
