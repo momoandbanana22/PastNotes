@@ -116,11 +116,17 @@ public class ViewCommandTests
         var originalOutput = System.Console.Out;
         using var stringWriter = new StringWriter();
         System.Console.SetOut(stringWriter);
-        
-        command.Execute();
-        
+
+        try
+        {
+            command.Execute();
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+
         var output = stringWriter.ToString();
-        System.Console.SetOut(originalOutput);
 
         // Assert - Check that seconds are displayed (format includes :ss)
         Assert.Matches(@"\d{2}:\d{2}:\d{2}", output);
@@ -151,11 +157,17 @@ public class ViewCommandTests
         var originalOutput = System.Console.Out;
         using var stringWriter = new StringWriter();
         System.Console.SetOut(stringWriter);
-        
-        command.Execute();
-        
+
+        try
+        {
+            command.Execute();
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+
         var output = stringWriter.ToString();
-        System.Console.SetOut(originalOutput);
 
         // Assert
         Assert.DoesNotContain("ID:", output);
@@ -186,11 +198,17 @@ public class ViewCommandTests
         var originalOutput = System.Console.Out;
         using var stringWriter = new StringWriter();
         System.Console.SetOut(stringWriter);
-        
-        command.Execute();
-        
+
+        try
+        {
+            command.Execute();
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+
         var output = stringWriter.ToString();
-        System.Console.SetOut(originalOutput);
 
         // Assert
         Assert.Contains("ID:", output);
@@ -224,11 +242,17 @@ public class ViewCommandTests
         var originalOutput = System.Console.Out;
         using var stringWriter = new StringWriter();
         System.Console.SetOut(stringWriter);
-        
-        command.Execute();
-        
+
+        try
+        {
+            command.Execute();
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+
         var output = stringWriter.ToString();
-        System.Console.SetOut(originalOutput);
 
         // Assert
         Assert.Contains("19:30:45", output);
@@ -267,9 +291,15 @@ public class ViewCommandTests
         System.Console.SetOut(stringWriter);
 
         // Act
-        var result = command.Execute();
-
-        System.Console.SetOut(originalOutput);
+        int result;
+        try
+        {
+            result = command.Execute();
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
 
         // Assert
         Assert.Equal(0, result);
@@ -397,9 +427,15 @@ public class ViewCommandTests
         System.Console.SetOut(stringWriter);
 
         // Act
-        var result = await command.ExecuteAsync();
-
-        System.Console.SetOut(originalOutput);
+        int result;
+        try
+        {
+            result = await command.ExecuteAsync();
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
 
         // Assert
         Assert.Equal(0, result);
@@ -445,11 +481,17 @@ public class ViewCommandTests
         var originalOutput = System.Console.Out;
         using var stringWriter = new StringWriter();
         System.Console.SetOut(stringWriter);
-        
-        command.Execute();
-        
+
+        try
+        {
+            command.Execute();
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+
         var output = stringWriter.ToString();
-        System.Console.SetOut(originalOutput);
 
         // Assert
         Assert.Contains("添付ファイル", output);

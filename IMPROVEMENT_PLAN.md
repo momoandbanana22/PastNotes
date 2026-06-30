@@ -490,7 +490,7 @@ System.Console.SetOut(originalOutput);
 
 ---
 
-### [ ] TST-17. `Console.SetOut`/`SetError` が `finally` 外（BUG-25 の適用漏れ）
+### [x] TST-17. `Console.SetOut`/`SetError` が `finally` 外（BUG-25 の適用漏れ）
 
 **対象ファイル**:
 - `PastNotes.Console.Tests/Commands/FetchCommandTests.cs`（3 テスト）
@@ -513,6 +513,8 @@ System.Console.SetOut(originalOutput);
 - `Execute_WhenNoteHasFiles_DisplaysFileInformation`
 
 **修正案**: 各テストの `Console.SetOut(originalOutput)` / `Console.SetError(originalError)` を `finally` ブロックに移動する（BUG-25 と同一パターン）。
+
+**対処**: FetchCommandTests 3件（SetOut ×2、SetError ×1）と ViewCommandTests 7件（SetOut ×7）の計10テストすべてで復元処理を `finally` ブロックに移動した。ViewCommandTests の同一パターン5件は一括置換で対応。ビルド警告ゼロ、44件ユニットテスト全件パスを確認済み。
 
 ---
 

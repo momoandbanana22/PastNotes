@@ -213,9 +213,15 @@ public class FetchCommandTests
         System.Console.SetOut(stringWriter);
 
         // Act
-        var result = await command.ExecuteAsync(startDate, endDate);
-
-        System.Console.SetOut(originalOutput);
+        int result;
+        try
+        {
+            result = await command.ExecuteAsync(startDate, endDate);
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
 
         // Assert
         Assert.Equal(0, result);
@@ -240,9 +246,15 @@ public class FetchCommandTests
         System.Console.SetOut(stringWriter);
 
         // Act
-        var result = await command.ExecuteAsync(30);
-
-        System.Console.SetOut(originalOutput);
+        int result;
+        try
+        {
+            result = await command.ExecuteAsync(30);
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
 
         // Assert
         Assert.Equal(0, result);
@@ -434,9 +446,15 @@ public class FetchCommandTests
         System.Console.SetError(stringWriter);
 
         // Act
-        var result = await command.ExecuteAsync(30);
-
-        System.Console.SetError(originalError);
+        int result;
+        try
+        {
+            result = await command.ExecuteAsync(30);
+        }
+        finally
+        {
+            System.Console.SetError(originalError);
+        }
 
         // Assert
         Assert.Equal(1, result);
