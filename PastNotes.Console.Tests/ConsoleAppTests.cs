@@ -226,8 +226,6 @@ public class ConsoleAppTests
             // Act
             var result = await Program.Main(args);
 
-            System.Console.SetOut(originalOutput);
-
             // Assert
             Assert.Equal(1, result);
             Assert.Contains("MISSKEY_API_TOKEN", stringWriter.ToString());

@@ -22,7 +22,7 @@ public class SearchCommand
     {
         var notes = _repository.LoadFromFileAsync(_filePath).GetAwaiter().GetResult();
         
-        if (notes == null || !notes.Any())
+        if (!notes.Any())
         {
             System.Console.WriteLine("No notes found. Run 'fetch' command first.");
             return 1;
@@ -51,7 +51,7 @@ public class SearchCommand
     {
         var notes = await _repository.LoadFromFileAsync(_filePath);
 
-        if (notes == null || !notes.Any())
+        if (!notes.Any())
         {
             System.Console.WriteLine("No notes found. Run 'fetch' command first.");
             return 1;

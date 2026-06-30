@@ -21,7 +21,7 @@ public class ViewHtmlCommand
     {
         var notes = _repository.LoadFromFileAsync(_filePath).GetAwaiter().GetResult();
         
-        if (notes == null || !notes.Any())
+        if (!notes.Any())
         {
             System.Console.WriteLine("No notes found. Run 'fetch' command first.");
             return 1;

@@ -392,33 +392,41 @@ System.Console.SetOut(originalOutput);
 
 ---
 
-### [ ] BUG-35. `SearchCommand` に到達不能な `notes == null` チェックが残存（BUG-31 適用漏れ）
-
-**対象ファイル**: `PastNotes.Console/Commands/SearchCommand.cs`（25行目、54行目）
-
-**問題**: BUG-31 で `ViewCommand` の `notes == null ||` を削除したのと同じ理由で、`SearchCommand.Execute()`（25行目）と `ExecuteAsync()`（54行目）にも同チェックが残っている。`NoteRepository.LoadFromFileAsync` はファイル不在時に `Enumerable.Empty<Note>()`、JSON 破損時に `InvalidDataException` を返すため null にはならない。死コードがコードの一貫性を損なう。
-
-**修正案**: `if (notes == null || !notes.Any())` を `if (!notes.Any())` に変更する（2箇所）。
-
----
-
-### [ ] BUG-36. `ViewHtmlCommand` に到達不能な `notes == null` チェックが残存（同上）
-
-**対象ファイル**: `PastNotes.Console/Commands/ViewHtmlCommand.cs`（24行目）
-
-**問題**: BUG-35 と同一の原因。`ViewHtmlCommand.Execute()` 24行目の `if (notes == null || !notes.Any())` で `notes == null` が到達不能。`ViewCommand` は BUG-31 修正済みだが `ViewHtmlCommand` には適用されていない。
-
-**修正案**: `notes == null ||` を削除する（1箇所）。
-
----
-
-### [ ] BUG-37. `MisskeyApiClient` がライブラリ内で直接 `System.Console.WriteLine` を呼び出している
+### [ ] BUG-35. `MisskeyApiClient` がライブラリ内で直接 `System.Console.WriteLine` を呼び出している
 
 **対象ファイル**: `PastNotes/MisskeyApiClient.cs`（288行目）
 
 **問題**: `GetNotesWithPaginationFromApiAsync` のページネーションループ内で `System.Console.WriteLine($"  取得中... {allNotes.Count} 件")` を直接呼び出している。`PastNotes` はライブラリプロジェクトであり、コンソール出力を直接持つべきではない（Console に依存するとコンソールアプリ以外での再利用が困難、テスト出力が汚れる）。`FetchCommandTests` 等で `Console.SetOut` を差し替えてもこのメッセージは通常出力として混入し続ける。
 
 **修正案**: `IProgress<string>` やコールバック Action などを引数として受け取る形に変更し、進捗出力の責任を呼び出し元（`FetchCommand`）に委ねる。または `System.Console.WriteLine` を条件付きコンパイルまたは設定フラグで無効化できるようにする。
+
+---
+
+## REFACTOR: リファクタリング
+
+*動作を変えずにコード構造・一貫性を改善する変更。*
+
+### [x] REFACTOR-1. `SearchCommand` の到達不能な `notes == null` チェックを削除
+
+**対象ファイル**: `PastNotes.Console/Commands/SearchCommand.cs`（25行目、54行目）
+
+**背景**: `NoteRepository.LoadFromFileAsync` はファイル不在時に `Enumerable.Empty<Note>()`、JSON 破損時に `InvalidDataException` を返すため null にはならない。BUG-31 で `ViewCommand` の同チェックを削除したが、`SearchCommand.Execute()`・`ExecuteAsync()` には残存していた。
+
+**変更**: `if (notes == null || !notes.Any())` → `if (!notes.Any())`（2箇所）。動作不変。
+
+**対処**: 変更後、既存109件ユニットテスト全件パスで動作不変を確認済み。
+
+---
+
+### [x] REFACTOR-2. `ViewHtmlCommand` の到達不能な `notes == null` チェックを削除
+
+**対象ファイル**: `PastNotes.Console/Commands/ViewHtmlCommand.cs`（24行目）
+
+**背景**: REFACTOR-1 と同一原因。`ViewCommand` は BUG-31 で修正済みだが `ViewHtmlCommand` には未適用だった。
+
+**変更**: `if (notes == null || !notes.Any())` → `if (!notes.Any())`（1箇所）。動作不変。
+
+**対処**: REFACTOR-1 と同一コミットで対処。
 
 ---
 
@@ -598,13 +606,15 @@ System.Console.SetOut(originalOutput);
 
 ---
 
-### [ ] TST-19. `ConsoleAppTests.FetchCommand_WhenApiTokenMissing` の try ブロック内に `SetOut` 復元が重複（TST-17 の適用漏れ）
+### [x] TST-19. `ConsoleAppTests.FetchCommand_WhenApiTokenMissing` の try ブロック内に `SetOut` 復元が重複（TST-17 の適用漏れ）
 
 **対象ファイル**: `PastNotes.Console.Tests/ConsoleAppTests.cs`（186行目）
 
 **問題**: TST-17 で `FetchCommandTests`・`ViewCommandTests` の `Console.SetOut/SetError` 復元を `finally` ブロックへ移動したが、`ConsoleAppTests` の `FetchCommand_WhenApiTokenMissing_ReturnsOneAndPrintsError` テストには同じパターンが残っている。try ブロック内 186行目と finally ブロックで `System.Console.SetOut(originalOutput)` を二重に呼んでいる。同ファイルの他のテスト（`SearchCommand_WhenInvalidStartDate_ReturnsOneAndPrintsError` 等）は finally のみで復元しており不一致。
 
 **修正案**: try ブロック内の `System.Console.SetOut(originalOutput)` 186行目を削除する。
+
+**対処**: 229行目の重複 `System.Console.SetOut(originalOutput)` を削除。BUG-35/36 と同一コミットで対処。109件ユニットテスト全件パス。
 
 ---
 
