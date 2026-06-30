@@ -475,7 +475,7 @@ public class MisskeyApiClientTests
 
         if (string.IsNullOrEmpty(instanceUrl) || string.IsNullOrEmpty(apiToken))
         {
-            Assert.True(false, "統合テストを実行するには環境変数を設定してください。'dotnet test --filter \"Category=Integration\"' を使用して統合テストのみを実行してください。");
+            Assert.Fail("統合テストを実行するには環境変数を設定してください。'dotnet test --filter \"Category=Integration\"' を使用して統合テストのみを実行してください。");
         }
 
         var httpClient = new HttpClient();
@@ -506,7 +506,7 @@ public class MisskeyApiClientTests
 
         if (string.IsNullOrEmpty(instanceUrl) || string.IsNullOrEmpty(apiToken))
         {
-            Assert.True(false, "統合テストを実行するには環境変数を設定してください。'dotnet test --filter \"Category=Integration\"' を使用して統合テストのみを実行してください。");
+            Assert.Fail("統合テストを実行するには環境変数を設定してください。'dotnet test --filter \"Category=Integration\"' を使用して統合テストのみを実行してください。");
         }
 
         var httpClient = new HttpClient();
@@ -535,7 +535,7 @@ public class MisskeyApiClientTests
 
         if (string.IsNullOrEmpty(instanceUrl) || string.IsNullOrEmpty(apiToken))
         {
-            Assert.True(false, "統合テストを実行するには環境変数を設定してください。'dotnet test --filter \"Category=Integration\"' を使用して統合テストのみを実行してください。");
+            Assert.Fail("統合テストを実行するには環境変数を設定してください。'dotnet test --filter \"Category=Integration\"' を使用して統合テストのみを実行してください。");
         }
 
         var httpClient = new HttpClient();
@@ -575,7 +575,7 @@ public class MisskeyApiClientTests
 
         if (string.IsNullOrEmpty(instanceUrl) || string.IsNullOrEmpty(apiToken))
         {
-            Assert.True(false, "統合テストを実行するには環境変数を設定してください。'dotnet test --filter \"Category=Integration\"' を使用して統合テストのみを実行してください。");
+            Assert.Fail("統合テストを実行するには環境変数を設定してください。'dotnet test --filter \"Category=Integration\"' を使用して統合テストのみを実行してください。");
         }
 
         var httpClient = new HttpClient();

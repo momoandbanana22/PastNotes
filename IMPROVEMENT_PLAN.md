@@ -332,13 +332,13 @@ System.Console.SetOut(originalOutput);
 
 ---
 
-### [ ] BUG-30. 統合テストの `Assert.True(false, message)` がビルド警告を発生させている
+### [x] BUG-30. 統合テストの `Assert.True(false, message)` がビルド警告を発生させている
 
 **対象ファイル**: `PastNotes.Tests/MisskeyApiClientTests.cs`（478・509・538・578 行目）
 
 **問題**: 統合テストで環境変数が未設定のときに `Assert.True(false, message)` を使用しており、`xUnit2020` アナライザー警告が 4 件発生している。RELEASE_CHECKLIST の「ビルドエラー・警告がゼロ（`dotnet build`）」が `[x]` 済みになっているが、実際は 4 件の警告が存在する状態。xUnit 2.9.0 以降では `Assert.Fail(message)` を使用すべきと静的解析が警告している。
 
-**修正案**: 4 箇所の `Assert.True(false, message)` を `Assert.Fail(message)` に置き換える。RELEASE_CHECKLIST の「警告がゼロ」のチェックも外し、修正後に再チェックする。
+**対処**: 4 箇所の `Assert.True(false, message)` を `Assert.Fail(message)` に置き換えた。`dotnet build` の警告が 4 件 → 0 件になったことを確認済み。
 
 ---
 
