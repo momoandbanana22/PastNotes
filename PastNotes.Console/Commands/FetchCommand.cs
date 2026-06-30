@@ -82,5 +82,10 @@ public class FetchCommand
             System.Console.Error.WriteLine($"Error: Unauthorized - {ex.Message}");
             return 1;
         }
+        catch (ApiException ex)
+        {
+            System.Console.Error.WriteLine($"Error: {ex.Message}");
+            return 1;
+        }
     }
 }

@@ -458,6 +458,84 @@ public class FetchCommandTests
         Assert.Contains("Unauthorized", output, StringComparison.OrdinalIgnoreCase);
     }
 
+    // TDD: BUG-38 - リトライ上限超過時は exit 1 かつエラーが stderr に出力されること
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ExecuteAsync_WhenMaxRetriesExceeded_ReturnsOneAndPrintsToStderr()
+    {
+        // Arrange
+        var mockApiClient = new Mock<IMisskeyApiClient>();
+        var repository = new NoteRepository();
+        var command = new FetchCommand(mockApiClient.Object, repository);
+
+        mockApiClient
+            .Setup(x => x.GetNotesWithRetry(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<Action<string>?>()))
+            .ThrowsAsync(new RateLimitExceededException("Max retries exceeded"));
+
+        var originalError = System.Console.Error;
+        var originalOut = System.Console.Out;
+        using var errWriter = new StringWriter();
+        using var outWriter = new StringWriter();
+        System.Console.SetError(errWriter);
+        System.Console.SetOut(outWriter);
+
+        // Act
+        int result;
+        try
+        {
+            result = await command.ExecuteAsync(30);
+        }
+        finally
+        {
+            System.Console.SetError(originalError);
+            System.Console.SetOut(originalOut);
+        }
+
+        // Assert
+        Assert.Equal(1, result);
+        Assert.Contains("Max retries exceeded", errWriter.ToString());
+        Assert.DoesNotContain("Max retries exceeded", outWriter.ToString());
+    }
+
+    // TDD: BUG-38 - ServerErrorException も stderr に出力されること
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ExecuteAsync_WhenServerError_ReturnsOneAndPrintsToStderr()
+    {
+        // Arrange
+        var mockApiClient = new Mock<IMisskeyApiClient>();
+        var repository = new NoteRepository();
+        var command = new FetchCommand(mockApiClient.Object, repository);
+
+        mockApiClient
+            .Setup(x => x.GetNotesWithRetry(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<Action<string>?>()))
+            .ThrowsAsync(new ServerErrorException("Server error: InternalServerError"));
+
+        var originalError = System.Console.Error;
+        var originalOut = System.Console.Out;
+        using var errWriter = new StringWriter();
+        using var outWriter = new StringWriter();
+        System.Console.SetError(errWriter);
+        System.Console.SetOut(outWriter);
+
+        // Act
+        int result;
+        try
+        {
+            result = await command.ExecuteAsync(30);
+        }
+        finally
+        {
+            System.Console.SetError(originalError);
+            System.Console.SetOut(originalOut);
+        }
+
+        // Assert
+        Assert.Equal(1, result);
+        Assert.Contains("Server error", errWriter.ToString());
+        Assert.DoesNotContain("Server error", outWriter.ToString());
+    }
+
     // TDD: BUG-24 - ExecuteAsync(days) の進捗表示が JST であることを確認
     [Fact]
     [Trait("Category", "Unit")]
