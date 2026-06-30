@@ -318,6 +318,18 @@ System.Console.SetOut(originalOutput);
 
 ---
 
+### [ ] BUG-29. `ViewCommand` で `notes.Count()` と `foreach` が二重列挙している（BUG-26 の適用漏れ）
+
+**対象ファイル**: `PastNotes.Console/Commands/ViewCommand.cs`（`Execute()` 41・44行目、`ExecuteAsync()` 84・87行目）
+
+**問題**: `Execute()` および `ExecuteAsync()` で、`--start/--end` 指定時に `FilterByDateRange` が返す遅延評価の `IEnumerable<Note>` を `notes.Count()` と `foreach` で2回列挙している。BUG-26 で `SearchCommand` に適用した `.ToList()` 修正が `ViewCommand` には適用されていなかった。
+
+元コレクションは `JsonSerializer.Deserialize` の結果（実態は `Note[]`）のため動作上の誤りは生じないが、`SearchCommand` との実装の一貫性が欠ける。
+
+**修正案**: `Execute()` と `ExecuteAsync()` 両方で、`FilterByDateRange` 呼び出し後に `.ToList()` を適用し、`notes.Count()` を `notes.Count`（プロパティ）に変更する。
+
+---
+
 ## TST: テスト追加
 
 ### [x] TST-1. 対象期間より古いノートしかない場合のページネーション終了
