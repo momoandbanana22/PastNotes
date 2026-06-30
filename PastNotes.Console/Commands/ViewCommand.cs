@@ -23,9 +23,9 @@ public class ViewCommand
 
     public int Execute()
     {
-        var notes = _repository.LoadFromFileAsync(_filePath).GetAwaiter().GetResult();
+        var notes = _repository.LoadFromFileAsync(_filePath).GetAwaiter().GetResult().ToList();
 
-        if (notes == null || !notes.Any())
+        if (!notes.Any())
         {
             System.Console.WriteLine("No notes found. Run 'fetch' command first.");
             return 1;
@@ -38,7 +38,7 @@ public class ViewCommand
                 _endDate ?? DateTime.MaxValue).ToList();
         }
 
-        System.Console.WriteLine($"Total notes: {notes.Count()}");
+        System.Console.WriteLine($"Total notes: {notes.Count}");
         System.Console.WriteLine();
 
         foreach (var note in notes)
@@ -66,9 +66,9 @@ public class ViewCommand
 
     public async Task<int> ExecuteAsync()
     {
-        var notes = await _repository.LoadFromFileAsync(_filePath);
+        var notes = (await _repository.LoadFromFileAsync(_filePath)).ToList();
 
-        if (notes == null || !notes.Any())
+        if (!notes.Any())
         {
             System.Console.WriteLine("No notes found. Run 'fetch' command first.");
             return 1;
@@ -81,7 +81,7 @@ public class ViewCommand
                 _endDate ?? DateTime.MaxValue).ToList();
         }
 
-        System.Console.WriteLine($"Total notes: {notes.Count()}");
+        System.Console.WriteLine($"Total notes: {notes.Count}");
         System.Console.WriteLine();
 
         foreach (var note in notes)

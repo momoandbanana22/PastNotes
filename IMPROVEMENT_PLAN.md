@@ -342,13 +342,15 @@ System.Console.SetOut(originalOutput);
 
 ---
 
-### [ ] BUG-31. BUG-29 の残り作業: `ViewCommand` の `notes.Count()` が `notes.Count` プロパティになっていない
+### [x] BUG-31. BUG-29 の残り作業: `ViewCommand` の `notes.Count()` が `notes.Count` プロパティになっていない
 
 **対象ファイル**: `PastNotes.Console/Commands/ViewCommand.cs`（`Execute()` 41行目、`ExecuteAsync()` 84行目）
 
 **問題**: BUG-29 の修正コミット（"fix: ViewCommand の FilterByDateRange 後に .ToList() を適用"）で `FilterByDateRange` 後の `.ToList()` 適用は行われたが、IMPROVEMENT_PLAN に記載していた `notes.Count()` → `notes.Count`（プロパティ）への変更が未適用のまま残っている。`notes` の宣言型が `IEnumerable<Note>` のため `.Count` プロパティが直接呼べず、拡張メソッド `Count()` が残存している。動作上の問題は生じないが（`ICollection<T>` の最適化により O(1)）、`SearchCommand` が `results.Count`（プロパティ）を使用しているのと実装が一致しない。
 
 **修正案**: `notes` の宣言型を `List<Note>` に変更し（`LoadFromFileAsync` 結果に即座に `.ToList()` を適用）、`notes.Count()` を `notes.Count` に変更する。`FilterByDateRange` 後の `.ToList()` は維持する。
+
+**対処**: `Execute()` で `LoadFromFileAsync(...).GetAwaiter().GetResult().ToList()`、`ExecuteAsync()` で `(await LoadFromFileAsync(...)).ToList()` に変更し `notes` を `List<Note>` として宣言。`notes.Count()` → `notes.Count` に変更（2箇所）。`notes == null ||` の不要な null チェックも除去。TDD で既存の 44 件ユニットテストがリファクタリング前後とも全件パスすることを確認済み。
 
 ---
 
