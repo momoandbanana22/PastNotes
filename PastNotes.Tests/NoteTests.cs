@@ -71,6 +71,32 @@ public class NoteHtmlGeneratorOutputTests
 {
     [Fact]
     [Trait("Category", "Unit")]
+    public void GenerateHtml_WhenNoteIdContainsHtmlSpecialChars_EncodesIdInTitle()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var note = new Note
+        {
+            Id = "</title><script>alert(1)</script>",
+            Text = "Safe text",
+            CreatedAt = DateTime.UtcNow
+        };
+        var outputPath = $"test_note_xss_{Guid.NewGuid()}.html";
+
+        // Act
+        generator.GenerateHtml(note, outputPath);
+
+        // Assert
+        var html = File.ReadAllText(outputPath);
+        Assert.DoesNotContain("</title><script>", html);
+        Assert.Contains("&lt;/title&gt;", html);
+
+        // Cleanup
+        if (File.Exists(outputPath)) File.Delete(outputPath);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     public void GenerateHtml_WhenCalledWithNote_CreatesHtmlFile()
     {
         // Arrange

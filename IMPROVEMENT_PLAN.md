@@ -366,13 +366,15 @@ System.Console.SetOut(originalOutput);
 
 ---
 
-### [ ] BUG-33. `NoteHtmlGenerator.GenerateHtml` で `note.Id` が HTML エンコードされていない（XSS）
+### [x] BUG-33. `NoteHtmlGenerator.GenerateHtml` で `note.Id` が HTML エンコードされていない（XSS）
 
 **対象ファイル**: `PastNotes/NoteHtmlGenerator.cs`（18行目）
 
 **問題**: `GenerateHtml` の `<title>` タグで `note.Id` を `WebUtility.HtmlEncode` せずに直接埋め込んでいる。同メソッド内の `note.Text`・`file.Url`・`file.Name` はすべて `WebUtility.HtmlEncode` を通しており、`note.Id` だけが漏れている。Misskey の ID は英数字のみのため実害は低いが、`</title><script>alert(1)</script>` のような値が入ると HTML 構造の破壊またはスクリプト注入が発生しうる。
 
 **修正案**: `note.Id` を `WebUtility.HtmlEncode(note.Id)` に変更する。
+
+**対処**: `NoteHtmlGenerator.cs` 18行目を `WebUtility.HtmlEncode(note.Id)` に変更。TDD で `GenerateHtml_WhenNoteIdContainsHtmlSpecialChars_EncodesIdInTitle` を追加して検証済み。107件ユニットテスト全件パス。
 
 ---
 

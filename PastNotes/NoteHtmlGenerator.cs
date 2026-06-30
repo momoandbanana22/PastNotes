@@ -15,7 +15,7 @@ public class NoteHtmlGenerator
 <head>
     <meta charset=""UTF-8"">
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-    <title>Note - {note.Id}</title>
+    <title>Note - {WebUtility.HtmlEncode(note.Id)}</title>
     <style>
         body {{
             font-family: Arial, sans-serif;
