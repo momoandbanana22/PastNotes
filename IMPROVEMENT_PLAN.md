@@ -476,6 +476,16 @@ else
 
 ---
 
+### [ ] BUG-40. 進捗メッセージの日本語が文字化けする
+
+**対象ファイル**: `PastNotes.Console/Program.cs`
+
+**問題**: `MisskeyApiClient.GetNotesWithPaginationFromApiAsync`（272行目）が `"  取得中... {allNotes.Count} 件"` という日本語を出力するが、`Program.cs` に `Console.OutputEncoding` の設定がないため、Windows PowerShell のデフォルトエンコーディング（CP932）と衝突し、進捗メッセージが文字化けする。統合テスト実行時に確認。
+
+**修正案**: `Program.cs` の起動時に `Console.OutputEncoding = System.Text.Encoding.UTF8;` を追加する。
+
+---
+
 ## REFACTOR: リファクタリング
 
 *動作を変えずにコード構造・一貫性を改善する変更。*
