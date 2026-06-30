@@ -1,36 +1,4 @@
-namespace PastNotes;
-
-public class TimeZoneHelperTests
-{
-    // BUG-13: Windows専用タイムゾーンIDの代わりにOS判定で取得したゾーンがUTC+9であることを確認
-    [Fact]
-    [Trait("Category", "Unit")]
-    public void Jst_ShouldBeUtcPlus9()
-    {
-        Assert.Equal(TimeSpan.FromHours(9), TimeZoneHelper.Jst.BaseUtcOffset);
-    }
-
-    // TDD: BUG-27 - ConvertToUtc が正しく JST→UTC 変換するか
-    [Fact]
-    [Trait("Category", "Unit")]
-    public void ConvertToUtc_WhenJstNewYearMidnight_ReturnsPreviousDayUtc()
-    {
-        // JST 2024-01-01 00:00:00 → UTC 2023-12-31 15:00:00
-        var jst = new DateTime(2024, 1, 1, 0, 0, 0);
-        var utc = TimeZoneHelper.ConvertToUtc(jst);
-        Assert.Equal(new DateTime(2023, 12, 31, 15, 0, 0, DateTimeKind.Utc), utc);
-    }
-
-    [Fact]
-    [Trait("Category", "Unit")]
-    public void ConvertToUtc_WhenJstNoon_ReturnsUtcMorning()
-    {
-        // JST 2024-06-15 12:00:00 → UTC 2024-06-15 03:00:00
-        var jst = new DateTime(2024, 6, 15, 12, 0, 0);
-        var utc = TimeZoneHelper.ConvertToUtc(jst);
-        Assert.Equal(new DateTime(2024, 6, 15, 3, 0, 0, DateTimeKind.Utc), utc);
-    }
-}
+namespace PastNotes.Tests;
 
 public class NoteHtmlGeneratorTests
 {
@@ -101,5 +69,259 @@ public class NoteHtmlGeneratorTests
 
         // Cleanup
         if (File.Exists(outputPath)) File.Delete(outputPath);
+    }
+}
+
+public class NoteHtmlGeneratorOutputTests
+{
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GenerateHtml_WhenNoteIdContainsHtmlSpecialChars_EncodesIdInTitle()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var note = new Note
+        {
+            Id = "</title><script>alert(1)</script>",
+            Text = "Safe text",
+            CreatedAt = DateTime.UtcNow
+        };
+        var outputPath = $"test_note_xss_{Guid.NewGuid()}.html";
+
+        // Act
+        generator.GenerateHtml(note, outputPath);
+
+        // Assert
+        var html = File.ReadAllText(outputPath);
+        Assert.DoesNotContain("</title><script>", html);
+        Assert.Contains("&lt;/title&gt;", html);
+
+        // Cleanup
+        if (File.Exists(outputPath)) File.Delete(outputPath);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GenerateHtml_WhenCalledWithNote_CreatesHtmlFile()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var note = new Note
+        {
+            Id = "test-id",
+            Text = "Test note",
+            CreatedAt = DateTime.Now
+        };
+        var outputPath = $"test_note_{Guid.NewGuid()}.html";
+
+        // Act
+        generator.GenerateHtml(note, outputPath);
+
+        // Assert
+        Assert.True(File.Exists(outputPath));
+
+        // Cleanup
+        if (File.Exists(outputPath))
+        {
+            File.Delete(outputPath);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GenerateHtml_WhenNoteHasFiles_IncludesImageTags()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var note = new Note
+        {
+            Id = "test-id",
+            Text = "Test note with image",
+            CreatedAt = DateTime.Now,
+            Files = new List<NoteFile>
+            {
+                new NoteFile
+                {
+                    Id = "file-1",
+                    Url = "https://example.com/image.jpg",
+                    Type = "image/jpeg",
+                    Name = "image.jpg"
+                }
+            }
+        };
+        var outputPath = $"test_note_{Guid.NewGuid()}.html";
+
+        // Act
+        generator.GenerateHtml(note, outputPath);
+
+        // Assert
+        var htmlContent = File.ReadAllText(outputPath);
+        Assert.Contains("<img", htmlContent);
+        Assert.Contains("https://example.com/image.jpg", htmlContent);
+
+        // Cleanup
+        if (File.Exists(outputPath))
+        {
+            File.Delete(outputPath);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void OpenInBrowser_WhenCalledWithHtmlFile_OpensBrowser()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var note = new Note
+        {
+            Id = "test-id",
+            Text = "Test note",
+            CreatedAt = DateTime.Now
+        };
+        var outputPath = $"test_note_{Guid.NewGuid()}.html";
+        generator.GenerateHtml(note, outputPath);
+
+        // Act & Assert
+        // ブラウザを開く機能はテストが難しいため、メソッドが存在することを確認
+        var method = typeof(NoteHtmlGenerator).GetMethod("OpenInBrowser", new[] { typeof(string) });
+        Assert.NotNull(method);
+
+        // Cleanup
+        if (File.Exists(outputPath))
+        {
+            File.Delete(outputPath);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GenerateHtmlForAllNotes_WhenCalledWithMultipleNotes_GeneratesSingleHtmlFile()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var notes = new List<Note>
+        {
+            new Note { Id = "1", Text = "Test note 1", CreatedAt = DateTime.Now },
+            new Note { Id = "2", Text = "Test note 2", CreatedAt = DateTime.Now }
+        };
+        var outputPath = $"test_notes_{Guid.NewGuid()}.html";
+
+        // Act
+        generator.GenerateHtmlForAllNotes(notes, outputPath);
+
+        // Assert
+        Assert.True(File.Exists(outputPath));
+        var htmlContent = File.ReadAllText(outputPath);
+        Assert.Contains("Test note 1", htmlContent);
+        Assert.Contains("Test note 2", htmlContent);
+
+        // Cleanup
+        if (File.Exists(outputPath))
+        {
+            File.Delete(outputPath);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GenerateHtmlForAllNotes_WhenNotesHaveFiles_IncludesImageTags()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var notes = new List<Note>
+        {
+            new Note
+            {
+                Id = "1",
+                Text = "Test note with image",
+                CreatedAt = DateTime.Now,
+                Files = new List<NoteFile>
+                {
+                    new NoteFile
+                    {
+                        Id = "file-1",
+                        Url = "https://example.com/image.jpg",
+                        Type = "image/jpeg",
+                        Name = "image.jpg"
+                    }
+                }
+            }
+        };
+        var outputPath = $"test_notes_{Guid.NewGuid()}.html";
+
+        // Act
+        generator.GenerateHtmlForAllNotes(notes, outputPath);
+
+        // Assert
+        var htmlContent = File.ReadAllText(outputPath);
+        Assert.Contains("<img", htmlContent);
+        Assert.Contains("https://example.com/image.jpg", htmlContent);
+
+        // Cleanup
+        if (File.Exists(outputPath))
+        {
+            File.Delete(outputPath);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GenerateHtml_WhenNoteHasLineBreaks_PreservesLineBreaksInHtml()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var note = new Note
+        {
+            Id = "test-id",
+            Text = "Line 1\nLine 2\nLine 3",
+            CreatedAt = DateTime.Now
+        };
+        var outputPath = $"test_note_linebreaks_{Guid.NewGuid()}.html";
+
+        // Act
+        generator.GenerateHtml(note, outputPath);
+
+        // Assert
+        var htmlContent = File.ReadAllText(outputPath);
+        // Check that line breaks are preserved either as <br> tags or with CSS white-space
+        Assert.True(htmlContent.Contains("<br") || htmlContent.Contains("white-space"));
+
+        // Cleanup
+        if (File.Exists(outputPath))
+        {
+            File.Delete(outputPath);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GenerateHtmlForAllNotes_WhenNotesHaveLineBreaks_PreservesLineBreaksInHtml()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var notes = new List<Note>
+        {
+            new Note
+            {
+                Id = "1",
+                Text = "First line\nSecond line\nThird line",
+                CreatedAt = DateTime.Now
+            }
+        };
+        var outputPath = $"test_notes_linebreaks_{Guid.NewGuid()}.html";
+
+        // Act
+        generator.GenerateHtmlForAllNotes(notes, outputPath);
+
+        // Assert
+        var htmlContent = File.ReadAllText(outputPath);
+        // Check that line breaks are preserved either as <br> tags or with CSS white-space
+        Assert.True(htmlContent.Contains("<br") || htmlContent.Contains("white-space"));
+
+        // Cleanup
+        if (File.Exists(outputPath))
+        {
+            File.Delete(outputPath);
+        }
     }
 }

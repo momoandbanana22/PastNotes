@@ -699,7 +699,7 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] TST-23. テストクラスがファイル名・名前空間と一致していない
+### [x] TST-23. テストクラスがファイル名・名前空間と一致していない
 
 **対象ファイル**:
 - `PastNotes.Tests/NoteHtmlGeneratorTests.cs`（`TimeZoneHelperTests` クラスが同居）
