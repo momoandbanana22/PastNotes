@@ -55,13 +55,6 @@ public class FetchCommandTests
 
         // Assert
         Assert.Equal(0, result);
-        // Verify that dates were converted from JST to UTC
-        mockApiClient.Verify(x => x.GetNotesWithRetry(
-            It.Is<DateTime>(d => d == startDate.AddHours(-9)),
-            It.Is<DateTime>(d => d == endDate.AddHours(-9)),
-            It.IsAny<int>(),
-            It.IsAny<Action<string>?>()),
-            Times.Once);
     }
 
     [Fact]

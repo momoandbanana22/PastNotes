@@ -671,6 +671,16 @@ if (notes == null || !notes.Any())
 
 ---
 
+### [x] TST-22. `FetchCommandTests` に実質同一のテストが2件重複している
+
+**対象ファイル**: `PastNotes.Console.Tests/Commands/FetchCommandTests.cs`（35〜65行目、68〜100行目）
+
+**問題**: `ExecuteAsync_WhenCalledWithDateRange_ReturnsSuccess` と `ExecuteAsync_WhenCalledWithDateRange_ConvertsJstToUtcByDefault` が実質同一の内容を検証している。どちらも「JST→UTC 変換が正しく行われること」を `Verify` で確認しており、セットアップ・アサーション・意図が重複している。テストの意図の違いが名前から読み取れず、将来のメンテナンス時に混乱を招く可能性がある。
+
+**対処**: `ExecuteAsync_WhenCalledWithDateRange_ReturnsSuccess` から `mockApiClient.Verify` 呼び出しを削除し「日付範囲指定時に exit 0 を返すこと」のみを検証するよう変更した。JST→UTC 変換の検証は `ExecuteAsync_WhenCalledWithDateRange_ConvertsJstToUtcByDefault` に集約。113件ユニットテスト全件パス。
+
+---
+
 ## DOC: ドキュメント
 
 ### [x] DOC-1. MisskeyApiClientのTODOコメントを整理する
@@ -694,6 +704,23 @@ if (notes == null || !notes.Any())
 - 実行前提条件（.NET 10 SDK が必要）の記載がない
 - `view` の表示順序（保存順）が記載されていない
 - `search` で 0 件ヒットしたときの挙動が記載されていない
+
+---
+
+### [ ] DOC-4. `--max-retries` CLI オプションが README・DEVELOPMENT.md に記載されていない
+
+**対象ファイル**: `PastNotes.Console/Program.cs`（64〜65行目）、`README.md`、`DEVELOPMENT.md`
+
+**問題**: `--max-retries` オプションが `Program.cs` に実装されているが、どのドキュメントにも記載がない。
+
+```csharp
+var maxRetriesIdx = Array.IndexOf(args, "--max-retries");
+var maxRetries = (maxRetriesIdx >= 0 && maxRetriesIdx + 1 < args.Length && int.TryParse(args[maxRetriesIdx + 1], out var mr)) ? mr : 3;
+```
+
+TST-21 の修正時に「Option A: FetchCommand コンストラクタへの注入」と「Option C: CLI オプション追加」の両方が実装されたが、後者のドキュメント化が漏れた。ユーザーはこのオプションの存在を知る手段がない。
+
+**修正案**: README の `fetch` コマンド使用例と DEVELOPMENT.md のビルド・実行コマンド一覧に `--max-retries <n>` の説明を追記する。
 
 ---
 
