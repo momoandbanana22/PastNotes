@@ -33,10 +33,22 @@ public class Program
             // --instance-url / --token 引数を優先、なければ環境変数
             var instanceUrlIdx = Array.IndexOf(args, "--instance-url");
             var tokenIdx       = Array.IndexOf(args, "--token");
-            var instanceUrl = (instanceUrlIdx >= 0 && instanceUrlIdx + 1 < args.Length)
+
+            if (instanceUrlIdx >= 0 && instanceUrlIdx + 1 >= args.Length)
+            {
+                System.Console.WriteLine("Error: --instance-url requires a URL value");
+                return 1;
+            }
+            if (tokenIdx >= 0 && tokenIdx + 1 >= args.Length)
+            {
+                System.Console.WriteLine("Error: --token requires a token value");
+                return 1;
+            }
+
+            var instanceUrl = (instanceUrlIdx >= 0)
                 ? args[instanceUrlIdx + 1]
                 : Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL") ?? "https://misskey.io";
-            var apiToken = (tokenIdx >= 0 && tokenIdx + 1 < args.Length)
+            var apiToken = (tokenIdx >= 0)
                 ? args[tokenIdx + 1]
                 : Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
 

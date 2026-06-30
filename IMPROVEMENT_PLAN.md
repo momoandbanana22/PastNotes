@@ -404,7 +404,7 @@ System.Console.SetOut(originalOutput);
 
 ---
 
-### [ ] BUG-36. `fetch` の `--token` / `--instance-url` に値を指定しないとエラーなく環境変数にフォールバックする
+### [x] BUG-36. `fetch` の `--token` / `--instance-url` に値を指定しないとエラーなく環境変数にフォールバックする
 
 **対象ファイル**: `PastNotes.Console/Program.cs`（34〜41行目）
 

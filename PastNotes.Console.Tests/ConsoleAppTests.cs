@@ -84,6 +84,49 @@ public class ConsoleAppTests
         Assert.NotEqual(0, result);
     }
 
+    // TDD: BUG-36 - --token に値なしで渡した場合はエラーを返すか
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task FetchCommand_WhenTokenFlagHasNoValue_ReturnsOneAndPrintsError()
+    {
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            var args = new[] { "fetch", "--days", "30", "--token" };
+            var result = await Program.Main(args);
+            Assert.Equal(1, result);
+            Assert.Contains("--token", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task FetchCommand_WhenInstanceUrlFlagHasNoValue_ReturnsOneAndPrintsError()
+    {
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            var args = new[] { "fetch", "--days", "30", "--instance-url" };
+            var result = await Program.Main(args);
+            Assert.Equal(1, result);
+            Assert.Contains("--instance-url", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+    }
+
     // TDD: TST-10 - トークンなしでexit 1とエラーメッセージ
     // TDD: fetch --append --start ... --end ... の順序でも正しく解析されること
     [Fact]
