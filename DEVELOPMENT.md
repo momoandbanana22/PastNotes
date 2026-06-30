@@ -124,19 +124,6 @@ $env:MISSKEY_API_TOKEN = "your-api-token"
 dotnet test --filter "Category=Integration"
 ```
 
-#### 方法2: PowerShellスクリプトを使用
-
-```powershell
-.\run-integration-tests.ps1 -InstanceUrl "https://misskey.io" -ApiToken "your-api-token"
-```
-
-**注意:**
-- PowerShellスクリプトの実行が無効になっている場合、以下のコマンドで有効にできます:
-  ```powershell
-  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-  ```
-- APIトークンはMisskey.ioの設定から取得してください
-
 ### すべてのテストを実行
 
 ```bash
