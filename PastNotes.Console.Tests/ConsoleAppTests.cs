@@ -40,7 +40,7 @@ public class ConsoleAppTests
 
         if (string.IsNullOrEmpty(apiToken))
         {
-            throw new Exception("統合テストを実行するには環境変数を設定してください。");
+            Assert.Fail("統合テストを実行するには環境変数を設定してください。");
         }
 
         // Cleanup any existing notes.json
@@ -114,6 +114,49 @@ public class ConsoleAppTests
 
             // Assert: 引数解析は成功するので「Usage:」ではなく network error になること
             Assert.DoesNotContain("Usage: PastNotes.Console fetch --days", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+    }
+
+    // TDD: BUG-32 - search/view で不正な日付を指定するとエラーを返すか
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task SearchCommand_WhenInvalidStartDate_ReturnsOneAndPrintsError()
+    {
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            var args = new[] { "search", "keyword", "--start", "not-a-date", "--end", "2024-01-31" };
+            var result = await Program.Main(args);
+            Assert.Equal(1, result);
+            Assert.Contains("Invalid start date format", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ViewCommand_WhenInvalidEndDate_ReturnsOneAndPrintsError()
+    {
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            var args = new[] { "view", "--start", "2024-01-01", "--end", "not-a-date" };
+            var result = await Program.Main(args);
+            Assert.Equal(1, result);
+            Assert.Contains("Invalid end date format", stringWriter.ToString());
         }
         finally
         {

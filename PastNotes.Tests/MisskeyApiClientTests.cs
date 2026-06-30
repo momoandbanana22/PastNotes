@@ -449,7 +449,7 @@ public class MisskeyApiClientTests
 
         if (string.IsNullOrEmpty(apiToken))
         {
-            throw new Exception("統合テストを実行するには環境変数を設定してください。");
+            Assert.Fail("統合テストを実行するには環境変数を設定してください。");
         }
 
         var httpClient = new HttpClient();
@@ -831,7 +831,7 @@ public class MisskeyApiClientTests
 
         if (string.IsNullOrEmpty(apiToken))
         {
-            throw new Exception("統合テストを実行するには環境変数を設定してください。");
+            Assert.Fail("統合テストを実行するには環境変数を設定してください。");
         }
 
         var httpClient = new HttpClient();

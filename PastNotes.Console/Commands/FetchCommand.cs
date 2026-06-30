@@ -56,20 +56,22 @@ public class FetchCommand
                 return 0;
             }
 
-            IEnumerable<Note> toSave = notes;
+            List<Note> toSave;
             if (_append)
             {
                 var existing = await _repository.LoadFromFileAsync(_filePath);
-                // 新規ノートを優先して重複IDを排除しマージ
-                var merged = notes.Concat(existing)
+                toSave = notes.Concat(existing)
                     .GroupBy(n => n.Id)
                     .Select(g => g.First())
                     .ToList();
-                toSave = merged;
+            }
+            else
+            {
+                toSave = notes.ToList();
             }
 
             await _repository.SaveToFileAsync(toSave, _filePath);
-            System.Console.WriteLine($"Saved {toSave.Count()} notes to {_filePath}");
+            System.Console.WriteLine($"Saved {toSave.Count} notes to {_filePath}");
             return 0;
         }
         catch (UnauthorizedException ex)

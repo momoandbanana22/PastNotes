@@ -67,7 +67,7 @@ public class NoteTests
     }
 }
 
-public class NoteHtmlGeneratorTests
+public class NoteHtmlGeneratorOutputTests
 {
     [Fact]
     [Trait("Category", "Unit")]

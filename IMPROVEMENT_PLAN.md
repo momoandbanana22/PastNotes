@@ -354,6 +354,18 @@ System.Console.SetOut(originalOutput);
 
 ---
 
+### [x] BUG-32. `search`・`view` で不正な日付フォーマットが無視される
+
+**対象ファイル**: `PastNotes.Console/Program.cs`（116〜117行目、140〜141行目）
+
+**問題**: `fetch` コマンドは `--start`/`--end` の日付パースに失敗すると `"Error: Invalid start/end date format"` を出力して exit 1 する。しかし `search`・`view` コマンドは同じ状況で `TryParse` の失敗を無視し、フィルタなしで全件処理してしまう。ユーザーが `--start invalid-date` と指定すると、エラーは出ず全ノートが表示/検索される。
+
+**修正案**: `search`・`view` の日付パースを `TryParse` のワンライナーから分離し、失敗時はエラーメッセージを出力して exit 1 する（`fetch` と同一パターン）。
+
+**対処**: `Program.cs` の `search`（116〜117行目）と `view`（140〜141行目）を修正。TDD で `SearchCommand_WhenInvalidStartDate_ReturnsOneAndPrintsError`・`ViewCommand_WhenInvalidEndDate_ReturnsOneAndPrintsError` を追加して検証済み。
+
+---
+
 ## TST: テスト追加
 
 ### [x] TST-1. 対象期間より古いノートしかない場合のページネーション終了
