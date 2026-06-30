@@ -707,7 +707,7 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] DOC-4. `--max-retries` CLI オプションが README・DEVELOPMENT.md に記載されていない
+### [x] DOC-4. `--max-retries` CLI オプションが README・DEVELOPMENT.md に記載されていない
 
 **対象ファイル**: `PastNotes.Console/Program.cs`（64〜65行目）、`README.md`、`DEVELOPMENT.md`
 
@@ -721,6 +721,8 @@ var maxRetries = (maxRetriesIdx >= 0 && maxRetriesIdx + 1 < args.Length && int.T
 TST-21 の修正時に「Option A: FetchCommand コンストラクタへの注入」と「Option C: CLI オプション追加」の両方が実装されたが、後者のドキュメント化が漏れた。ユーザーはこのオプションの存在を知る手段がない。
 
 **修正案**: README の `fetch` コマンド使用例と DEVELOPMENT.md のビルド・実行コマンド一覧に `--max-retries <n>` の説明を追記する。
+
+**解決**: TDD で対応。`Main_WhenCalledWithNoArgs_UsageContainsMaxRetries` テストを先に追加して失敗を確認（RED）後、`Program.cs` の usage 文字列に `[--max-retries <n>]` を追加してテストを通過させた（GREEN）。README.md と DEVELOPMENT.md にも使用例を追記。51件ユニットテスト全件パス。
 
 ---
 

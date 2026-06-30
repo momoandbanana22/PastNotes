@@ -24,6 +24,7 @@ dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --days 
 dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --start 2024-01-01 --end 2024-01-31
 dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --days 30 --append
 dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --days 30 --token your-token --instance-url https://misskey.io
+dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --days 30 --max-retries 5
 dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- search <keyword>
 dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- search <keyword> --start 2024-01-01 --end 2024-01-31
 dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- view

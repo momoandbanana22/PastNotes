@@ -282,4 +282,26 @@ public class ConsoleAppTests
             Environment.SetEnvironmentVariable("MISSKEY_API_TOKEN", originalToken);
         }
     }
+
+    // TDD: DOC-4 - --max-retries がusageメッセージに記載されていること
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Main_WhenCalledWithNoArgs_UsageContainsMaxRetries()
+    {
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            var result = await Program.Main(Array.Empty<string>());
+
+            Assert.Equal(1, result);
+            Assert.Contains("--max-retries", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+    }
 }

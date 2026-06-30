@@ -70,6 +70,10 @@ APIトークンは Misskey の「設定 → API」から取得できます。
     dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --days 30 --append
     dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --start 2024-01-01 --end 2024-01-31 --append
 
+    # ノート取得（リトライ回数指定・デフォルト3回・0で無効化）
+    dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --days 30 --max-retries 5
+    dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --days 30 --max-retries 0
+
 #### 検索・表示系コマンド（ローカルに保存されたnotes.jsonを対象）
 
     # ノート検索（全期間）

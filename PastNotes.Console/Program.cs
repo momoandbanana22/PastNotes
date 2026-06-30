@@ -16,8 +16,8 @@ public class Program
         {
             System.Console.WriteLine("Usage: PastNotes.Console <command> [options]");
             System.Console.WriteLine("Commands:");
-            System.Console.WriteLine("  fetch --days <days> [--append] [--token <token>] [--instance-url <url>]");
-            System.Console.WriteLine("  fetch --start <date> --end <date> [--append] [--token <token>] [--instance-url <url>]");
+            System.Console.WriteLine("  fetch --days <days> [--append] [--token <token>] [--instance-url <url>] [--max-retries <n>]");
+            System.Console.WriteLine("  fetch --start <date> --end <date> [--append] [--token <token>] [--instance-url <url>] [--max-retries <n>]");
             System.Console.WriteLine("  search <keyword> [--start <date>] [--end <date>]");
             System.Console.WriteLine("  view [--show-id] [--start <date>] [--end <date>]");
             System.Console.WriteLine("  view-html [--open]");
