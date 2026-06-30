@@ -476,11 +476,16 @@ else
 
 ---
 
-### [ ] BUG-40. 進捗メッセージの日本語が文字化けする
+### [ ] BUG-40. 日本語出力が文字化けする
 
-**対象ファイル**: `PastNotes.Console/Program.cs`
+**対象ファイル**: `PastNotes.Console/Program.cs`、`PastNotes.Console/Commands/ViewCommand.cs`（54・97行目）、`PastNotes/MisskeyApiClient.cs`（272行目）
 
-**問題**: `MisskeyApiClient.GetNotesWithPaginationFromApiAsync`（272行目）が `"  取得中... {allNotes.Count} 件"` という日本語を出力するが、`Program.cs` に `Console.OutputEncoding` の設定がないため、Windows PowerShell のデフォルトエンコーディング（CP932）と衝突し、進捗メッセージが文字化けする。統合テスト実行時に確認。
+**問題**: 以下の箇所が日本語テキストを `Console.WriteLine` で出力するが、`Program.cs` に `Console.OutputEncoding` の設定がないため、Windows PowerShell のデフォルトエンコーディング（CP932）と衝突して文字化けする。
+
+- `MisskeyApiClient.cs:272` — `"  取得中... {allNotes.Count} 件"`（進捗メッセージ）
+- `ViewCommand.cs:54,97` — `"  添付ファイル:"`（`view` コマンドの表示）
+
+ユニットテストは `StringWriter` でキャプチャするためエンコーディング問題が隠れ、統合テスト実行まで気づかなかった。
 
 **修正案**: `Program.cs` の起動時に `Console.OutputEncoding = System.Text.Encoding.UTF8;` を追加する。
 
@@ -853,6 +858,16 @@ if (notes == null || !notes.Any())
 **問題**: 両クラスに UTC→JST 変換・秒数表示・日付フィルタリングを確認するテストがほぼ同じ構造で存在しており、`NoteRepository.FilterByDateRange` の動作を重複して検証している。フィルタリングロジック自体は `NoteRepositoryTests` で検証すれば十分。
 
 **修正案**: コマンドクラスのテストでは「フィルタリングを呼び出すこと」を確認する最小限のテストに絞り、境界値検証は `NoteRepositoryTests` に集約する。
+
+---
+
+### [ ] TST-30. `Program.cs` の起動時エンコーディング設定を検証するテストがない
+
+**対象ファイル**: `PastNotes.Console.Tests/ConsoleAppTests.cs`、`PastNotes.Console/Program.cs`
+
+**問題**: `MisskeyApiClient.GetNotesWithPaginationFromApiAsync`（272行目）が日本語文字列 `"  取得中... {allNotes.Count} 件"` を出力するが、`Program.cs` に `Console.OutputEncoding = Encoding.UTF8` の設定がなく、Windows 環境で文字化けが発生する（BUG-40）。この問題はコードを読めば発見できるにもかかわらず、`Program.cs` の起動初期化コードを検証するユニットテストがなかったために見落とされた。
+
+**修正案**: BUG-40 の修正（`Console.OutputEncoding = Encoding.UTF8` 追加）に合わせて、`ConsoleAppTests` に起動時の出力エンコーディングが UTF-8 であることを確認するテストを追加する。
 
 ---
 
