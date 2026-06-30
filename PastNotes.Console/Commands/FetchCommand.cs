@@ -51,7 +51,7 @@ public class FetchCommand
             var notes = await _apiClient.GetNotesWithRetry(startDate, endDate, maxRetries: 3,
                 progress: msg => System.Console.WriteLine(msg));
 
-            if (notes == null || !notes.Any())
+            if (!notes.Any())
             {
                 System.Console.WriteLine("No notes found.");
                 return 0;

@@ -444,7 +444,7 @@ System.Console.SetOut(originalOutput);
 
 ---
 
-### [ ] REFACTOR-3. `FetchCommand` の到達不能な `notes == null` チェックを削除
+### [x] REFACTOR-3. `FetchCommand` の到達不能な `notes == null` チェックを削除
 
 **対象ファイル**: `PastNotes.Console/Commands/FetchCommand.cs`（54行目）
 
