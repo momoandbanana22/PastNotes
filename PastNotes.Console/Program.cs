@@ -44,6 +44,15 @@ public class Program
                 System.Console.WriteLine("Error: --token requires a token value");
                 return 1;
             }
+            var maxRetriesIdx = Array.IndexOf(args, "--max-retries");
+            if (maxRetriesIdx >= 0)
+            {
+                if (maxRetriesIdx + 1 >= args.Length || !int.TryParse(args[maxRetriesIdx + 1], out _))
+                {
+                    System.Console.WriteLine("Error: --max-retries requires a number value");
+                    return 1;
+                }
+            }
 
             var instanceUrl = (instanceUrlIdx >= 0)
                 ? args[instanceUrlIdx + 1]
@@ -61,8 +70,7 @@ public class Program
             var apiClient = new MisskeyApiClient(instanceUrl, apiToken, _sharedHttpClient);
             var repository = new NoteRepository();
             var append = args.Contains("--append");
-            var maxRetriesIdx = Array.IndexOf(args, "--max-retries");
-            var maxRetries = (maxRetriesIdx >= 0 && maxRetriesIdx + 1 < args.Length && int.TryParse(args[maxRetriesIdx + 1], out var mr)) ? mr : 3;
+            var maxRetries = (maxRetriesIdx >= 0) ? int.Parse(args[maxRetriesIdx + 1]) : 3;
             var fetchCommand = new FetchCommand(apiClient, repository, append: append, maxRetries: maxRetries);
 
             try

@@ -304,4 +304,48 @@ public class ConsoleAppTests
             System.Console.SetOut(originalOutput);
         }
     }
+
+    // TDD: BUG-37 - --max-retries に値なしで渡した場合はエラーを返すか
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task FetchCommand_WhenMaxRetriesFlagHasNoValue_ReturnsOneAndPrintsError()
+    {
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            var args = new[] { "fetch", "--days", "30", "--max-retries" };
+            var result = await Program.Main(args);
+            Assert.Equal(1, result);
+            Assert.Contains("--max-retries", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+    }
+
+    // TDD: BUG-37 - --max-retries に数値以外の値を渡した場合はエラーを返すか
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task FetchCommand_WhenMaxRetriesIsNotANumber_ReturnsOneAndPrintsError()
+    {
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            var args = new[] { "fetch", "--days", "30", "--max-retries", "abc" };
+            var result = await Program.Main(args);
+            Assert.Equal(1, result);
+            Assert.Contains("--max-retries", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+    }
 }

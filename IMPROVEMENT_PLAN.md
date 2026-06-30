@@ -416,7 +416,7 @@ System.Console.SetOut(originalOutput);
 
 ---
 
-### [ ] BUG-37. `--max-retries` に値を指定しないとエラーなくデフォルト 3 にフォールバックする
+### [x] BUG-37. `--max-retries` に値を指定しないとエラーなくデフォルト 3 にフォールバックする
 
 **対象ファイル**: `PastNotes.Console/Program.cs`（65行目）
 
