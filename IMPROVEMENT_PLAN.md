@@ -871,6 +871,26 @@ if (notes == null || !notes.Any())
 
 ---
 
+### [ ] TST-31. エンドツーエンドテスト（ユーザーシナリオ全体）がない
+
+**対象ファイル**: `PastNotes.Console.Tests/ConsoleAppTests.cs`
+
+**問題**: 統合テストは `MisskeyApiClient` の API 接続と `FetchCommand` の単独動作を確認しているが、`fetch` → `search`・`view`・`view-html` の一連のユーザーシナリオを通しで確認するテストが存在しない。fetch で取得・保存したノートを search/view で正しく読み込めるかどうかは、現状テストで保証されていない。
+
+**修正案**: `fetch` 実行後に `search`・`view`・`view-html` を続けて実行し、それぞれの出力が期待通りであることを確認する統合テストを追加する。
+
+---
+
+### [ ] TST-32. 状態遷移テスト（コマンドの実行順序・前提条件）がない
+
+**対象ファイル**: `PastNotes.Console.Tests/ConsoleAppTests.cs`
+
+**問題**: `search`・`view`・`view-html` は `notes.json` が存在することを前提とするが、ファイルが存在しない状態での動作（「No notes found. Run 'fetch' command first.」）と、存在する状態での動作の両方を組み合わせた状態遷移テストがない。個別のコマンドのテストはあるが、実行順序による状態変化が正しく処理されることを保証するテストが不足している。
+
+**修正案**: `notes.json` なし → `search`/`view` → エラー → `fetch` → `search`/`view` → 正常 の流れを確認するテストを追加する。
+
+---
+
 ## DOC: ドキュメント
 
 ### [x] DOC-1. MisskeyApiClientのTODOコメントを整理する
