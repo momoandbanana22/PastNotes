@@ -132,22 +132,6 @@ public class MisskeyApiClient : IMisskeyApiClient
         }
     }
 
-    public async Task<string> GetUserIdAsync()
-    {
-        // 認証してユーザーIDを取得
-        if (_userId == null && _httpClient != null)
-        {
-            await AuthenticateWithApiAsync();
-        }
-
-        if (_userId == null)
-        {
-            throw new ApiException("Failed to authenticate and get user ID");
-        }
-
-        return _userId;
-    }
-
     private async Task<IEnumerable<Note>> GetNotesFromApiAsync(DateTime startDate, DateTime endDate, string? untilId = null)
     {
         // 認証してユーザーIDを取得

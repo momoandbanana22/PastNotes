@@ -502,7 +502,7 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] REFACTOR-4. `MisskeyApiClient.GetUserIdAsync()` が `IMisskeyApiClient` 外の dead public API
+### [x] REFACTOR-4. `MisskeyApiClient.GetUserIdAsync()` が `IMisskeyApiClient` 外の dead public API
 
 **対象ファイル**: `PastNotes/MisskeyApiClient.cs`（135〜149行目）、`PastNotes/IMisskeyApiClient.cs`
 
@@ -511,6 +511,8 @@ if (notes == null || !notes.Any())
 **影響**: 利用者がインターフェース経由でモックを使う場合に不要な混乱を招く。また `_userId` フィールドを経由するロジックが `GetUserIdAsync` 経由と `AuthenticateWithApiAsync` 直接経由の 2 経路に分岐しているため、将来の変更時に片方だけ修正する漏れが起きやすい。
 
 **修正案**: `GetUserIdAsync()` を削除し、ユーザー ID が必要な箇所（`GetNotesFromApiAsync`）では既存の `AuthenticateWithApiAsync` 呼び出しパターンを引き続き使う。または `IMisskeyApiClient` に追加して意図的な公開 API として整備する（外部利用がない現状では削除が望ましい）。
+
+**対処**: `GetUserIdAsync()` メソッド（15行）を `MisskeyApiClient.cs` から削除。テストコード・プロダクションコードいずれからも参照なしのため影響なし。全 122 件ユニットテストパス確認済み。削除により `PastNotes` のライン カバレッジが 88.41% → 90.55% に向上（dead code 除去の副作用）。
 
 ---
 
