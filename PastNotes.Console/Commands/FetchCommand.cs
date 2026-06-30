@@ -8,13 +8,15 @@ public class FetchCommand
     private readonly NoteRepository _repository;
     private readonly string _filePath;
     private readonly bool _append;
+    private readonly int _maxRetries;
 
-    public FetchCommand(IMisskeyApiClient apiClient, NoteRepository repository, string filePath = "notes.json", bool append = false)
+    public FetchCommand(IMisskeyApiClient apiClient, NoteRepository repository, string filePath = "notes.json", bool append = false, int maxRetries = 3)
     {
         _apiClient = apiClient;
         _repository = repository;
         _filePath = filePath;
         _append = append;
+        _maxRetries = maxRetries;
     }
 
     public async Task<int> ExecuteAsync(int days)
@@ -48,7 +50,7 @@ public class FetchCommand
     {
         try
         {
-            var notes = await _apiClient.GetNotesWithRetry(startDate, endDate, maxRetries: 3,
+            var notes = await _apiClient.GetNotesWithRetry(startDate, endDate, maxRetries: _maxRetries,
                 progress: msg => System.Console.WriteLine(msg));
 
             if (!notes.Any())

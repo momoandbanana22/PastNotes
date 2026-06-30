@@ -658,7 +658,7 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] TST-21. `FetchCommand_WhenAppendPrecedesStartEnd_ParsesArgsCorrectly` が接続失敗 + 3回リトライでテストが遅い
+### [x] TST-21. `FetchCommand_WhenAppendPrecedesStartEnd_ParsesArgsCorrectly` が接続失敗 + 3回リトライでテストが遅い
 
 **対象ファイル**: `PastNotes.Console.Tests/ConsoleAppTests.cs`（`FetchCommand_WhenAppendPrecedesStartEnd_ParsesArgsCorrectly` テスト）
 

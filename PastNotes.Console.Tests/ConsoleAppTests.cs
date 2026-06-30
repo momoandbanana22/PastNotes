@@ -128,37 +128,42 @@ public class ConsoleAppTests
     }
 
     // TDD: TST-10 - トークンなしでexit 1とエラーメッセージ
-    // TDD: fetch --append --start ... --end ... の順序でも正しく解析されること
+    // TDD: fetch --append --start ... --end ... の順序でも正しく解析されること (TST-21)
     [Fact]
     [Trait("Category", "Unit")]
     public async Task FetchCommand_WhenAppendPrecedesStartEnd_ParsesArgsCorrectly()
     {
-        // Arrange
+        // --token を渡さず env var もクリアすることでトークン検証エラーで早期リターンさせ
+        // ネットワーク呼び出しを回避する
+        var originalToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
+        Environment.SetEnvironmentVariable("MISSKEY_API_TOKEN", null);
+
         var originalOutput = System.Console.Out;
         using var stringWriter = new StringWriter();
         System.Console.SetOut(stringWriter);
 
         try
         {
-            // --append を --start/--end より前に置く（バグ再現）
+            // --append を --start/--end より前に置く（引数順序バグの再現）
             var args = new[]
             {
                 "fetch", "--append",
                 "--start", "2024-01-01",
-                "--end", "2024-01-31",
-                "--token", "faketoken",
-                "--instance-url", "http://localhost:1"
+                "--end", "2024-01-31"
             };
 
             // Act
             var result = await Program.Main(args);
 
-            // Assert: 引数解析は成功するので「Usage:」ではなく network error になること
+            // Assert: 引数解析は成功するので「Usage:」ではなくトークン不足エラーになること
+            Assert.Equal(1, result);
             Assert.DoesNotContain("Usage: PastNotes.Console fetch --days", stringWriter.ToString());
+            Assert.Contains("MISSKEY_API_TOKEN", stringWriter.ToString());
         }
         finally
         {
             System.Console.SetOut(originalOutput);
+            Environment.SetEnvironmentVariable("MISSKEY_API_TOKEN", originalToken);
         }
     }
 
