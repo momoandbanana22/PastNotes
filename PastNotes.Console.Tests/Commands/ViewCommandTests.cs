@@ -281,6 +281,95 @@ public class ViewCommandTests
         if (File.Exists(testFilePath)) File.Delete(testFilePath);
     }
 
+    // TDD: BUG-29 - "Total notes: N" の件数と実際に出力されるノート行数が一致するか（二重列挙がないことの証明）
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Execute_TotalCountMatchesActualDisplayedNotes()
+    {
+        // Arrange
+        var repository = new NoteRepository();
+        var testFilePath = $"test_notes_{Guid.NewGuid()}.json";
+
+        var testNotes = new List<Note>
+        {
+            new Note { Id = "jan", Text = "January note",  CreatedAt = new DateTime(2024, 1, 15, 1, 0, 0, DateTimeKind.Utc) },
+            new Note { Id = "feb", Text = "February note", CreatedAt = new DateTime(2024, 2, 15, 1, 0, 0, DateTimeKind.Utc) },
+            new Note { Id = "mar", Text = "March note",    CreatedAt = new DateTime(2024, 3, 15, 1, 0, 0, DateTimeKind.Utc) }
+        };
+        await repository.SaveToFileAsync(testNotes, testFilePath);
+
+        // JST 2024-01-01〜2024-01-31 を指定（1月のノートのみ表示されるべき）
+        var jstStart = new DateTime(2024, 1, 1);
+        var jstEnd   = new DateTime(2024, 1, 31, 23, 59, 59);
+        var command = new ViewCommand(repository, testFilePath, startDate: jstStart, endDate: jstEnd);
+
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            command.Execute();
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+
+        // Assert: "Total notes: 1" が出力され、1月のノートのみ表示されること
+        var output = stringWriter.ToString();
+        Assert.Contains("Total notes: 1", output);
+        Assert.Contains("January note", output);
+        Assert.DoesNotContain("February note", output);
+        Assert.DoesNotContain("March note", output);
+
+        if (File.Exists(testFilePath)) File.Delete(testFilePath);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ExecuteAsync_TotalCountMatchesActualDisplayedNotes()
+    {
+        // Arrange
+        var repository = new NoteRepository();
+        var testFilePath = $"test_notes_{Guid.NewGuid()}.json";
+
+        var testNotes = new List<Note>
+        {
+            new Note { Id = "jan", Text = "January note",  CreatedAt = new DateTime(2024, 1, 15, 1, 0, 0, DateTimeKind.Utc) },
+            new Note { Id = "feb", Text = "February note", CreatedAt = new DateTime(2024, 2, 15, 1, 0, 0, DateTimeKind.Utc) },
+            new Note { Id = "mar", Text = "March note",    CreatedAt = new DateTime(2024, 3, 15, 1, 0, 0, DateTimeKind.Utc) }
+        };
+        await repository.SaveToFileAsync(testNotes, testFilePath);
+
+        // JST 2024-01-01〜2024-01-31 を指定（1月のノートのみ表示されるべき）
+        var jstStart = new DateTime(2024, 1, 1);
+        var jstEnd   = new DateTime(2024, 1, 31, 23, 59, 59);
+        var command = new ViewCommand(repository, testFilePath, startDate: jstStart, endDate: jstEnd);
+
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            await command.ExecuteAsync();
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+
+        // Assert: "Total notes: 1" が出力され、1月のノートのみ表示されること
+        var output = stringWriter.ToString();
+        Assert.Contains("Total notes: 1", output);
+        Assert.Contains("January note", output);
+        Assert.DoesNotContain("February note", output);
+        Assert.DoesNotContain("March note", output);
+
+        if (File.Exists(testFilePath)) File.Delete(testFilePath);
+    }
+
     // TDD: FEAT-3 - view に日付絞り込みオプション
     [Fact]
     [Trait("Category", "Unit")]

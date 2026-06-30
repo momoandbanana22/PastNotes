@@ -318,7 +318,7 @@ System.Console.SetOut(originalOutput);
 
 ---
 
-### [ ] BUG-29. `ViewCommand` で `notes.Count()` と `foreach` が二重列挙している（BUG-26 の適用漏れ）
+### [x] BUG-29. `ViewCommand` で `notes.Count()` と `foreach` が二重列挙している（BUG-26 の適用漏れ）
 
 **対象ファイル**: `PastNotes.Console/Commands/ViewCommand.cs`（`Execute()` 41・44行目、`ExecuteAsync()` 84・87行目）
 

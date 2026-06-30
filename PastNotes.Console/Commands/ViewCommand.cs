@@ -35,12 +35,12 @@ public class ViewCommand
         {
             notes = _repository.FilterByDateRange(notes,
                 _startDate ?? DateTime.MinValue,
-                _endDate ?? DateTime.MaxValue);
+                _endDate ?? DateTime.MaxValue).ToList();
         }
 
         System.Console.WriteLine($"Total notes: {notes.Count()}");
         System.Console.WriteLine();
-        
+
         foreach (var note in notes)
         {
             var jstTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(note.CreatedAt, DateTimeKind.Utc), TimeZoneHelper.Jst);
@@ -78,12 +78,12 @@ public class ViewCommand
         {
             notes = _repository.FilterByDateRange(notes,
                 _startDate ?? DateTime.MinValue,
-                _endDate ?? DateTime.MaxValue);
+                _endDate ?? DateTime.MaxValue).ToList();
         }
 
         System.Console.WriteLine($"Total notes: {notes.Count()}");
         System.Console.WriteLine();
-        
+
         foreach (var note in notes)
         {
             var jstTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(note.CreatedAt, DateTimeKind.Utc), TimeZoneHelper.Jst);
