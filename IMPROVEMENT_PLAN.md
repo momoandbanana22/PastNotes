@@ -518,13 +518,15 @@ System.Console.SetOut(originalOutput);
 
 ---
 
-### [ ] TST-18. `PastNotes.Console.Tests` の `coverlet.collector` バージョンが古い（TST-16 との不整合）
+### [x] TST-18. `PastNotes.Console.Tests` の `coverlet.collector` バージョンが古い（TST-16 との不整合）
 
 **対象ファイル**: `PastNotes.Console.Tests/PastNotes.Console.Tests.csproj`
 
 **問題**: `PastNotes.Tests` は `coverlet.collector 10.0.1` と `coverlet.msbuild 10.0.1` を使用しているが、`PastNotes.Console.Tests` は `coverlet.collector 6.0.4` のみで `coverlet.msbuild` が未追加。カバレッジ収集方法・バージョンが 2 プロジェクト間で一致していない。TST-16 の際に `PastNotes.Tests` の `csproj` を更新したが、`PastNotes.Console.Tests` の更新が漏れた可能性がある。
 
 **修正案**: `PastNotes.Console.Tests.csproj` の `coverlet.collector` を `10.0.1` に更新し、`coverlet.msbuild 10.0.1` を追加する。
+
+**対処**: `coverlet.collector` を `6.0.4` → `10.0.1` に更新し `IncludeAssets`/`PrivateAssets` を追加。`coverlet.msbuild 10.0.1` を追加。`CollectCoverage`・`CoverletOutputFormat`・`CoverletOutput` の PropertyGroup を追加し `PastNotes.Tests.csproj` と完全に統一した。`dotnet restore` 後にビルド警告ゼロ、104件ユニットテスト全件パス、両プロジェクトのカバレッジ合算集計が動作することを確認済み。
 
 ---
 
