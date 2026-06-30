@@ -758,7 +758,7 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] TST-24. `PastNotes.Console` のテストカバレッジが目標 80% を下回っている
+### [x] TST-24. `PastNotes.Console` のテストカバレッジが目標 80% を下回っている
 
 **対象ファイル**: `PastNotes.Console.Tests/`、`PastNotes.Console/Program.cs`
 
@@ -771,6 +771,10 @@ if (notes == null || !notes.Any())
 - `Program.cs` の `Unknown command` 分岐
 
 **修正案**: 上記パスをカバーするユニットテストを `ConsoleAppTests` または各コマンドの Tests クラスに追加する。BUG-38 対処と合わせて進めると効率的。
+
+**対処**: 以下のテストを追加し、`PastNotes.Console` のラインカバレッジを **68.54% → 82.27%**（分岐 62.02% → 76.58%、メソッド 100%）に引き上げた。全 132 件ユニットテストパス確認済み。
+- `ConsoleAppTests`: `Unknown command` / `fetch` else 分岐 / `view-html` ノートなし・JSON 破損 / `search` キーワードなし・`--end` 無効日付 / `view` `--start` 値なし・無効日付（9 件追加）
+- `ViewCommandTests`（`ViewHtmlCommandTests` クラス）: ノートなし → 1 返却 / JSON 破損 → `InvalidDataException`（2 件追加）
 
 ---
 

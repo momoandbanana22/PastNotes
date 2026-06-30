@@ -348,4 +348,185 @@ public class ConsoleAppTests
             System.Console.SetOut(originalOutput);
         }
     }
+
+    // TST-24: search にキーワードなし → Usage 表示パス
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task SearchCommand_WhenNoKeyword_ReturnsOneAndPrintsUsage()
+    {
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            var result = await Program.Main(new[] { "search" });
+            Assert.Equal(1, result);
+            Assert.Contains("Usage:", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+    }
+
+    // TST-24: search --end に無効な日付
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task SearchCommand_WhenInvalidEndDate_ReturnsOneAndPrintsError()
+    {
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            var args = new[] { "search", "keyword", "--start", "2024-01-01", "--end", "not-a-date" };
+            var result = await Program.Main(args);
+            Assert.Equal(1, result);
+            Assert.Contains("Invalid end date format", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+    }
+
+    // TST-24: view --start に値なし
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ViewCommand_WhenStartFlagHasNoValue_ReturnsOneAndPrintsError()
+    {
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            var args = new[] { "view", "--start" };
+            var result = await Program.Main(args);
+            Assert.Equal(1, result);
+            Assert.Contains("--start", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+    }
+
+    // TST-24: view --start に無効な日付
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ViewCommand_WhenInvalidStartDate_ReturnsOneAndPrintsError()
+    {
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            var args = new[] { "view", "--start", "not-a-date" };
+            var result = await Program.Main(args);
+            Assert.Equal(1, result);
+            Assert.Contains("Invalid start date format", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+    }
+
+    // TST-24: Unknown command パスのカバレッジ
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Main_WhenCalledWithUnknownCommand_ReturnsOneAndPrintsError()
+    {
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            var result = await Program.Main(new[] { "bogus-command" });
+            Assert.Equal(1, result);
+            Assert.Contains("Unknown command", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+    }
+
+    // TST-24: fetch --start のみ（--end なし）→ Usage 表示パス
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task FetchCommand_WhenOnlyStartDateProvided_ReturnsOneAndPrintsUsage()
+    {
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            var args = new[] { "fetch", "--token", "dummy-token", "--start", "2024-01-01" };
+            var result = await Program.Main(args);
+            Assert.Equal(1, result);
+            Assert.Contains("Usage:", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+    }
+
+    // TST-24: view-html コマンド（ノートなし）パス
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Main_WhenViewHtmlWithNoNotes_ReturnsOneAndPrintsMessage()
+    {
+        if (File.Exists("notes.json"))
+            File.Delete("notes.json");
+
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            var result = await Program.Main(new[] { "view-html" });
+            Assert.Equal(1, result);
+            Assert.Contains("No notes found", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+    }
+
+    // TST-24: view-html コマンド（JSON 破損）→ catch パス
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Main_WhenViewHtmlWithCorruptedJson_ReturnsOneAndPrintsError()
+    {
+        await File.WriteAllTextAsync("notes.json", "{ not valid json }}");
+
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            var result = await Program.Main(new[] { "view-html" });
+            Assert.Equal(1, result);
+            Assert.Contains("Error:", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+            if (File.Exists("notes.json"))
+                File.Delete("notes.json");
+            if (Directory.Exists("html_output"))
+                Directory.Delete("html_output", recursive: true);
+        }
+    }
 }

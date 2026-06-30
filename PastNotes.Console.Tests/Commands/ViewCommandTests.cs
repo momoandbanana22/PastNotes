@@ -608,7 +608,7 @@ public class ViewHtmlCommandTests
         var testFilePath = $"test_notes_{Guid.NewGuid()}.json";
         var outputDir = $"test_html_{Guid.NewGuid()}";
         var command = new ViewHtmlCommand(repository, testFilePath, outputDir, openBrowser: false);
-        
+
         var testNotes = new List<Note>
         {
             new Note { Id = "1", Text = "Test note", CreatedAt = DateTime.Now }
@@ -619,7 +619,7 @@ public class ViewHtmlCommandTests
         // ブラウザを開く機能はテストが難しいため、コマンドが正常に実行されることを確認
         var result = command.Execute();
         Assert.Equal(0, result);
-        
+
         // Cleanup
         if (File.Exists(testFilePath))
         {
@@ -628,6 +628,51 @@ public class ViewHtmlCommandTests
         if (Directory.Exists(outputDir))
         {
             Directory.Delete(outputDir, true);
+        }
+    }
+
+    // TST-24: ノートファイルが存在しない場合 → "No notes found" パス
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Execute_WhenNoNotesFile_ReturnsOneAndPrintsMessage()
+    {
+        var originalOut = System.Console.Out;
+        using var sw = new StringWriter();
+        System.Console.SetOut(sw);
+        try
+        {
+            var repository = new NoteRepository();
+            var testFilePath = Path.Combine(Path.GetTempPath(), $"nonexistent_{Guid.NewGuid()}.json");
+            var outputDir = Path.Combine(Path.GetTempPath(), $"test_html_{Guid.NewGuid()}");
+            var command = new ViewHtmlCommand(repository, testFilePath, outputDir);
+            var result = command.Execute();
+            Assert.Equal(1, result);
+            Assert.Contains("No notes found", sw.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOut);
+        }
+    }
+
+    // TST-24: JSON 破損ファイル → InvalidDataException 伝播
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Execute_WhenCorruptedJson_ThrowsInvalidDataException()
+    {
+        var testFilePath = Path.Combine(Path.GetTempPath(), $"corrupt_{Guid.NewGuid()}.json");
+        await File.WriteAllTextAsync(testFilePath, "{ not valid json }}");
+        try
+        {
+            var repository = new NoteRepository();
+            var outputDir = Path.Combine(Path.GetTempPath(), $"test_html_{Guid.NewGuid()}");
+            var command = new ViewHtmlCommand(repository, testFilePath, outputDir);
+            Assert.Throws<InvalidDataException>(() => command.Execute());
+        }
+        finally
+        {
+            if (File.Exists(testFilePath))
+                File.Delete(testFilePath);
         }
     }
 }
