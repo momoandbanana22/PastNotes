@@ -48,7 +48,8 @@ public class FetchCommand
     {
         try
         {
-            var notes = await _apiClient.GetNotesWithRetry(startDate, endDate, maxRetries: 3);
+            var notes = await _apiClient.GetNotesWithRetry(startDate, endDate, maxRetries: 3,
+                progress: msg => System.Console.WriteLine(msg));
 
             if (notes == null || !notes.Any())
             {

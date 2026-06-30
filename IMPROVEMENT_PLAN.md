@@ -392,13 +392,15 @@ System.Console.SetOut(originalOutput);
 
 ---
 
-### [ ] BUG-35. `MisskeyApiClient` がライブラリ内で直接 `System.Console.WriteLine` を呼び出している
+### [x] BUG-35. `MisskeyApiClient` がライブラリ内で直接 `System.Console.WriteLine` を呼び出している
 
 **対象ファイル**: `PastNotes/MisskeyApiClient.cs`（288行目）
 
 **問題**: `GetNotesWithPaginationFromApiAsync` のページネーションループ内で `System.Console.WriteLine($"  取得中... {allNotes.Count} 件")` を直接呼び出している。`PastNotes` はライブラリプロジェクトであり、コンソール出力を直接持つべきではない（Console に依存するとコンソールアプリ以外での再利用が困難、テスト出力が汚れる）。`FetchCommandTests` 等で `Console.SetOut` を差し替えてもこのメッセージは通常出力として混入し続ける。
 
 **修正案**: `IProgress<string>` やコールバック Action などを引数として受け取る形に変更し、進捗出力の責任を呼び出し元（`FetchCommand`）に委ねる。または `System.Console.WriteLine` を条件付きコンパイルまたは設定フラグで無効化できるようにする。
+
+**対処**: `IMisskeyApiClient.GetNotesWithRetry` / `GetNotesWithPagination` に `Action<string>? progress = null` を追加。`MisskeyApiClient` の内部実装で `Console.WriteLine` を `progress?.Invoke(...)` に置き換え。`FetchCommand` では `progress: msg => System.Console.WriteLine(msg)` を渡すことで進捗表示を維持。TDD で `GetNotesWithRetry_WhenProgressProvided_InvokesCallback`・`GetNotesWithRetry_WhenNoProgressProvided_WritesNothingToConsole` を追加、既存の `GetNotesAsync_WhenPaginating_PrintsProgressMessages` を `GetNotesAsync_WhenPaginating_WritesNothingToConsole` に更新。FetchCommandTests の Setup/Verify/Callback も 4引数対応に修正。111件ユニットテスト全件パス。
 
 ---
 

@@ -256,17 +256,17 @@ public class MisskeyApiClient : IMisskeyApiClient
         });
     }
 
-    public async Task<IEnumerable<Note>> GetNotesWithPagination(DateTime startDate, DateTime endDate)
+    public async Task<IEnumerable<Note>> GetNotesWithPagination(DateTime startDate, DateTime endDate, Action<string>? progress = null)
     {
         if (_httpClient == null)
         {
             throw new InvalidOperationException("HttpClient is required to call the Misskey API");
         }
 
-        return await GetNotesWithPaginationFromApiAsync(startDate, endDate);
+        return await GetNotesWithPaginationFromApiAsync(startDate, endDate, progress);
     }
 
-    private async Task<IEnumerable<Note>> GetNotesWithPaginationFromApiAsync(DateTime startDate, DateTime endDate)
+    private async Task<IEnumerable<Note>> GetNotesWithPaginationFromApiAsync(DateTime startDate, DateTime endDate, Action<string>? progress = null)
     {
         var allNotes = new List<Note>();
         var untilId = (string?)null;
@@ -285,7 +285,7 @@ public class MisskeyApiClient : IMisskeyApiClient
                 var filteredNotes = notes.Where(note => note.CreatedAt >= startDate && note.CreatedAt <= endDate);
                 allNotes.AddRange(filteredNotes);
 
-                System.Console.WriteLine($"  取得中... {allNotes.Count} 件");
+                progress?.Invoke($"  取得中... {allNotes.Count} 件");
 
                 untilId = notes.Last().Id;
 
@@ -304,17 +304,17 @@ public class MisskeyApiClient : IMisskeyApiClient
         return allNotes;
     }
 
-    public async Task<IEnumerable<Note>> GetNotesWithRetry(DateTime startDate, DateTime endDate, int maxRetries)
+    public async Task<IEnumerable<Note>> GetNotesWithRetry(DateTime startDate, DateTime endDate, int maxRetries, Action<string>? progress = null)
     {
         if (_httpClient == null)
         {
             throw new InvalidOperationException("HttpClient is required to call the Misskey API");
         }
 
-        return await GetNotesWithRetryFromApiAsync(startDate, endDate, maxRetries);
+        return await GetNotesWithRetryFromApiAsync(startDate, endDate, maxRetries, progress);
     }
 
-    private async Task<IEnumerable<Note>> GetNotesWithRetryFromApiAsync(DateTime startDate, DateTime endDate, int maxRetries)
+    private async Task<IEnumerable<Note>> GetNotesWithRetryFromApiAsync(DateTime startDate, DateTime endDate, int maxRetries, Action<string>? progress = null)
     {
         int retryCount = 0;
         TimeSpan delay = TimeSpan.FromSeconds(1);
@@ -323,7 +323,7 @@ public class MisskeyApiClient : IMisskeyApiClient
         {
             try
             {
-                return await GetNotesWithPaginationFromApiAsync(startDate, endDate);
+                return await GetNotesWithPaginationFromApiAsync(startDate, endDate, progress);
             }
             catch (Exception ex) when (ex is HttpRequestException || ex is RateLimitExceededException)
             {

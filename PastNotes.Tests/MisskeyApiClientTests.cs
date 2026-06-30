@@ -369,6 +369,61 @@ public class MisskeyApiClientTests
         await Assert.ThrowsAsync<ArgumentException>(() => client.GetNotesAsync(startDate, endDate));
     }
 
+    // TDD: BUG-35 - 進捗コールバックが呼ばれること、Console には書かれないこと
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesWithRetry_WhenProgressProvided_InvokesCallback()
+    {
+        // Arrange
+        var mockHandler = new MockHttpMessageHandler();
+        mockHandler.SimulatePagination(true);
+        var httpClient = new HttpClient(mockHandler);
+        var client = new MisskeyApiClient("https://misskey.io", "valid-token", httpClient);
+
+        var progressMessages = new List<string>();
+        Action<string> progress = msg => progressMessages.Add(msg);
+
+        var startDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var endDate   = new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Utc);
+
+        // Act
+        await client.GetNotesWithRetry(startDate, endDate, maxRetries: 3, progress: progress);
+
+        // Assert
+        Assert.NotEmpty(progressMessages);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesWithRetry_WhenNoProgressProvided_WritesNothingToConsole()
+    {
+        // Arrange
+        var mockHandler = new MockHttpMessageHandler();
+        mockHandler.SimulatePagination(true);
+        var httpClient = new HttpClient(mockHandler);
+        var client = new MisskeyApiClient("https://misskey.io", "valid-token", httpClient);
+
+        var originalOut = System.Console.Out;
+        using var sw = new StringWriter();
+        System.Console.SetOut(sw);
+
+        try
+        {
+            var startDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            var endDate   = new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Utc);
+
+            // Act: progress なしで呼ぶ
+            await client.GetNotesWithRetry(startDate, endDate, maxRetries: 3);
+        }
+        finally
+        {
+            System.Console.SetOut(originalOut);
+        }
+
+        // Assert: ライブラリ側から Console への書き込みがないこと
+        Assert.Empty(sw.ToString());
+    }
+
     [Fact]
     [Trait("Category", "Unit")]
     public void ParseApiResponse_WhenCalledWithValidJson_ReturnsNoteObjects()
@@ -852,10 +907,10 @@ public class MisskeyApiClientTests
         Assert.Equal(noteIds.Count, uniqueNoteIds.Count);
     }
 
-    // TDD: FEAT-1 - ページネーション中の進捗表示
+    // TDD: FEAT-1 / BUG-35 - GetNotesAsync はコールバックなしで呼ぶため Console に何も書かない
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task GetNotesAsync_WhenPaginating_PrintsProgressMessages()
+    public async Task GetNotesAsync_WhenPaginating_WritesNothingToConsole()
     {
         // Arrange
         var mockHandler = new MockHttpMessageHandler();
@@ -870,21 +925,17 @@ public class MisskeyApiClientTests
         try
         {
             // Act
-            var notes = await client.GetNotesAsync(
+            await client.GetNotesAsync(
                 new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 new DateTime(2024, 1, 31, 23, 59, 59, DateTimeKind.Utc));
-
-            System.Console.SetOut(originalOutput);
-
-            // Assert: 1ページ目(100件)、2ページ目(200件)の進捗が出力されること
-            var output = stringWriter.ToString();
-            Assert.Contains("100", output);
-            Assert.Contains("200", output);
         }
         finally
         {
             System.Console.SetOut(originalOutput);
         }
+
+        // Assert: ライブラリは Console に書かない（BUG-35 修正後の正しい動作）
+        Assert.Empty(stringWriter.ToString());
     }
 
     // TDD: TST-1 - 全ノートが対象期間より古い場合に0件で終了する
