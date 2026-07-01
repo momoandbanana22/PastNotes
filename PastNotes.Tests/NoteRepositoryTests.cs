@@ -174,51 +174,6 @@ public class NoteRepositoryTests
         Assert.Equal("2", results[0].Id);
     }
 
-    // TDD: 非同期バージョンのテスト
-    [Fact]
-    [Trait("Category", "Unit")]
-    public async Task SaveToFileAsync_WhenCalledWithNotes_SavesNotesToFileAsync()
-    {
-        // Arrange
-        var notes = new List<Note>
-        {
-            new Note { Id = "1", Text = "Test note 1", CreatedAt = DateTime.Now },
-            new Note { Id = "2", Text = "Test note 2", CreatedAt = DateTime.Now }
-        };
-        var filePath = "test-notes-async.json";
-        var repository = new NoteRepository();
-
-        // Act
-        await repository.SaveToFileAsync(notes, filePath);
-
-        // Assert
-        Assert.True(File.Exists(filePath));
-        File.Delete(filePath);
-    }
-
-    [Fact]
-    [Trait("Category", "Unit")]
-    public async Task LoadFromFileAsync_WhenCalledWithValidFile_ReturnsNotesAsync()
-    {
-        // Arrange
-        var notes = new List<Note>
-        {
-            new Note { Id = "1", Text = "Test note 1", CreatedAt = DateTime.Now },
-            new Note { Id = "2", Text = "Test note 2", CreatedAt = DateTime.Now }
-        };
-        var filePath = "test-notes-load-async.json";
-        var repository = new NoteRepository();
-        await repository.SaveToFileAsync(notes, filePath);
-
-        // Act
-        var loadedNotes = await repository.LoadFromFileAsync(filePath);
-
-        // Assert
-        Assert.NotNull(loadedNotes);
-        Assert.Equal(2, loadedNotes.Count());
-        File.Delete(filePath);
-    }
-
     // TDD: TST-4 - DateTimeKindがsave/loadで保持されるか
     [Fact]
     [Trait("Category", "Unit")]
@@ -244,22 +199,6 @@ public class NoteRepositoryTests
 
         // Cleanup
         if (File.Exists(filePath)) File.Delete(filePath);
-    }
-
-    [Fact]
-    [Trait("Category", "Unit")]
-    public async Task LoadFromFileAsync_WhenCalledWithInvalidFile_ReturnsEmptyListAsync()
-    {
-        // Arrange
-        var filePath = "non-existent-file-async.json";
-        var repository = new NoteRepository();
-
-        // Act
-        var loadedNotes = await repository.LoadFromFileAsync(filePath);
-
-        // Assert
-        Assert.NotNull(loadedNotes);
-        Assert.Empty(loadedNotes);
     }
 
     // TDD: TST-6 - 壊れたJSONファイルの読み込み

@@ -847,13 +847,20 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] TST-28. `NoteRepositoryTests` に `SaveToFileAsync`/`LoadFromFileAsync` の実質重複テストがある
+### [x] TST-28. `NoteRepositoryTests` に `SaveToFileAsync`/`LoadFromFileAsync` の実質重複テストがある
 
 **対象ファイル**: `PastNotes.Tests/NoteRepositoryTests.cs`
 
 **問題**: `SaveToFileAsync_WhenCalledWithNotes_SavesNotesToFile`（同期的な動作確認）と後続の `LoadFromFileAsync` テストがほぼ同一の Arrange/Act を繰り返しており、同じ振る舞いを重複して検証している。
 
-**修正案**: 保存と読み込みを一つのラウンドトリップテストに統合するか、各テストの責務を明確に分離して重複を排除する。
+**対処**: リファクタリングのため新規テストは追加せず（CLAUDE.md ルール1）、削除前に既存70件のユニットテストが GREEN であることを確認した上で、以下3件の完全重複テストを削除した。`NoteRepository.SaveToFileAsync`/`LoadFromFileAsync` は非同期メソッドしか存在せず、"Async" 接尾辞の有無以外に Arrange/Act/Assert の差異がなかったため、責務分離ではなく削除で重複を解消した。
+- `SaveToFileAsync_WhenCalledWithNotes_SavesNotesToFileAsync`（`SaveToFileAsync_WhenCalledWithNotes_SavesNotesToFile` と完全重複）
+- `LoadFromFileAsync_WhenCalledWithValidFile_ReturnsNotesAsync`（`LoadFromFileAsync_WhenCalledWithValidFile_ReturnsNotes` と完全重複）
+- `LoadFromFileAsync_WhenCalledWithInvalidFile_ReturnsEmptyListAsync`（`LoadFromFileAsync_WhenCalledWithInvalidFile_ReturnsEmptyList` と完全重複）
+
+削除後も67件のユニットテスト全件パスし、動作不変であることを確認した（`DateTimeKind` 保持テスト・破損 JSON テストなど責務が異なるテストは維持）。
+
+横展開確認: `\w+Async\(\)` という命名の重複パターンが他テストファイルに残っていないか Grep 検索した結果、`PastNotes.Tests` 配下に該当するメソッド名は残っていないことを確認した。`SearchCommand`/`ViewCommand` の `Execute`/`ExecuteAsync` ペアは実装自体が同期・非同期の2メソッドとして存在するため対象外（重複ではない）。
 
 ---
 
