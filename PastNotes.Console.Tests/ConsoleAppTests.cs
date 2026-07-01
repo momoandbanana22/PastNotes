@@ -89,9 +89,9 @@ public class ConsoleAppTests
     [Trait("Category", "Unit")]
     public async Task FetchCommand_WhenTokenFlagHasNoValue_ReturnsOneAndPrintsError()
     {
-        var originalOutput = System.Console.Out;
+        var originalError = System.Console.Error;
         using var stringWriter = new StringWriter();
-        System.Console.SetOut(stringWriter);
+        System.Console.SetError(stringWriter);
 
         try
         {
@@ -102,7 +102,7 @@ public class ConsoleAppTests
         }
         finally
         {
-            System.Console.SetOut(originalOutput);
+            System.Console.SetError(originalError);
         }
     }
 
@@ -110,9 +110,9 @@ public class ConsoleAppTests
     [Trait("Category", "Unit")]
     public async Task FetchCommand_WhenInstanceUrlFlagHasNoValue_ReturnsOneAndPrintsError()
     {
-        var originalOutput = System.Console.Out;
+        var originalError = System.Console.Error;
         using var stringWriter = new StringWriter();
-        System.Console.SetOut(stringWriter);
+        System.Console.SetError(stringWriter);
 
         try
         {
@@ -123,7 +123,7 @@ public class ConsoleAppTests
         }
         finally
         {
-            System.Console.SetOut(originalOutput);
+            System.Console.SetError(originalError);
         }
     }
 
@@ -139,8 +139,11 @@ public class ConsoleAppTests
         Environment.SetEnvironmentVariable("MISSKEY_API_TOKEN", null);
 
         var originalOutput = System.Console.Out;
-        using var stringWriter = new StringWriter();
-        System.Console.SetOut(stringWriter);
+        var originalError = System.Console.Error;
+        using var outWriter = new StringWriter();
+        using var errWriter = new StringWriter();
+        System.Console.SetOut(outWriter);
+        System.Console.SetError(errWriter);
 
         try
         {
@@ -157,12 +160,13 @@ public class ConsoleAppTests
 
             // Assert: 引数解析は成功するので「Usage:」ではなくトークン不足エラーになること
             Assert.Equal(1, result);
-            Assert.DoesNotContain("Usage: PastNotes.Console fetch --days", stringWriter.ToString());
-            Assert.Contains("MISSKEY_API_TOKEN", stringWriter.ToString());
+            Assert.DoesNotContain("Usage: PastNotes.Console fetch --days", outWriter.ToString());
+            Assert.Contains("MISSKEY_API_TOKEN", errWriter.ToString());
         }
         finally
         {
             System.Console.SetOut(originalOutput);
+            System.Console.SetError(originalError);
             Environment.SetEnvironmentVariable("MISSKEY_API_TOKEN", originalToken);
         }
     }
@@ -172,9 +176,9 @@ public class ConsoleAppTests
     [Trait("Category", "Unit")]
     public async Task SearchCommand_WhenStartFlagHasNoValue_ReturnsOneAndPrintsError()
     {
-        var originalOutput = System.Console.Out;
+        var originalError = System.Console.Error;
         using var stringWriter = new StringWriter();
-        System.Console.SetOut(stringWriter);
+        System.Console.SetError(stringWriter);
 
         try
         {
@@ -185,7 +189,7 @@ public class ConsoleAppTests
         }
         finally
         {
-            System.Console.SetOut(originalOutput);
+            System.Console.SetError(originalError);
         }
     }
 
@@ -193,9 +197,9 @@ public class ConsoleAppTests
     [Trait("Category", "Unit")]
     public async Task ViewCommand_WhenEndFlagHasNoValue_ReturnsOneAndPrintsError()
     {
-        var originalOutput = System.Console.Out;
+        var originalError = System.Console.Error;
         using var stringWriter = new StringWriter();
-        System.Console.SetOut(stringWriter);
+        System.Console.SetError(stringWriter);
 
         try
         {
@@ -206,7 +210,7 @@ public class ConsoleAppTests
         }
         finally
         {
-            System.Console.SetOut(originalOutput);
+            System.Console.SetError(originalError);
         }
     }
 
@@ -215,9 +219,9 @@ public class ConsoleAppTests
     [Trait("Category", "Unit")]
     public async Task SearchCommand_WhenInvalidStartDate_ReturnsOneAndPrintsError()
     {
-        var originalOutput = System.Console.Out;
+        var originalError = System.Console.Error;
         using var stringWriter = new StringWriter();
-        System.Console.SetOut(stringWriter);
+        System.Console.SetError(stringWriter);
 
         try
         {
@@ -228,7 +232,7 @@ public class ConsoleAppTests
         }
         finally
         {
-            System.Console.SetOut(originalOutput);
+            System.Console.SetError(originalError);
         }
     }
 
@@ -236,9 +240,9 @@ public class ConsoleAppTests
     [Trait("Category", "Unit")]
     public async Task ViewCommand_WhenInvalidEndDate_ReturnsOneAndPrintsError()
     {
-        var originalOutput = System.Console.Out;
+        var originalError = System.Console.Error;
         using var stringWriter = new StringWriter();
-        System.Console.SetOut(stringWriter);
+        System.Console.SetError(stringWriter);
 
         try
         {
@@ -249,7 +253,7 @@ public class ConsoleAppTests
         }
         finally
         {
-            System.Console.SetOut(originalOutput);
+            System.Console.SetError(originalError);
         }
     }
 
@@ -261,9 +265,9 @@ public class ConsoleAppTests
         var originalToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
         Environment.SetEnvironmentVariable("MISSKEY_API_TOKEN", null);
 
-        var originalOutput = System.Console.Out;
+        var originalError = System.Console.Error;
         using var stringWriter = new StringWriter();
-        System.Console.SetOut(stringWriter);
+        System.Console.SetError(stringWriter);
 
         try
         {
@@ -278,7 +282,7 @@ public class ConsoleAppTests
         }
         finally
         {
-            System.Console.SetOut(originalOutput);
+            System.Console.SetError(originalError);
             Environment.SetEnvironmentVariable("MISSKEY_API_TOKEN", originalToken);
         }
     }
@@ -321,9 +325,9 @@ public class ConsoleAppTests
     [Trait("Category", "Unit")]
     public async Task FetchCommand_WhenMaxRetriesFlagHasNoValue_ReturnsOneAndPrintsError()
     {
-        var originalOutput = System.Console.Out;
+        var originalError = System.Console.Error;
         using var stringWriter = new StringWriter();
-        System.Console.SetOut(stringWriter);
+        System.Console.SetError(stringWriter);
 
         try
         {
@@ -334,7 +338,7 @@ public class ConsoleAppTests
         }
         finally
         {
-            System.Console.SetOut(originalOutput);
+            System.Console.SetError(originalError);
         }
     }
 
@@ -343,9 +347,9 @@ public class ConsoleAppTests
     [Trait("Category", "Unit")]
     public async Task FetchCommand_WhenMaxRetriesIsNotANumber_ReturnsOneAndPrintsError()
     {
-        var originalOutput = System.Console.Out;
+        var originalError = System.Console.Error;
         using var stringWriter = new StringWriter();
-        System.Console.SetOut(stringWriter);
+        System.Console.SetError(stringWriter);
 
         try
         {
@@ -356,7 +360,7 @@ public class ConsoleAppTests
         }
         finally
         {
-            System.Console.SetOut(originalOutput);
+            System.Console.SetError(originalError);
         }
     }
 
@@ -386,9 +390,9 @@ public class ConsoleAppTests
     [Trait("Category", "Unit")]
     public async Task SearchCommand_WhenInvalidEndDate_ReturnsOneAndPrintsError()
     {
-        var originalOutput = System.Console.Out;
+        var originalError = System.Console.Error;
         using var stringWriter = new StringWriter();
-        System.Console.SetOut(stringWriter);
+        System.Console.SetError(stringWriter);
 
         try
         {
@@ -399,7 +403,7 @@ public class ConsoleAppTests
         }
         finally
         {
-            System.Console.SetOut(originalOutput);
+            System.Console.SetError(originalError);
         }
     }
 
@@ -408,9 +412,9 @@ public class ConsoleAppTests
     [Trait("Category", "Unit")]
     public async Task ViewCommand_WhenStartFlagHasNoValue_ReturnsOneAndPrintsError()
     {
-        var originalOutput = System.Console.Out;
+        var originalError = System.Console.Error;
         using var stringWriter = new StringWriter();
-        System.Console.SetOut(stringWriter);
+        System.Console.SetError(stringWriter);
 
         try
         {
@@ -421,7 +425,7 @@ public class ConsoleAppTests
         }
         finally
         {
-            System.Console.SetOut(originalOutput);
+            System.Console.SetError(originalError);
         }
     }
 
@@ -430,9 +434,9 @@ public class ConsoleAppTests
     [Trait("Category", "Unit")]
     public async Task ViewCommand_WhenInvalidStartDate_ReturnsOneAndPrintsError()
     {
-        var originalOutput = System.Console.Out;
+        var originalError = System.Console.Error;
         using var stringWriter = new StringWriter();
-        System.Console.SetOut(stringWriter);
+        System.Console.SetError(stringWriter);
 
         try
         {
@@ -443,7 +447,7 @@ public class ConsoleAppTests
         }
         finally
         {
-            System.Console.SetOut(originalOutput);
+            System.Console.SetError(originalError);
         }
     }
 

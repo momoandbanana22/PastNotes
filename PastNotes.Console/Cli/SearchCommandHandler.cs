@@ -21,12 +21,12 @@ public static class SearchCommandHandler
         {
             if (sStartIdx + 1 >= args.Length)
             {
-                System.Console.WriteLine("Error: --start requires a date value. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
+                System.Console.Error.WriteLine("Error: --start requires a date value. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
                 return 1;
             }
             if (!DateTime.TryParse(args[sStartIdx + 1], out var ss))
             {
-                System.Console.WriteLine("Error: Invalid start date format. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
+                System.Console.Error.WriteLine("Error: Invalid start date format. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
                 return 1;
             }
             searchStart = ss;
@@ -35,12 +35,12 @@ public static class SearchCommandHandler
         {
             if (sEndIdx + 1 >= args.Length)
             {
-                System.Console.WriteLine("Error: --end requires a date value. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
+                System.Console.Error.WriteLine("Error: --end requires a date value. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
                 return 1;
             }
             if (!DateTime.TryParse(args[sEndIdx + 1], out var se))
             {
-                System.Console.WriteLine("Error: Invalid end date format. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
+                System.Console.Error.WriteLine("Error: Invalid end date format. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
                 return 1;
             }
             searchEnd = se;

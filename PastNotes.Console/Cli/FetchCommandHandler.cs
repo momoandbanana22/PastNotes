@@ -13,12 +13,12 @@ public static class FetchCommandHandler
 
         if (instanceUrlIdx >= 0 && instanceUrlIdx + 1 >= args.Length)
         {
-            System.Console.WriteLine("Error: --instance-url requires a URL value");
+            System.Console.Error.WriteLine("Error: --instance-url requires a URL value");
             return 1;
         }
         if (tokenIdx >= 0 && tokenIdx + 1 >= args.Length)
         {
-            System.Console.WriteLine("Error: --token requires a token value");
+            System.Console.Error.WriteLine("Error: --token requires a token value");
             return 1;
         }
         var maxRetriesIdx = Array.IndexOf(args, "--max-retries");
@@ -26,7 +26,7 @@ public static class FetchCommandHandler
         {
             if (maxRetriesIdx + 1 >= args.Length || !int.TryParse(args[maxRetriesIdx + 1], out _))
             {
-                System.Console.WriteLine("Error: --max-retries requires a number value");
+                System.Console.Error.WriteLine("Error: --max-retries requires a number value");
                 return 1;
             }
         }
@@ -40,7 +40,7 @@ public static class FetchCommandHandler
 
         if (string.IsNullOrEmpty(apiToken))
         {
-            System.Console.WriteLine("Error: MISSKEY_API_TOKEN environment variable is required");
+            System.Console.Error.WriteLine("Error: MISSKEY_API_TOKEN environment variable is required");
             return 1;
         }
 
@@ -60,7 +60,7 @@ public static class FetchCommandHandler
             {
                 if (!int.TryParse(args[daysIdx + 1], out int days))
                 {
-                    System.Console.WriteLine("Error: days must be a number");
+                    System.Console.Error.WriteLine("Error: days must be a number");
                     return 1;
                 }
 
@@ -71,13 +71,13 @@ public static class FetchCommandHandler
             {
                 if (!DateTime.TryParse(args[sIdx + 1], out DateTime startDate))
                 {
-                    System.Console.WriteLine("Error: Invalid start date format. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
+                    System.Console.Error.WriteLine("Error: Invalid start date format. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
                     return 1;
                 }
 
                 if (!DateTime.TryParse(args[eIdx + 1], out DateTime endDate))
                 {
-                    System.Console.WriteLine("Error: Invalid end date format. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
+                    System.Console.Error.WriteLine("Error: Invalid end date format. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
                     return 1;
                 }
 
