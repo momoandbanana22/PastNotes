@@ -70,6 +70,45 @@ public class NoteHtmlGeneratorTests
         // Cleanup
         if (File.Exists(outputPath)) File.Delete(outputPath);
     }
+
+    // TDD: TST-37 - GenerateHtmlForAllNotesのfile.Urlエスケープ（file.Nameは検証済みだがUrlは未検証だった）
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GenerateHtmlForAllNotes_WhenFileUrlContainsHtmlTags_ShouldEscapeSrcAttribute()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var outputPath = $"test_xss_{Guid.NewGuid()}.html";
+        var notes = new List<Note>
+        {
+            new Note
+            {
+                Id = "1",
+                Text = "normal text",
+                CreatedAt = new DateTime(2024, 1, 15, 10, 0, 0, DateTimeKind.Utc),
+                Files = new List<NoteFile>
+                {
+                    new NoteFile
+                    {
+                        Id = "f1",
+                        Url = "\"><script>alert('xss')</script>",
+                        Type = "image/jpeg",
+                        Name = "image.jpg"
+                    }
+                }
+            }
+        };
+
+        // Act
+        generator.GenerateHtmlForAllNotes(notes, outputPath);
+        var html = File.ReadAllText(outputPath);
+
+        // Assert: src属性内にスクリプトが挿入されていないこと
+        Assert.DoesNotContain("<script>alert('xss')</script>", html);
+
+        // Cleanup
+        if (File.Exists(outputPath)) File.Delete(outputPath);
+    }
 }
 
 public class NoteHtmlGeneratorOutputTests
@@ -95,6 +134,70 @@ public class NoteHtmlGeneratorOutputTests
         var html = File.ReadAllText(outputPath);
         Assert.DoesNotContain("</title><script>", html);
         Assert.Contains("&lt;/title&gt;", html);
+
+        // Cleanup
+        if (File.Exists(outputPath)) File.Delete(outputPath);
+    }
+
+    // TDD: TST-37 - GenerateHtmlのnote.Textエスケープ（GenerateHtmlForAllNotesは検証済みだがGenerateHtmlは未検証だった）
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GenerateHtml_WhenNoteTextContainsHtmlTags_ShouldEscapeOutput()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var note = new Note
+        {
+            Id = "test-id",
+            Text = "<script>alert('xss')</script>",
+            CreatedAt = DateTime.UtcNow
+        };
+        var outputPath = $"test_note_xss_{Guid.NewGuid()}.html";
+
+        // Act
+        generator.GenerateHtml(note, outputPath);
+
+        // Assert
+        var html = File.ReadAllText(outputPath);
+        Assert.DoesNotContain("<script>alert('xss')</script>", html);
+        Assert.Contains("&lt;script&gt;", html);
+
+        // Cleanup
+        if (File.Exists(outputPath)) File.Delete(outputPath);
+    }
+
+    // TDD: TST-37 - GenerateHtmlのfile.Name/Urlエスケープ（GenerateHtmlForAllNotesは検証済みだがGenerateHtmlは未検証だった）
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GenerateHtml_WhenFileNameOrUrlContainsHtmlTags_ShouldEscapeAttributes()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var note = new Note
+        {
+            Id = "test-id",
+            Text = "normal text",
+            CreatedAt = DateTime.UtcNow,
+            Files = new List<NoteFile>
+            {
+                new NoteFile
+                {
+                    Id = "file-1",
+                    Url = "\"><script>alert('url')</script>",
+                    Type = "image/jpeg",
+                    Name = "\"><script>alert('name')</script>"
+                }
+            }
+        };
+        var outputPath = $"test_note_xss_{Guid.NewGuid()}.html";
+
+        // Act
+        generator.GenerateHtml(note, outputPath);
+
+        // Assert
+        var html = File.ReadAllText(outputPath);
+        Assert.DoesNotContain("<script>alert('url')</script>", html);
+        Assert.DoesNotContain("<script>alert('name')</script>", html);
 
         // Cleanup
         if (File.Exists(outputPath)) File.Delete(outputPath);

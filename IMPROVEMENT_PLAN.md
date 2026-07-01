@@ -1029,7 +1029,7 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] TST-37. `NoteHtmlGenerator` の XSS テストが `GenerateHtml`（単一ノート）と `GenerateHtmlForAllNotes`（複数ノート）で非対称
+### [x] TST-37. `NoteHtmlGenerator` の XSS テストが `GenerateHtml`（単一ノート）と `GenerateHtmlForAllNotes`（複数ノート）で非対称
 
 **対象ファイル**: `PastNotes.Tests/NoteHtmlGeneratorTests.cs`、`PastNotes/NoteHtmlGenerator.cs`
 
@@ -1044,7 +1044,7 @@ if (notes == null || !notes.Any())
 
 `GenerateHtml`（単一ノート）の `Text`・`file.Name`・`file.Url` のエスケープと、`GenerateHtmlForAllNotes`（複数ノート）の `file.Url` のエスケープには、悪意あるペイロードを用いた検証が一切ない。実装（`WebUtility.HtmlEncode`）は両メソッドで同一のため動作バグの可能性は低いが、CLAUDE.md のテスト観点表（セキュリティ）に照らすと、BUG-12/BUG-33 で確立した「HTML 出力はテキスト・属性ごとに XSS ペイロードで検証する」方針が全出力箇所に横展開されていない。
 
-**対処**: 未対応。TDD で `GenerateHtml_WhenNoteTextContainsHtmlTags_ShouldEscapeOutput`・`GenerateHtml_WhenFileNameOrUrlContainsHtmlTags_ShouldEscapeAttributes`・`GenerateHtmlForAllNotes_WhenFileUrlContainsHtmlTags_ShouldEscapeSrcAttribute` を追加する。実装は既に正しいはずのため、追加時点で GREEN になる想定。
+**対処**: TDD で対応。`GenerateHtml_WhenNoteTextContainsHtmlTags_ShouldEscapeOutput`・`GenerateHtml_WhenFileNameOrUrlContainsHtmlTags_ShouldEscapeAttributes`（いずれも `NoteHtmlGeneratorOutputTests`）・`GenerateHtmlForAllNotes_WhenFileUrlContainsHtmlTags_ShouldEscapeSrcAttribute`（`NoteHtmlGeneratorTests`）の3件を追加した。想定通り追加時点で GREEN（`WebUtility.HtmlEncode` は両メソッドで既に一貫して適用されており新規バグはなかった）。`PastNotes.Tests` 73件 → 76件、全ユニットテストパス、`dotnet build` 警告0件を確認済み。
 
 ---
 
