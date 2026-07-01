@@ -174,7 +174,7 @@ public class MisskeyApiClient : IMisskeyApiClient
         return ParseApiResponse(jsonResponse);
     }
 
-    public async Task<IEnumerable<Note>> GetNotesAsync(DateTime startDate, DateTime endDate)
+    public async Task<IEnumerable<Note>> GetNotesWithCache(DateTime startDate, DateTime endDate)
     {
         // 日付範囲のバリデーション
         if (startDate > endDate)

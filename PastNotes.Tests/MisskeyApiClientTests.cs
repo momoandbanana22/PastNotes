@@ -358,7 +358,7 @@ public class MisskeyApiClientTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task GetNotesAsync_WhenCalledWithoutHttpClient_ThrowsInvalidOperationException()
+    public async Task GetNotesWithCache_WhenCalledWithoutHttpClient_ThrowsInvalidOperationException()
     {
         // HttpClient なしで API メソッドを呼ぶことは設計上できないはず。
         // ダミーデータを返す特殊ケースは本番コードに存在すべきでない（BUG-19）。
@@ -369,12 +369,12 @@ public class MisskeyApiClientTests
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => client.GetNotesAsync(startDate, endDate));
+            () => client.GetNotesWithCache(startDate, endDate));
     }
 
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task GetNotesAsync_WhenApiCallFails_ThrowsApiException()
+    public async Task GetNotesWithCache_WhenApiCallFails_ThrowsApiException()
     {
         // Arrange
         var mockHandler = new MockHttpMessageHandler();
@@ -388,12 +388,12 @@ public class MisskeyApiClientTests
         var endDate = new DateTime(2024, 1, 31);
 
         // Act & Assert: 500はServerErrorException（ApiExceptionのサブクラス）
-        await Assert.ThrowsAsync<ServerErrorException>(() => client.GetNotesAsync(startDate, endDate));
+        await Assert.ThrowsAsync<ServerErrorException>(() => client.GetNotesWithCache(startDate, endDate));
     }
 
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task GetNotesAsync_WhenStartDateIsAfterEndDate_ThrowsArgumentException()
+    public async Task GetNotesWithCache_WhenStartDateIsAfterEndDate_ThrowsArgumentException()
     {
         // Arrange
         var instanceUrl = "https://misskey.io";
@@ -403,7 +403,7 @@ public class MisskeyApiClientTests
         var endDate = new DateTime(2024, 1, 1);
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => client.GetNotesAsync(startDate, endDate));
+        await Assert.ThrowsAsync<ArgumentException>(() => client.GetNotesWithCache(startDate, endDate));
     }
 
     // TDD: BUG-35 - 進捗コールバックが呼ばれること、Console には書かれないこと
@@ -533,7 +533,7 @@ public class MisskeyApiClientTests
 
     [Fact]
     [Trait("Category", "Integration")]
-    public async Task GetNotesAsync_WhenCalledWithRealApi_ShouldFetchMoreThan100Notes()
+    public async Task GetNotesWithCache_WhenCalledWithRealApi_ShouldFetchMoreThan100Notes()
     {
         // Arrange
         var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL") ?? "https://misskey.io";
@@ -550,7 +550,7 @@ public class MisskeyApiClientTests
         var endDate = DateTime.Now;
 
         // Act
-        var notes = await client.GetNotesAsync(startDate, endDate);
+        var notes = await client.GetNotesWithCache(startDate, endDate);
 
         // Assert
         Assert.NotNull(notes);
@@ -576,14 +576,14 @@ public class MisskeyApiClientTests
         var endDate = DateTime.Now;
 
         // Act
-        var notes = await client.GetNotesAsync(startDate, endDate);
+        var notes = await client.GetNotesWithCache(startDate, endDate);
 
         // Assert
         Assert.NotNull(notes);
         Assert.True(notes.Count() > 0);
 
         // 実際のAPI呼び出しを確認するために、2回目の呼び出しも行う
-        var notes2 = await client.GetNotesAsync(startDate, endDate);
+        var notes2 = await client.GetNotesWithCache(startDate, endDate);
         Assert.NotNull(notes2);
         Assert.Equal(notes.Count(), notes2.Count()); // キャッシュが効いているはず
     }
@@ -608,7 +608,7 @@ public class MisskeyApiClientTests
 
         // Act
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        var notes = await client.GetNotesAsync(startDate, endDate);
+        var notes = await client.GetNotesWithCache(startDate, endDate);
         stopwatch.Stop();
 
         // Assert
@@ -638,7 +638,7 @@ public class MisskeyApiClientTests
         var endDate = DateTime.Now;
 
         // Act
-        var notes = await client.GetNotesAsync(startDate, endDate);
+        var notes = await client.GetNotesWithCache(startDate, endDate);
         await repository.SaveToFileAsync(notes, testFilePath);
         var loadedNotes = await repository.LoadFromFileAsync(testFilePath);
         var searchResults = repository.SearchByKeyword(loadedNotes, "test");
@@ -676,7 +676,7 @@ public class MisskeyApiClientTests
         var endDate = DateTime.Now;
 
         // Act
-        var notes = await client.GetNotesAsync(startDate, endDate);
+        var notes = await client.GetNotesWithCache(startDate, endDate);
 
         // Assert
         Assert.NotNull(notes);
@@ -692,7 +692,7 @@ public class MisskeyApiClientTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task GetNotesAsync_WhenCalledWithHttpClient_SendsRequestToMisskeyApi()
+    public async Task GetNotesWithCache_WhenCalledWithHttpClient_SendsRequestToMisskeyApi()
     {
         // Arrange
         var instanceUrl = "https://misskey.io";
@@ -704,7 +704,7 @@ public class MisskeyApiClientTests
         var endDate = new DateTime(2024, 1, 31);
 
         // Act
-        var notes = await client.GetNotesAsync(startDate, endDate);
+        var notes = await client.GetNotesWithCache(startDate, endDate);
 
         // Assert
         Assert.NotNull(notes);
@@ -799,7 +799,7 @@ public class MisskeyApiClientTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task GetNotesAsync_WhenCalledTwiceWithSameParameters_UsesCache()
+    public async Task GetNotesWithCache_WhenCalledTwiceWithSameParameters_UsesCache()
     {
         // Arrange
         var instanceUrl = "https://misskey.io";
@@ -811,9 +811,9 @@ public class MisskeyApiClientTests
         var endDate = new DateTime(2024, 1, 31);
 
         // Act
-        var notes1 = await client.GetNotesAsync(startDate, endDate);
+        var notes1 = await client.GetNotesWithCache(startDate, endDate);
         var firstRequestCount = mockHttpMessageHandler.RequestsSent;
-        var notes2 = await client.GetNotesAsync(startDate, endDate);
+        var notes2 = await client.GetNotesWithCache(startDate, endDate);
         var secondRequestCount = mockHttpMessageHandler.RequestsSent;
 
         // Assert
@@ -840,7 +840,7 @@ public class MisskeyApiClientTests
         var endDate = new DateTime(2024, 1, 31);
         
         // Act
-        var notes = await client.GetNotesAsync(startDate, endDate);
+        var notes = await client.GetNotesWithCache(startDate, endDate);
         
         // Assert
         // ページネーションが実行されていれば、4回呼び出されるはず（認証1回 + 1ページ目 + 2ページ目 + 3ページ目で空）
@@ -866,7 +866,7 @@ public class MisskeyApiClientTests
         var endDate = new DateTime(2024, 1, 31, 23, 59, 59, DateTimeKind.Utc);
 
         // Act
-        var notes = await client.GetNotesAsync(startDate, endDate);
+        var notes = await client.GetNotesWithCache(startDate, endDate);
 
         // Assert
         // 1ページ目(2026年ノート)はフィルタ対象外、2ページ目(2024-01)の2件が返るべき
@@ -880,7 +880,7 @@ public class MisskeyApiClientTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task GetNotesAsync_ShouldNotUseSinceDateUntilDateParameters()
+    public async Task GetNotesWithCache_ShouldNotUseSinceDateUntilDateParameters()
     {
         // Arrange
         var instanceUrl = "https://misskey.io";
@@ -895,7 +895,7 @@ public class MisskeyApiClientTests
         var endDate = new DateTime(2024, 1, 31);
         
         // Act
-        var notes = await client.GetNotesAsync(startDate, endDate);
+        var notes = await client.GetNotesWithCache(startDate, endDate);
         
         // Assert
         // Misskey APIのsinceDateとuntilDateパラメータは壊れているため、使用しないことを確認
@@ -915,7 +915,7 @@ public class MisskeyApiClientTests
 
     [Fact]
     [Trait("Category", "Integration")]
-    public async Task GetNotesAsync_WhenUsingUntilIdPagination_ShouldFetchAllNotesCorrectly()
+    public async Task GetNotesWithCache_WhenUsingUntilIdPagination_ShouldFetchAllNotesCorrectly()
     {
         // Arrange
         var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL") ?? "https://misskey.io";
@@ -932,7 +932,7 @@ public class MisskeyApiClientTests
         var endDate = DateTime.Now;
 
         // Act
-        var notes = await client.GetNotesAsync(startDate, endDate);
+        var notes = await client.GetNotesWithCache(startDate, endDate);
 
         // Assert
         Assert.NotNull(notes);
@@ -944,10 +944,10 @@ public class MisskeyApiClientTests
         Assert.Equal(noteIds.Count, uniqueNoteIds.Count);
     }
 
-    // TDD: FEAT-1 / BUG-35 - GetNotesAsync はコールバックなしで呼ぶため Console に何も書かない
+    // TDD: FEAT-1 / BUG-35 - GetNotesWithCache はコールバックなしで呼ぶため Console に何も書かない
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task GetNotesAsync_WhenPaginating_WritesNothingToConsole()
+    public async Task GetNotesWithCache_WhenPaginating_WritesNothingToConsole()
     {
         // Arrange
         var mockHandler = new MockHttpMessageHandler();
@@ -962,7 +962,7 @@ public class MisskeyApiClientTests
         try
         {
             // Act
-            await client.GetNotesAsync(
+            await client.GetNotesWithCache(
                 new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 new DateTime(2024, 1, 31, 23, 59, 59, DateTimeKind.Utc));
         }
@@ -978,7 +978,7 @@ public class MisskeyApiClientTests
     // TDD: TST-1 - 全ノートが対象期間より古い場合に0件で終了する
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task GetNotesAsync_WhenAllNotesAreOlderThanRange_ShouldReturnEmpty()
+    public async Task GetNotesWithCache_WhenAllNotesAreOlderThanRange_ShouldReturnEmpty()
     {
         // Arrange
         var mockHandler = new MockHttpMessageHandler();
@@ -991,7 +991,7 @@ public class MisskeyApiClientTests
         var endDate = new DateTime(2024, 1, 31, 23, 59, 59, DateTimeKind.Utc);
 
         // Act
-        var notes = await client.GetNotesAsync(startDate, endDate);
+        var notes = await client.GetNotesWithCache(startDate, endDate);
 
         // Assert: 対象期間内にノートがないので0件
         Assert.Empty(notes);
@@ -1002,7 +1002,7 @@ public class MisskeyApiClientTests
     // TDD: TST-9 - ページネーション中のネットワーク断
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task GetNotesAsync_WhenNetworkFailsDuringPagination_PropagatesHttpRequestException()
+    public async Task GetNotesWithCache_WhenNetworkFailsDuringPagination_PropagatesHttpRequestException()
     {
         // Arrange
         var mockHandler = new MockHttpMessageHandler();
@@ -1015,7 +1015,7 @@ public class MisskeyApiClientTests
 
         // Act & Assert: リトライなしで例外がそのまま伝播することを確認
         await Assert.ThrowsAsync<HttpRequestException>(
-            () => client.GetNotesAsync(startDate, endDate));
+            () => client.GetNotesWithCache(startDate, endDate));
     }
 
     // TDD: BUG-22 - GetNotesWithRetry がページネーションで全件取得するか
@@ -1126,7 +1126,7 @@ public class MisskeyApiClientTests
     // TDD: BUG-8 - _callCountバグ
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task GetNotesAsync_WithMockHttpClient_ShouldReturnNotesFromMock()
+    public async Task GetNotesWithCache_WithMockHttpClient_ShouldReturnNotesFromMock()
     {
         // Arrange
         var instanceUrl = "https://misskey.io";
@@ -1138,7 +1138,7 @@ public class MisskeyApiClientTests
         var endDate = new DateTime(2024, 1, 31, 23, 59, 59, DateTimeKind.Utc);
 
         // Act
-        var notes = await client.GetNotesAsync(startDate, endDate);
+        var notes = await client.GetNotesWithCache(startDate, endDate);
 
         // Assert
         // MockHttpMessageHandlerは2件のノート(2024-01-15, 2024-01-20)を返すはず
@@ -1149,7 +1149,7 @@ public class MisskeyApiClientTests
     // TDD: キャッシュ有効期限管理
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task GetNotesAsync_WhenCalledAfterCacheExpiration_ShouldRefetchData()
+    public async Task GetNotesWithCache_WhenCalledAfterCacheExpiration_ShouldRefetchData()
     {
         // Arrange
         var instanceUrl = "https://misskey.io";
@@ -1162,13 +1162,13 @@ public class MisskeyApiClientTests
         var endDate = new DateTime(2024, 1, 31);
 
         // Act
-        var notes1 = await client.GetNotesAsync(startDate, endDate);
+        var notes1 = await client.GetNotesWithCache(startDate, endDate);
         var firstRequestCount = mockHttpMessageHandler.RequestsSent;
         
         // キャッシュ有効期限を待つ
         await Task.Delay(100);
         
-        var notes2 = await client.GetNotesAsync(startDate, endDate);
+        var notes2 = await client.GetNotesWithCache(startDate, endDate);
         var secondRequestCount = mockHttpMessageHandler.RequestsSent;
 
         // Assert
@@ -1200,13 +1200,13 @@ public class MisskeyApiClientTests
         var endDate = new DateTime(2024, 1, 31);
 
         // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(() => client.GetNotesAsync(startDate, endDate));
+        await Assert.ThrowsAsync<NotFoundException>(() => client.GetNotesWithCache(startDate, endDate));
     }
 
     // TDD: TST-33 - ページネーション中の日付フィルタで startDate == endDate（同一日時の1点フィルタ）が正しく扱われるか（TST-25 の横展開）
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task GetNotesAsync_WhenStartDateEqualsEndDate_ReturnsOnlyExactMatchingNote()
+    public async Task GetNotesWithCache_WhenStartDateEqualsEndDate_ReturnsOnlyExactMatchingNote()
     {
         // Arrange
         var instanceUrl = "https://misskey.io";
@@ -1218,7 +1218,7 @@ public class MisskeyApiClientTests
         var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
 
         // Act
-        var notes = (await client.GetNotesAsync(targetDate, targetDate)).ToList();
+        var notes = (await client.GetNotesWithCache(targetDate, targetDate)).ToList();
 
         // Assert: ちょうどのノート1件のみが返るべき（1秒前・1秒後は除外）
         Assert.Single(notes);
