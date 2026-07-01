@@ -1023,6 +1023,29 @@ public class MisskeyApiClientTests
         Assert.Equal("Max retries exceeded", ex.Message);
     }
 
+    // TDD: BUG-39 - maxRetries=0（リトライ無効）時は一度も retry していないため、
+    // "Max retries exceeded" ではなく元のエラーメッセージをそのまま伝えるべき
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesWithRetry_WhenMaxRetriesIsZeroAndRequestFails_ThrowsOriginalErrorMessage()
+    {
+        // Arrange: maxRetries=0 なので最初の失敗で即座に例外が伝播するはず
+        var mockHandler = new MockHttpMessageHandler();
+        mockHandler.SetErrorResponse(new HttpResponseMessage(System.Net.HttpStatusCode.TooManyRequests)
+        {
+            Content = new StringContent("Rate limit exceeded", System.Text.Encoding.UTF8, "application/json")
+        });
+        var httpClient = new HttpClient(mockHandler);
+        var client = new MisskeyApiClient("https://misskey.io", "valid-token", httpClient);
+        var startDate = new DateTime(2024, 1, 1);
+        var endDate = new DateTime(2024, 1, 31);
+
+        // Act & Assert: 一度もリトライしていないので "Max retries exceeded" は誤り。元の例外メッセージが伝わるべき
+        var ex = await Assert.ThrowsAsync<RateLimitExceededException>(
+            () => client.GetNotesWithRetry(startDate, endDate, maxRetries: 0));
+        Assert.Equal("Rate limit exceeded", ex.Message);
+    }
+
     // TDD: BUG-28 - HttpRequestException 発生時もリトライして成功するか
     [Fact]
     [Trait("Category", "Unit")]

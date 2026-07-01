@@ -458,21 +458,17 @@ catch (Exception ex)
 
 ---
 
-### [ ] BUG-39. `--max-retries 0` 時のエラーメッセージが誤解を招く
+### [x] BUG-39. `--max-retries 0` 時のエラーメッセージが誤解を招く
 
 **対象ファイル**: `PastNotes/MisskeyApiClient.cs`（`GetNotesWithRetryFromApiAsync` の else ブロック）
 
 **問題**: `maxRetries=0`（リトライ無効）のとき、最初のリクエストが失敗すると `RateLimitExceededException("Max retries exceeded")` を投げる。README は「`--max-retries 0` でリトライを無効化できる」と説明しているが、受け取るエラーメッセージは「リトライ回数を超過した」と主張しており矛盾する。また `HttpRequestException` などの元のエラーメッセージも失われる。
 
-**修正案**: `retryCount == 0`（一度もリトライしていない）のときは元の例外メッセージをそのまま使用する。
+**対処**: TDD で対応。失敗テスト `GetNotesWithRetry_WhenMaxRetriesIsZeroAndRequestFails_ThrowsOriginalErrorMessage`（429 モック・`maxRetries: 0` で `ex.Message` が `"Rate limit exceeded"` であることを検証）を先に追加し RED を確認後、`throw new RateLimitExceededException("Max retries exceeded")` を `throw new RateLimitExceededException(retryCount == 0 ? ex.Message : "Max retries exceeded")` に変更して GREEN を確認した。
 
-```csharp
-else
-{
-    string message = retryCount == 0 ? ex.Message : "Max retries exceeded";
-    throw new RateLimitExceededException(message);
-}
-```
+横展開確認: `Max retries exceeded`・`retryCount`・`maxRetries` を Grep で検索し、リトライメッセージ分岐ロジックが存在するのは `MisskeyApiClient.GetNotesWithRetryFromApiAsync` の1箇所のみであることを確認済み（他のヒットは呼び出し元での引数の受け渡しのみ）。
+
+`PastNotes.Tests` 68件、`PastNotes.Console.Tests` 65件、全ユニットテストパス確認済み。
 
 ---
 

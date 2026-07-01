@@ -319,7 +319,7 @@ public class MisskeyApiClient : IMisskeyApiClient
                 }
                 else
                 {
-                    throw new RateLimitExceededException("Max retries exceeded");
+                    throw new RateLimitExceededException(retryCount == 0 ? ex.Message : "Max retries exceeded");
                 }
             }
         }
