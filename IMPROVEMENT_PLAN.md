@@ -1013,7 +1013,7 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] TST-36. `MisskeyApiClient.HandleErrorResponse` の 401（Unauthorized）・default（未分類エラー）分岐が直接テストされていない
+### [x] TST-36. `MisskeyApiClient.HandleErrorResponse` の 401（Unauthorized）・default（未分類エラー）分岐が直接テストされていない
 
 **対象ファイル**: `PastNotes.Tests/MisskeyApiClientTests.cs`、`PastNotes/MisskeyApiClient.cs`（114-133行目）
 
@@ -1021,7 +1021,11 @@ if (notes == null || !notes.Any())
 
 `PastNotes.Console.Tests/Commands/FetchCommandTests.cs` に `ExecuteAsync_WhenApiReturns401_ReturnsOneAndPrintsError`（429行目）があるが、これは `Mock<IMisskeyApiClient>` が `UnauthorizedException` を直接 `ThrowsAsync` するモックであり、実際の HTTP 401 レスポンスが `HandleErrorResponse` によって正しく `UnauthorizedException` に変換されることは検証していない。
 
-**対処**: 未対応。TDD で `GetNotesFromApiAsync_WhenReturns401_ShouldThrowUnauthorizedException`（404テストと同一パターンで401モックに変更）・`GetNotesFromApiAsync_WhenReturnsUnhandledStatusCode_ShouldThrowApiException`（例: 400 Bad Request）を追加する。実装は既に正しいはずのため、追加時点で GREEN になる想定。
+**対処**: TDD で対応。当初案（404テストと同一パターンで401モックに変更するだけ）では不十分であることが判明した。`MockHttpMessageHandler.SetErrorResponse` は `/api/i`（認証コール）にも無条件で適用されるため、401を設定すると認証コール自体が401を受け取る。しかし `AuthenticateWithApiAsync` は401を特別扱いし（`HandleErrorResponse` を呼ばず `return false` するのみ）、結果として `GetNotesFromApiAsync` が「認証失敗」として汎用の `ApiException("Failed to authenticate and get user ID")` を投げてしまい、`HandleErrorResponse` 自身の401分岐（`UnauthorizedException`）を検証できないことが分かった。
+
+そのため `MockHttpMessageHandler` に `SetErrorResponseOnNotesCall(HttpResponseMessage)` を追加し、`/api/i` は通常どおり成功させたまま `/api/users/notes`（ノート取得コール）のみエラーを返せるようにした（既存の `_simulateNetworkFailureOnFirstNotesCall` 等と同じ、ノート取得コールに限定したシミュレーション機構）。これにより認証が成功した後のノート取得コールで初めて401を受け取り、`HandleErrorResponse` の401分岐を正しく検証できるようにした。
+
+`GetNotesFromApiAsync_WhenReturns401OnNotesCall_ShouldThrowUnauthorizedException`・`GetNotesFromApiAsync_WhenReturnsUnhandledStatusCode_ShouldThrowApiException`（400 Bad Request、`ApiException` の厳密な型一致まで検証）を追加。実装は既に正しく、追加時点で GREEN（新規バグはなかった）。`PastNotes.Tests` 71件 → 73件、全ユニットテストパス、`dotnet build` 警告0件を確認済み。
 
 ---
 

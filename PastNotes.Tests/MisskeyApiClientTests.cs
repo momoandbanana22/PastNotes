@@ -68,6 +68,16 @@ public class MockHttpMessageHandler : HttpMessageHandler
         _boundaryExactDate = exactDate;
     }
 
+    // TDD: TST-36 - /api/i(認証)は成功させ、/api/users/notes(ノート取得)呼び出しのみエラーを返す
+    // (SetErrorResponseは/api/iにも適用されてしまうため、401のように認証コールでは
+    //  特別扱い(例外を投げずfalseを返す)される分岐を、ノート取得コールで正しく検証するために必要)
+    private HttpResponseMessage? _notesCallErrorResponse;
+
+    public void SetErrorResponseOnNotesCall(HttpResponseMessage response)
+    {
+        _notesCallErrorResponse = response;
+    }
+
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         RequestsSent++;
@@ -112,6 +122,12 @@ public class MockHttpMessageHandler : HttpMessageHandler
         if (request.RequestUri?.AbsolutePath.Contains("/api/users/notes") == true)
         {
             _notesCallCount++;
+
+            // ノート取得コールのみエラーを返す（TST-36）
+            if (_notesCallErrorResponse != null)
+            {
+                return _notesCallErrorResponse;
+            }
 
             // 2ページ目でネットワーク断をシミュレート（TST-9）
             if (_simulateNetworkFailureOnSecondPage && _notesCallCount >= 2)
@@ -1230,6 +1246,57 @@ public class MisskeyApiClientTests
 
         // Act & Assert
         await Assert.ThrowsAsync<NotFoundException>(() => client.GetNotesWithCache(startDate, endDate));
+    }
+
+    // TDD: TST-36 - HandleErrorResponseの401分岐（ノート取得コールでのUnauthorizedException、404テストの横展開）
+    // 認証(/api/i)コールでの401はAuthenticateWithApiAsyncが特別扱いしfalseを返すのみで例外を投げないため、
+    // ノート取得(/api/users/notes)コールでのみ401を返すことで、HandleErrorResponse側の401分岐を直接検証する
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesFromApiAsync_WhenReturns401OnNotesCall_ShouldThrowUnauthorizedException()
+    {
+        // Arrange
+        var instanceUrl = "https://misskey.io";
+        var apiToken = "valid-token";
+        var mockHttpMessageHandler = new MockHttpMessageHandler();
+        var errorResponse = new HttpResponseMessage(System.Net.HttpStatusCode.Unauthorized)
+        {
+            Content = new StringContent("Unauthorized", System.Text.Encoding.UTF8, "application/json")
+        };
+        mockHttpMessageHandler.SetErrorResponseOnNotesCall(errorResponse);
+
+        var httpClient = new HttpClient(mockHttpMessageHandler);
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
+        var startDate = new DateTime(2024, 1, 1);
+        var endDate = new DateTime(2024, 1, 31);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedException>(() => client.GetNotesWithCache(startDate, endDate));
+    }
+
+    // TDD: TST-36 - HandleErrorResponseのdefault分岐（未分類のステータスコードでApiExceptionを投げるか）
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesFromApiAsync_WhenReturnsUnhandledStatusCode_ShouldThrowApiException()
+    {
+        // Arrange
+        var instanceUrl = "https://misskey.io";
+        var apiToken = "valid-token";
+        var mockHttpMessageHandler = new MockHttpMessageHandler();
+        var errorResponse = new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest)
+        {
+            Content = new StringContent("Bad Request", System.Text.Encoding.UTF8, "application/json")
+        };
+        mockHttpMessageHandler.SetErrorResponseOnNotesCall(errorResponse);
+
+        var httpClient = new HttpClient(mockHttpMessageHandler);
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
+        var startDate = new DateTime(2024, 1, 1);
+        var endDate = new DateTime(2024, 1, 31);
+
+        // Act & Assert: 404/401/429/500系のいずれにも当てはまらないため、汎用のApiExceptionが投げられるべき
+        var ex = await Assert.ThrowsAsync<ApiException>(() => client.GetNotesWithCache(startDate, endDate));
+        Assert.Equal(typeof(ApiException), ex.GetType());
     }
 
     // TDD: TST-33 - ページネーション中の日付フィルタで startDate == endDate（同一日時の1点フィルタ）が正しく扱われるか（TST-25 の横展開）
