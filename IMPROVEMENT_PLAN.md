@@ -835,13 +835,15 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] TST-27. `SearchCommand`・`ViewCommand` でファイル破損時の例外伝播テストがない
+### [x] TST-27. `SearchCommand`・`ViewCommand` でファイル破損時の例外伝播テストがない
 
 **対象ファイル**: `PastNotes.Console.Tests/Commands/SearchCommandTests.cs`、`PastNotes.Console.Tests/Commands/ViewCommandTests.cs`
 
 **問題**: `ViewHtmlCommand` では JSON 破損時に `InvalidDataException` が伝播することをテストしているが（`Execute_WhenCorruptedJson_ThrowsInvalidDataException`）、同じ `NoteRepository.LoadFromFileAsync` を呼ぶ `SearchCommand.ExecuteAsync` と `ViewCommand.ExecuteAsync` には対応するテストがない。
 
-**修正案**: `SearchCommand` と `ViewCommand` に対し、破損 JSON ファイルを渡したときに `InvalidDataException` が伝播することを確認するテストを追加する。
+**対処**: `SearchCommandTests`・`ViewCommandTests` それぞれに `Execute_WhenCorruptedJson_ThrowsInvalidDataException`（同期版）・`ExecuteAsync_WhenCorruptedJson_ThrowsInvalidDataException`（非同期版）を追加（計4件）。課題本文は `ExecuteAsync` のみを挙げていたが、同期版 `Execute` も同一の `LoadFromFileAsync` 呼び出しで例外処理を持たないため同一コミットで対処した。実装はいずれも既に例外を捕捉せず伝播させる作りだったため実装変更は不要（70件全ユニットテストパス）。
+
+横展開確認: `LoadFromFileAsync` の呼び出し箇所を Grep 検索した結果、`FetchCommand.cs`（`--append` 時の既存ファイル読み込み）にも同じ呼び出しがあり、破損 JSON 時の挙動を確認するテストがないことを確認した。`FetchCommand` は `catch (UnauthorizedException)`・`catch (ApiException)` のみを捕捉するため `InvalidDataException` は `Program.cs` の汎用ハンドラ（stdout）まで伝播し、`FetchCommand` の他のエラー出力が stderr に統一されている（BUG-38）のと不整合になる可能性がある。別シナリオ（`--append` 限定）のため本コミットでは対処せず、TST-34 として記録する。
 
 ---
 
@@ -902,6 +904,16 @@ if (notes == null || !notes.Any())
 **問題**: TST-25 で `NoteRepository.FilterByDateRange` に `startDate == endDate` の境界値テストを追加した際、同一パターン（`note.CreatedAt >= startDate && note.CreatedAt <= endDate`）が `MisskeyApiClient.GetNotesWithPaginationFromApiAsync` のページネーション中フィルタにも存在することが判明した。こちらには対応する境界値テストがない。
 
 **修正案**: モックで `startDate == endDate` と一致するノート・1秒前・1秒後を用意し、`GetNotesAsync(date, date)` がちょうどのノートのみを返すことを検証するテストを追加する。
+
+---
+
+### [ ] TST-34. `FetchCommand` の `--append` モードで破損 JSON 読み込み時の挙動が未検証（TST-27 の横展開）
+
+**対象ファイル**: `PastNotes.Console.Tests/Commands/FetchCommandTests.cs`、`PastNotes.Console/Commands/FetchCommand.cs`（65行目）
+
+**問題**: TST-27 で `SearchCommand`・`ViewCommand` の破損 JSON テストを追加した際、`FetchCommand.FetchAndSaveAsync` も `--append` 指定時に既存の `notes.json` を `LoadFromFileAsync` で読み込んでおり、同じ `InvalidDataException` 伝播の可能性があることが判明した。`FetchCommand` は `catch (UnauthorizedException)`・`catch (ApiException)` のみを捕捉するため、この例外は `Program.cs` の汎用ハンドラ（`Console.WriteLine`、stdout）まで伝播する。`FetchCommand` の他のエラーは BUG-38 で stderr に統一済みのため、この経路だけ出力先が不整合になる可能性がある。
+
+**修正案**: `--append` 指定・既存 `notes.json` が破損 JSON のケースで `InvalidDataException` が伝播すること（および出力先が stdout/stderr のどちらであるべきか）を確認するテストを追加する。DESIGN-3（`SearchCommand`/`ViewCommand` の例外が stdout 経由になる問題）と合わせて検討するとよい。
 
 ---
 

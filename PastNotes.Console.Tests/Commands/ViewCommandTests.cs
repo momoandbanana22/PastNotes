@@ -505,6 +505,46 @@ public class ViewCommandTests
             File.Delete(testFilePath);
         }
     }
+
+    // TDD: TST-27 - 破損 JSON で InvalidDataException が伝播するか(同期版)
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Execute_WhenCorruptedJson_ThrowsInvalidDataException()
+    {
+        var repository = new NoteRepository();
+        var testFilePath = $"test_notes_{Guid.NewGuid()}.json";
+        File.WriteAllText(testFilePath, "{ not valid json }}");
+        var command = new ViewCommand(repository, testFilePath);
+
+        try
+        {
+            Assert.Throws<InvalidDataException>(() => command.Execute());
+        }
+        finally
+        {
+            if (File.Exists(testFilePath)) File.Delete(testFilePath);
+        }
+    }
+
+    // TDD: TST-27 - 破損 JSON で InvalidDataException が伝播するか(非同期版)
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ExecuteAsync_WhenCorruptedJson_ThrowsInvalidDataException()
+    {
+        var repository = new NoteRepository();
+        var testFilePath = $"test_notes_{Guid.NewGuid()}.json";
+        await File.WriteAllTextAsync(testFilePath, "{ not valid json }}");
+        var command = new ViewCommand(repository, testFilePath);
+
+        try
+        {
+            await Assert.ThrowsAsync<InvalidDataException>(() => command.ExecuteAsync());
+        }
+        finally
+        {
+            if (File.Exists(testFilePath)) File.Delete(testFilePath);
+        }
+    }
 }
 
 public class ViewHtmlCommandTests

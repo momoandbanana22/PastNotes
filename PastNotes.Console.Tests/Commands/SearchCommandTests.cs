@@ -275,4 +275,44 @@ public class SearchCommandTests
         // Cleanup
         if (File.Exists(testFilePath)) File.Delete(testFilePath);
     }
+
+    // TDD: TST-27 - 破損 JSON で InvalidDataException が伝播するか(同期版)
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Execute_WhenCorruptedJson_ThrowsInvalidDataException()
+    {
+        var repository = new NoteRepository();
+        var testFilePath = $"test_notes_{Guid.NewGuid()}.json";
+        File.WriteAllText(testFilePath, "{ not valid json }}");
+        var command = new SearchCommand(repository, testFilePath);
+
+        try
+        {
+            Assert.Throws<InvalidDataException>(() => command.Execute("keyword"));
+        }
+        finally
+        {
+            if (File.Exists(testFilePath)) File.Delete(testFilePath);
+        }
+    }
+
+    // TDD: TST-27 - 破損 JSON で InvalidDataException が伝播するか(非同期版)
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ExecuteAsync_WhenCorruptedJson_ThrowsInvalidDataException()
+    {
+        var repository = new NoteRepository();
+        var testFilePath = $"test_notes_{Guid.NewGuid()}.json";
+        await File.WriteAllTextAsync(testFilePath, "{ not valid json }}");
+        var command = new SearchCommand(repository, testFilePath);
+
+        try
+        {
+            await Assert.ThrowsAsync<InvalidDataException>(() => command.ExecuteAsync("keyword"));
+        }
+        finally
+        {
+            if (File.Exists(testFilePath)) File.Delete(testFilePath);
+        }
+    }
 }
