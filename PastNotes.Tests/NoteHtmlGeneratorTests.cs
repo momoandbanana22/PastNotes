@@ -222,6 +222,38 @@ public class NoteHtmlGeneratorOutputTests
         }
     }
 
+    // TDD: TST-26 - 空リストを渡したときに例外なく実行され、有効な HTML が生成されるか
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GenerateHtmlForAllNotes_WhenNotesListIsEmpty_GeneratesValidHtmlWithoutException()
+    {
+        // Arrange
+        var generator = new NoteHtmlGenerator();
+        var notes = new List<Note>();
+        var outputPath = $"test_notes_{Guid.NewGuid()}.html";
+
+        try
+        {
+            // Act
+            var exception = Record.Exception(() => generator.GenerateHtmlForAllNotes(notes, outputPath));
+
+            // Assert
+            Assert.Null(exception);
+            Assert.True(File.Exists(outputPath));
+            var htmlContent = File.ReadAllText(outputPath);
+            Assert.Contains("<!DOCTYPE html>", htmlContent);
+            Assert.Contains("</html>", htmlContent);
+        }
+        finally
+        {
+            // Cleanup
+            if (File.Exists(outputPath))
+            {
+                File.Delete(outputPath);
+            }
+        }
+    }
+
     [Fact]
     [Trait("Category", "Unit")]
     public void GenerateHtmlForAllNotes_WhenNotesHaveFiles_IncludesImageTags()

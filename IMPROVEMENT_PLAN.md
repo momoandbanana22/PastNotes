@@ -823,13 +823,15 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] TST-26. `NoteHtmlGenerator.GenerateHtmlForAllNotes` の空リスト入力テストがない
+### [x] TST-26. `NoteHtmlGenerator.GenerateHtmlForAllNotes` の空リスト入力テストがない
 
 **対象ファイル**: `PastNotes.Tests/NoteHtmlGeneratorTests.cs`、`PastNotes/NoteHtmlGenerator.cs`
 
 **問題**: `GenerateHtmlForAllNotes` は複数ノートを受け取りファイルを生成するが、空リストを渡したときの動作（ファイルが生成されるか、例外が出るか、空の HTML が出力されるか）を確認するテストがない。
 
-**修正案**: 空リストを渡したときに例外なく実行され、生成されたファイルが有効な HTML であることを確認するテストを追加する。
+**対処**: `GenerateHtmlForAllNotes_WhenNotesListIsEmpty_GeneratesValidHtmlWithoutException` を追加。空リストを渡しても例外を投げず、`<!DOCTYPE html>`〜`</html>` を含む有効な HTML ファイルが生成されることを検証した。実装は `foreach` がゼロ回実行されるだけで安全なため、テスト追加のみで実装変更は不要だった（70件全ユニットテストパス）。
+
+横展開確認: `ViewHtmlCommand` 呼び出し元でのノート0件時の挙動は TST-24 で既にテスト済み（`ViewHtmlCommandTests`: ノートなし → 1 返却）。`GenerateHtml`（単一ノート版）は空リストの概念が存在しないため対象外。他に同種の未検証箇所はなし。
 
 ---
 
