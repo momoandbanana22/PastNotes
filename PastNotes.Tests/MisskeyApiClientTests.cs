@@ -60,6 +60,14 @@ public class MockHttpMessageHandler : HttpMessageHandler
         _simulateNetworkFailureAlways = simulate;
     }
 
+    // TDD: TST-33 - startDate == endDate 境界値テスト用に、指定日時ちょうど・1秒前・1秒後の3件を返す
+    private DateTime? _boundaryExactDate = null;
+
+    public void SimulateBoundaryNotes(DateTime exactDate)
+    {
+        _boundaryExactDate = exactDate;
+    }
+
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         RequestsSent++;
@@ -217,6 +225,35 @@ public class MockHttpMessageHandler : HttpMessageHandler
                     }}");
                 }
                 jsonResponse = "[" + string.Join(",", notes) + "]";
+            }
+            else
+            {
+                jsonResponse = "[]";
+            }
+        }
+        // TDD: TST-33 - startDate == endDate 境界値: ちょうど・1秒前・1秒後の3件（新着順）を1ページで返す
+        else if (_boundaryExactDate.HasValue)
+        {
+            if (_notesCallCount == 1)
+            {
+                var exact = _boundaryExactDate.Value;
+                jsonResponse = $@"[
+                    {{
+                        ""id"": ""after-id"",
+                        ""text"": ""1秒後"",
+                        ""createdAt"": ""{exact.AddSeconds(1):yyyy-MM-ddTHH:mm:ss.fffZ}""
+                    }},
+                    {{
+                        ""id"": ""exact-id"",
+                        ""text"": ""ちょうど"",
+                        ""createdAt"": ""{exact:yyyy-MM-ddTHH:mm:ss.fffZ}""
+                    }},
+                    {{
+                        ""id"": ""before-id"",
+                        ""text"": ""1秒前"",
+                        ""createdAt"": ""{exact.AddSeconds(-1):yyyy-MM-ddTHH:mm:ss.fffZ}""
+                    }}
+                ]";
             }
             else
             {
@@ -1164,5 +1201,27 @@ public class MisskeyApiClientTests
 
         // Act & Assert
         await Assert.ThrowsAsync<NotFoundException>(() => client.GetNotesAsync(startDate, endDate));
+    }
+
+    // TDD: TST-33 - ページネーション中の日付フィルタで startDate == endDate（同一日時の1点フィルタ）が正しく扱われるか（TST-25 の横展開）
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesAsync_WhenStartDateEqualsEndDate_ReturnsOnlyExactMatchingNote()
+    {
+        // Arrange
+        var instanceUrl = "https://misskey.io";
+        var apiToken = "valid-token";
+        var mockHandler = new MockHttpMessageHandler();
+        var targetDate = new DateTime(2024, 1, 15, 12, 0, 0, DateTimeKind.Utc);
+        mockHandler.SimulateBoundaryNotes(targetDate);
+        var httpClient = new HttpClient(mockHandler);
+        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
+
+        // Act
+        var notes = (await client.GetNotesAsync(targetDate, targetDate)).ToList();
+
+        // Assert: ちょうどのノート1件のみが返るべき（1秒前・1秒後は除外）
+        Assert.Single(notes);
+        Assert.Equal("exact-id", notes[0].Id);
     }
 }

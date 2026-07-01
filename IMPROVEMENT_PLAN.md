@@ -911,13 +911,13 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] TST-33. `MisskeyApiClient` のページネーション日付フィルタに `startDate == endDate` 境界値テストがない（TST-25 の横展開）
+### [x] TST-33. `MisskeyApiClient` のページネーション日付フィルタに `startDate == endDate` 境界値テストがない（TST-25 の横展開）
 
 **対象ファイル**: `PastNotes.Tests/MisskeyApiClientTests.cs`、`PastNotes/MisskeyApiClient.cs`（269行目）
 
 **問題**: TST-25 で `NoteRepository.FilterByDateRange` に `startDate == endDate` の境界値テストを追加した際、同一パターン（`note.CreatedAt >= startDate && note.CreatedAt <= endDate`）が `MisskeyApiClient.GetNotesWithPaginationFromApiAsync` のページネーション中フィルタにも存在することが判明した。こちらには対応する境界値テストがない。
 
-**修正案**: モックで `startDate == endDate` と一致するノート・1秒前・1秒後を用意し、`GetNotesAsync(date, date)` がちょうどのノートのみを返すことを検証するテストを追加する。
+**対処**: `MockHttpMessageHandler` に `SimulateBoundaryNotes(DateTime exactDate)` を追加し、対象日時ちょうど・1秒前・1秒後の3件を新着順（後→ちょうど→前）の1ページで返すようにした。`GetNotesAsync_WhenStartDateEqualsEndDate_ReturnsOnlyExactMatchingNote` を追加し、`GetNotesAsync(targetDate, targetDate)` がちょうどのノート1件のみを返すことを検証した。実装（`>=`・`<=`）は既に正しく境界を含んでいたため、テスト追加のみで実装変更は不要だった（68件全ユニットテストパス）。
 
 ---
 
