@@ -540,4 +540,79 @@ public class ConsoleAppTests
                 Directory.Delete("html_output", recursive: true);
         }
     }
+
+    // TDD: TST-31 - fetch → search・view・view-html の一連のユーザーシナリオを通しで確認するE2Eテスト
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task EndToEndScenario_FetchThenSearchViewViewHtml_AllCommandsSucceedConsistently()
+    {
+        var apiToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
+        if (string.IsNullOrEmpty(apiToken))
+        {
+            Assert.Fail("統合テストを実行するには環境変数を設定してください。");
+        }
+
+        if (File.Exists("notes.json"))
+            File.Delete("notes.json");
+        if (Directory.Exists("html_output"))
+            Directory.Delete("html_output", recursive: true);
+
+        try
+        {
+            // Act 1: fetch — 実APIから取得して notes.json に保存
+            var fetchResult = await Program.Main(new[] { "fetch", "--days", "30" });
+            Assert.Equal(0, fetchResult);
+
+            var repository = new PastNotes.NoteRepository();
+            var fetchedNotes = (await repository.LoadFromFileAsync("notes.json")).ToList();
+            Assert.True(fetchedNotes.Any(), "Expected at least one note to be fetched");
+
+            // Act 2: search — fetch で保存したノートに対して、存在しないキーワードで検索(0件・exit 0)
+            var originalOutput = System.Console.Out;
+            using var searchWriter = new StringWriter();
+            System.Console.SetOut(searchWriter);
+            int searchResult;
+            try
+            {
+                searchResult = await Program.Main(new[] { "search", $"no-such-keyword-{Guid.NewGuid()}" });
+            }
+            finally
+            {
+                System.Console.SetOut(originalOutput);
+            }
+            Assert.Equal(0, searchResult);
+            Assert.Contains("Found 0 notes matching", searchWriter.ToString());
+
+            // Act 3: view — fetch で保存したノート件数と一致した件数が表示されること
+            using var viewWriter = new StringWriter();
+            System.Console.SetOut(viewWriter);
+            int viewResult;
+            try
+            {
+                viewResult = await Program.Main(new[] { "view" });
+            }
+            finally
+            {
+                System.Console.SetOut(originalOutput);
+            }
+            Assert.Equal(0, viewResult);
+            Assert.Contains($"Total notes: {fetchedNotes.Count}", viewWriter.ToString());
+
+            // Act 4: view-html — fetch で保存したノート件数分の <div class="note"> を含む HTML が生成されること
+            var viewHtmlResult = await Program.Main(new[] { "view-html" });
+            Assert.Equal(0, viewHtmlResult);
+            Assert.True(File.Exists(Path.Combine("html_output", "notes.html")));
+            var html = await File.ReadAllTextAsync(Path.Combine("html_output", "notes.html"));
+            Assert.Contains("<!DOCTYPE html>", html);
+            var noteDivCount = System.Text.RegularExpressions.Regex.Matches(html, "<div class=\"note\">").Count;
+            Assert.Equal(fetchedNotes.Count, noteDivCount);
+        }
+        finally
+        {
+            if (File.Exists("notes.json"))
+                File.Delete("notes.json");
+            if (Directory.Exists("html_output"))
+                Directory.Delete("html_output", recursive: true);
+        }
+    }
 }

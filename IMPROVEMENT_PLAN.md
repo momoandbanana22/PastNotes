@@ -889,13 +889,13 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] TST-31. エンドツーエンドテスト（ユーザーシナリオ全体）がない
+### [x] TST-31. エンドツーエンドテスト（ユーザーシナリオ全体）がない
 
 **対象ファイル**: `PastNotes.Console.Tests/ConsoleAppTests.cs`
 
 **問題**: 統合テストは `MisskeyApiClient` の API 接続と `FetchCommand` の単独動作を確認しているが、`fetch` → `search`・`view`・`view-html` の一連のユーザーシナリオを通しで確認するテストが存在しない。fetch で取得・保存したノートを search/view で正しく読み込めるかどうかは、現状テストで保証されていない。
 
-**修正案**: `fetch` 実行後に `search`・`view`・`view-html` を続けて実行し、それぞれの出力が期待通りであることを確認する統合テストを追加する。
+**対処**: `ConsoleAppTests.EndToEndScenario_FetchThenSearchViewViewHtml_AllCommandsSucceedConsistently`（`Category=Integration`）を追加した。実 API で `fetch --days 30` を実行し、保存されたノート件数と `view` の `Total notes: N`・`view-html` が生成する `<div class="note">` の件数が一致すること、`search` に存在しないキーワードを渡すと `Found 0 notes matching` で exit 0 になることを検証する。環境変数未設定時に `Assert.Fail` で案内が出ることを確認済み（CLAUDE.md ルール7 のとおり自動省略はしていない）。利用者が実環境（`MISSKEY_INSTANCE_URL`/`MISSKEY_API_TOKEN` 設定済み）で実行し、実ノート460件で `fetch → search → view → view-html` の一連のシナリオがパスすることを確認済み。
 
 ---
 
