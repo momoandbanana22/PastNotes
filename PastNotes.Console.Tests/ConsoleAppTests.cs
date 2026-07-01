@@ -193,6 +193,28 @@ public class ConsoleAppTests
         }
     }
 
+    // TDD: TST-35 - BUG-34 の横展開漏れ（search --end に値なしのケースが未検証だった）
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task SearchCommand_WhenEndFlagHasNoValue_ReturnsOneAndPrintsError()
+    {
+        var originalError = System.Console.Error;
+        using var stringWriter = new StringWriter();
+        System.Console.SetError(stringWriter);
+
+        try
+        {
+            var args = new[] { "search", "keyword", "--end" };
+            var result = await Program.Main(args);
+            Assert.Equal(1, result);
+            Assert.Contains("--end", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetError(originalError);
+        }
+    }
+
     [Fact]
     [Trait("Category", "Unit")]
     public async Task ViewCommand_WhenEndFlagHasNoValue_ReturnsOneAndPrintsError()

@@ -994,7 +994,7 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] TST-35. `SearchCommand` に `--end` 値なし時のテストがない（BUG-34 の横展開漏れ）
+### [x] TST-35. `SearchCommand` に `--end` 値なし時のテストがない（BUG-34 の横展開漏れ）
 
 **対象ファイル**: `PastNotes.Console.Tests/ConsoleAppTests.cs`
 
@@ -1009,7 +1009,7 @@ if (notes == null || !notes.Any())
 
 `SearchCommand` で `--end` 値なし（例: `search keyword --end`）のケースだけテストがない。実装（`SearchCommandHandler.cs:34-40`）は `Console.Error.WriteLine("Error: --end requires a date value...")` を正しく返しているため動作バグではなく、純粋なテストの抜け。
 
-**対処**: 未対応。`SearchCommand_WhenEndFlagHasNoValue_ReturnsOneAndPrintsError` を追加する。実装は既に正しいため、テスト追加時点で GREEN になる想定（挙動を裏付けるテストの追加）。
+**対処**: `ConsoleAppTests.cs` の `SearchCommand_WhenStartFlagHasNoValue_ReturnsOneAndPrintsError` の直後に `SearchCommand_WhenEndFlagHasNoValue_ReturnsOneAndPrintsError`（`search keyword --end` で値なしのとき、stderr に `--end` を含むエラーが出て exit 1 になることを検証）を追加した。想定通り追加時点で GREEN（実装は既に正しかったため新規バグはなかった）。`PastNotes.Console.Tests` 68件 → 69件、全ユニットテストパス、`dotnet build` 警告0件を確認済み。
 
 ---
 
