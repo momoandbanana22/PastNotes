@@ -326,6 +326,34 @@ public class ViewCommandTests
         }
     }
 
+    // TDD: BUG-42 - startDate > endDate（逆指定）を検証するか（BUG-41の横展開）
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ExecuteAsync_WhenStartDateAfterEndDate_ThrowsArgumentException()
+    {
+        // Arrange
+        var repository = new NoteRepository();
+        var testFilePath = $"test_notes_{Guid.NewGuid()}.json";
+        var testNotes = new List<Note>
+        {
+            new Note { Id = "1", Text = "Test note 1", CreatedAt = new DateTime(2024, 1, 15, 0, 0, 0, DateTimeKind.Utc) }
+        };
+        await repository.SaveToFileAsync(testNotes, testFilePath);
+
+        var command = new ViewCommand(repository, testFilePath,
+            startDate: new DateTime(2024, 2, 1), endDate: new DateTime(2024, 1, 1));
+
+        try
+        {
+            // Act & Assert
+            await Assert.ThrowsAsync<ArgumentException>(() => command.ExecuteAsync());
+        }
+        finally
+        {
+            if (File.Exists(testFilePath)) File.Delete(testFilePath);
+        }
+    }
+
     // TDD: TST-27 - 破損 JSON で InvalidDataException が伝播するか
     [Fact]
     [Trait("Category", "Unit")]

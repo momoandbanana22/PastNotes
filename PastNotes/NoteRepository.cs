@@ -35,6 +35,11 @@ public class NoteRepository
 
     public IEnumerable<Note> FilterByDateRange(IEnumerable<Note> notes, DateTime startDate, DateTime endDate)
     {
+        if (startDate > endDate)
+        {
+            throw new ArgumentException("Start date must be before end date");
+        }
+
         return notes.Where(note => note.CreatedAt >= startDate && note.CreatedAt <= endDate);
     }
 }

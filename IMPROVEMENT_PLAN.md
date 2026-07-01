@@ -522,7 +522,7 @@ catch (Exception ex)
 
 ---
 
-### [ ] BUG-42. `startDate > endDate` のバリデーションが `SearchCommand`・`ViewCommand` にも存在しない（BUG-41 の横展開）
+### [x] BUG-42. `startDate > endDate` のバリデーションが `SearchCommand`・`ViewCommand` にも存在しない（BUG-41 の横展開）
 
 **対象ファイル**: `PastNotes.Console/Commands/SearchCommand.cs`（12-19行目）、`PastNotes.Console/Commands/ViewCommand.cs`（13-22行目）
 
@@ -540,7 +540,15 @@ catch (Exception ex)
 
 **関連**: BUG-41（`MisskeyApiClient` 側の同一パターン）。`FetchCommand` にのみ存在する検証が `SearchCommand`/`ViewCommand`/`MisskeyApiClient` の大半のメソッドに横展開されていない、という同一の根本原因（入力検証がケースバイケースで場当たり的に追加されている）。
 
-**対処**: 未対応。BUG-41 と合わせて対応方針を検討する（例: `NoteRepository.FilterByDateRange` 冒頭での一元検証、または各コマンドのコンストラクタでの検証）。TDD で `SearchCommand`・`ViewCommand` それぞれに `_WhenStartDateAfterEndDate_ThrowsArgumentException` 相当のテストを追加し RED を確認した上で対応する。
+**対処**: TDD で対応。失敗テスト3件（`NoteRepositoryTests.FilterByDateRange_WhenStartDateAfterEndDate_ThrowsArgumentException`・`SearchCommandTests.ExecuteAsync_WhenStartDateAfterEndDate_ThrowsArgumentException`・`ViewCommandTests.ExecuteAsync_WhenStartDateAfterEndDate_ThrowsArgumentException`）を追加し、いずれも例外が投げられず RED になることを確認した。
+
+対応方針は「`NoteRepository.FilterByDateRange` 冒頭での一元検証」を採用した。理由: `SearchCommand`・`ViewCommand` はコンストラクタで受け取った `startDate`/`endDate` を最終的に必ず `FilterByDateRange` に渡す唯一の経路であり、コンストラクタ側で個別に検証を追加すると2クラスに同じロジックを複製することになる（BUG-41 で避けたのと同じ重複）。加えて、`SearchCommandHandler`/`ViewCommandHandler` は `new SearchCommand(...)`/`new ViewCommand(...)` のコンストラクタ呼び出しを try/catch の外で行っているため、コンストラクタで例外を投げると未捕捉のまま `Program.Main` まで伝播しクラッシュする（DESIGN-8 で確立した「例外は stderr で捕捉して exit 1」という契約が崩れる）。`FilterByDateRange` は既存の `ExecuteAsync` 呼び出し（各ハンドラーの try/catch 内）から呼ばれるため、この問題を避けられる。
+
+`FilterByDateRange` に `if (startDate > endDate) throw new ArgumentException("Start date must be before end date");` を追加（`MisskeyApiClient.ValidateDateRange` と同一メッセージで統一）。`_startDate ?? DateTime.MinValue`・`_endDate ?? DateTime.MaxValue` で補完された実効値に対して検証されるため、`--start`/`--end` のいずれか一方のみ指定した場合は誤検知しない。
+
+横展開確認: `Start date must be before` を Grep で再検索し、`NoteRepository.cs`・`MisskeyApiClient.cs`・`FetchCommand.cs` の3箇所に検証が存在することを確認した。`FetchCommand.cs` のメッセージのみ「before or equal to」という異なる文言だが、実装（`>` 比較）は3箇所とも同一であり動作上の不整合はない（メッセージ文言の統一は本項目のスコープ外、必要であれば別途 DOC/REFACTOR 項目とする）。
+
+`PastNotes.Tests` 70件 → 71件、`PastNotes.Console.Tests` 66件 → 68件、全ユニットテストパス、`dotnet build` 警告0件を確認済み。
 
 ---
 

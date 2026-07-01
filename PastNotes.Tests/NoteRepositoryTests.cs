@@ -129,6 +129,24 @@ public class NoteRepositoryTests
         });
     }
 
+    // TDD: BUG-42 - startDate > endDate（逆指定）を検証するか（BUG-41の横展開）
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void FilterByDateRange_WhenStartDateAfterEndDate_ThrowsArgumentException()
+    {
+        // Arrange
+        var notes = new List<Note>
+        {
+            new Note { Id = "1", Text = "Note 1", CreatedAt = new DateTime(2024, 1, 15) }
+        };
+        var repository = new NoteRepository();
+        var startDate = new DateTime(2024, 2, 1);
+        var endDate = new DateTime(2024, 1, 1);
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => repository.FilterByDateRange(notes, startDate, endDate));
+    }
+
     [Fact]
     [Trait("Category", "Unit")]
     public void FilterByDateRange_WhenCalledWithBoundaryDates_ReturnsCorrectNotes()
