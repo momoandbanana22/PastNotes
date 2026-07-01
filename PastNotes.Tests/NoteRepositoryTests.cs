@@ -151,6 +151,29 @@ public class NoteRepositoryTests
         Assert.Equal(3, results.Count());
     }
 
+    // TDD: TST-25 - startDate == endDate（同一日時の1点フィルタ）の境界値テスト
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void FilterByDateRange_WhenStartDateEqualsEndDate_ReturnsOnlyExactMatchingNote()
+    {
+        // Arrange
+        var targetDate = new DateTime(2024, 1, 15, 12, 0, 0);
+        var notes = new List<Note>
+        {
+            new Note { Id = "1", Text = "1秒前", CreatedAt = targetDate.AddSeconds(-1) },
+            new Note { Id = "2", Text = "ちょうど", CreatedAt = targetDate },
+            new Note { Id = "3", Text = "1秒後", CreatedAt = targetDate.AddSeconds(1) }
+        };
+        var repository = new NoteRepository();
+
+        // Act
+        var results = repository.FilterByDateRange(notes, targetDate, targetDate).ToList();
+
+        // Assert
+        Assert.Single(results);
+        Assert.Equal("2", results[0].Id);
+    }
+
     // TDD: 非同期バージョンのテスト
     [Fact]
     [Trait("Category", "Unit")]

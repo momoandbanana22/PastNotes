@@ -811,13 +811,15 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] TST-25. `NoteRepository.FilterByDateRange` の `startDate == endDate` 境界値テストがない
+### [x] TST-25. `NoteRepository.FilterByDateRange` の `startDate == endDate` 境界値テストがない
 
 **対象ファイル**: `PastNotes.Tests/NoteRepositoryTests.cs`、`PastNotes/NoteRepository.cs`
 
 **問題**: `FilterByDateRange` のテストは範囲内・範囲外のケースを確認しているが、`startDate == endDate`（同一日時の1点フィルタ）でノートが含まれるかどうかを検証するテストがない。実装は `>=` と `<=` を使っているが境界が正しく含まれることをテストで保証していない。
 
-**修正案**: `startDate == endDate` のとき、その日時と一致するノートが含まれ、1秒ずれたノートが含まれないことを検証するテストを追加する。
+**対処**: `FilterByDateRange_WhenStartDateEqualsEndDate_ReturnsOnlyExactMatchingNote` を追加。対象日時ちょうどのノート・1秒前・1秒後の3件を用意し、`FilterByDateRange(notes, targetDate, targetDate)` がちょうどのノート1件のみを返すことを検証した。実装（`>=`・`<=`）は既に正しく境界を含んでいたため、テスト追加のみで実装変更は不要だった（69件全ユニットテストパス）。
+
+横展開確認: `note.CreatedAt >= ... && note.CreatedAt <= ...` を Grep で検索した結果、`MisskeyApiClient.cs:269`（ページネーション中の日付フィルタ）にも同一パターンが存在し、`startDate == endDate` 境界のテストがないことを確認した。`NoteRepository.FilterByDateRange` とは別クラスのため本コミットでは対処せず、TST-33 として記録する。
 
 ---
 
@@ -888,6 +890,16 @@ if (notes == null || !notes.Any())
 **問題**: `search`・`view`・`view-html` は `notes.json` が存在することを前提とするが、ファイルが存在しない状態での動作（「No notes found. Run 'fetch' command first.」）と、存在する状態での動作の両方を組み合わせた状態遷移テストがない。個別のコマンドのテストはあるが、実行順序による状態変化が正しく処理されることを保証するテストが不足している。
 
 **修正案**: `notes.json` なし → `search`/`view` → エラー → `fetch` → `search`/`view` → 正常 の流れを確認するテストを追加する。
+
+---
+
+### [ ] TST-33. `MisskeyApiClient` のページネーション日付フィルタに `startDate == endDate` 境界値テストがない（TST-25 の横展開）
+
+**対象ファイル**: `PastNotes.Tests/MisskeyApiClientTests.cs`、`PastNotes/MisskeyApiClient.cs`（269行目）
+
+**問題**: TST-25 で `NoteRepository.FilterByDateRange` に `startDate == endDate` の境界値テストを追加した際、同一パターン（`note.CreatedAt >= startDate && note.CreatedAt <= endDate`）が `MisskeyApiClient.GetNotesWithPaginationFromApiAsync` のページネーション中フィルタにも存在することが判明した。こちらには対応する境界値テストがない。
+
+**修正案**: モックで `startDate == endDate` と一致するノート・1秒前・1秒後を用意し、`GetNotesAsync(date, date)` がちょうどのノートのみを返すことを検証するテストを追加する。
 
 ---
 
