@@ -514,30 +514,95 @@ public class ConsoleAppTests
         }
     }
 
-    // TST-24: view-html コマンド（JSON 破損）→ catch パス
+    // TDD: DESIGN-3 - view-html コマンド（JSON 破損）→ catch パスのエラーは stderr に出力されるべき
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task Main_WhenViewHtmlWithCorruptedJson_ReturnsOneAndPrintsError()
+    public async Task Main_WhenViewHtmlWithCorruptedJson_ReturnsOneAndPrintsErrorToStderr()
     {
         await File.WriteAllTextAsync("notes.json", "{ not valid json }}");
 
         var originalOutput = System.Console.Out;
-        using var stringWriter = new StringWriter();
-        System.Console.SetOut(stringWriter);
+        var originalError = System.Console.Error;
+        using var outWriter = new StringWriter();
+        using var errWriter = new StringWriter();
+        System.Console.SetOut(outWriter);
+        System.Console.SetError(errWriter);
 
         try
         {
             var result = await Program.Main(new[] { "view-html" });
             Assert.Equal(1, result);
-            Assert.Contains("Error:", stringWriter.ToString());
+            Assert.Contains("Error:", errWriter.ToString());
+            Assert.DoesNotContain("Error:", outWriter.ToString());
         }
         finally
         {
             System.Console.SetOut(originalOutput);
+            System.Console.SetError(originalError);
             if (File.Exists("notes.json"))
                 File.Delete("notes.json");
             if (Directory.Exists("html_output"))
                 Directory.Delete("html_output", recursive: true);
+        }
+    }
+
+    // TDD: DESIGN-3 - search コマンドの例外（破損JSON）は stderr に出力されるべき
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Main_WhenSearchWithCorruptedJson_ReturnsOneAndPrintsErrorToStderr()
+    {
+        await File.WriteAllTextAsync("notes.json", "{ not valid json }}");
+
+        var originalOutput = System.Console.Out;
+        var originalError = System.Console.Error;
+        using var outWriter = new StringWriter();
+        using var errWriter = new StringWriter();
+        System.Console.SetOut(outWriter);
+        System.Console.SetError(errWriter);
+
+        try
+        {
+            var result = await Program.Main(new[] { "search", "keyword" });
+            Assert.Equal(1, result);
+            Assert.Contains("Error:", errWriter.ToString());
+            Assert.DoesNotContain("Error:", outWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+            System.Console.SetError(originalError);
+            if (File.Exists("notes.json"))
+                File.Delete("notes.json");
+        }
+    }
+
+    // TDD: DESIGN-3 - view コマンドの例外（破損JSON）は stderr に出力されるべき
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Main_WhenViewWithCorruptedJson_ReturnsOneAndPrintsErrorToStderr()
+    {
+        await File.WriteAllTextAsync("notes.json", "{ not valid json }}");
+
+        var originalOutput = System.Console.Out;
+        var originalError = System.Console.Error;
+        using var outWriter = new StringWriter();
+        using var errWriter = new StringWriter();
+        System.Console.SetOut(outWriter);
+        System.Console.SetError(errWriter);
+
+        try
+        {
+            var result = await Program.Main(new[] { "view" });
+            Assert.Equal(1, result);
+            Assert.Contains("Error:", errWriter.ToString());
+            Assert.DoesNotContain("Error:", outWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+            System.Console.SetError(originalError);
+            if (File.Exists("notes.json"))
+                File.Delete("notes.json");
         }
     }
 

@@ -122,7 +122,7 @@ public class Program
             }
             catch (Exception ex)
             {
-                System.Console.WriteLine($"Error: {ex.Message}");
+                System.Console.Error.WriteLine($"Error: {ex.Message}");
                 return 1;
             }
         }
@@ -177,7 +177,7 @@ public class Program
             }
             catch (Exception ex)
             {
-                System.Console.WriteLine($"Error: {ex.Message}");
+                System.Console.Error.WriteLine($"Error: {ex.Message}");
                 return 1;
             }
         }
@@ -226,7 +226,7 @@ public class Program
             }
             catch (Exception ex)
             {
-                System.Console.WriteLine($"Error: {ex.Message}");
+                System.Console.Error.WriteLine($"Error: {ex.Message}");
                 return 1;
             }
         }
@@ -244,7 +244,7 @@ public class Program
             }
             catch (Exception ex)
             {
-                System.Console.WriteLine($"Error: {ex.Message}");
+                System.Console.Error.WriteLine($"Error: {ex.Message}");
                 return 1;
             }
         }
