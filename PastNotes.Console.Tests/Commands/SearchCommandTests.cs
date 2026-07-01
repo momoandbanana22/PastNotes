@@ -7,36 +7,6 @@ public class SearchCommandTests
 {
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task Execute_WhenCalledWithValidKeyword_ReturnsSuccess()
-    {
-        // Arrange
-        var repository = new NoteRepository();
-        var testFilePath = $"test_notes_{Guid.NewGuid()}.json";
-        var command = new SearchCommand(repository, testFilePath);
-        
-        var testNotes = new List<Note>
-        {
-            new Note { Id = "1", Text = "Hello world", CreatedAt = DateTime.Now },
-            new Note { Id = "2", Text = "Goodbye world", CreatedAt = DateTime.Now }
-        };
-        await repository.SaveToFileAsync(testNotes, testFilePath);
-
-        // Act
-        var result = command.Execute("world");
-
-        // Assert
-        Assert.Equal(0, result);
-        
-        // Cleanup
-        if (File.Exists(testFilePath))
-        {
-            File.Delete(testFilePath);
-        }
-    }
-
-    // TDD: 非同期バージョンのテスト
-    [Fact]
-    [Trait("Category", "Unit")]
     public async Task ExecuteAsync_WhenCalledWithValidKeyword_ReturnsSuccess()
     {
         // Arrange
@@ -64,10 +34,10 @@ public class SearchCommandTests
         }
     }
 
-    // TDD: Execute（同期版）にも日付フィルタリングが適用されること
+    // TDD: FEAT-3 - 日付フィルタリングが適用されること
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task Execute_WhenDateRangeSpecified_ShowsOnlyNotesInRange()
+    public async Task ExecuteAsync_WhenDateRangeSpecified_ShowsOnlyNotesInRange()
     {
         // Arrange
         var repository = new NoteRepository();
@@ -91,7 +61,7 @@ public class SearchCommandTests
         int result;
         try
         {
-            result = command.Execute("note");
+            result = await command.ExecuteAsync("note");
         }
         finally
         {
@@ -125,10 +95,10 @@ public class SearchCommandTests
         Assert.Equal(1, result);
     }
 
-    // TDD: BUG-20 - Execute が UTC を JST に変換して表示するか
+    // TDD: BUG-20 - UTC を JST に変換して表示するか
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task Execute_WhenCalledWithUtcDateTime_ConvertsToJst()
+    public async Task ExecuteAsync_WhenCalledWithUtcDateTime_ConvertsToJst()
     {
         // Arrange
         var repository = new NoteRepository();
@@ -149,7 +119,7 @@ public class SearchCommandTests
 
         try
         {
-            command.Execute("Test");
+            await command.ExecuteAsync("Test");
         }
         finally
         {
@@ -163,10 +133,10 @@ public class SearchCommandTests
         if (File.Exists(testFilePath)) File.Delete(testFilePath);
     }
 
-    // TDD: BUG-20 - Execute が秒数まで表示するか（HH:mm:ss）
+    // TDD: BUG-20 - 秒数まで表示するか（HH:mm:ss）
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task Execute_WhenCalledWithExistingNotes_DisplaysDateTimeWithSeconds()
+    public async Task ExecuteAsync_WhenCalledWithExistingNotes_DisplaysDateTimeWithSeconds()
     {
         // Arrange
         var repository = new NoteRepository();
@@ -185,7 +155,7 @@ public class SearchCommandTests
 
         try
         {
-            command.Execute("Test");
+            await command.ExecuteAsync("Test");
         }
         finally
         {
@@ -201,7 +171,7 @@ public class SearchCommandTests
     // TDD: BUG-26 - "Found N" の件数と実際に出力されるノート行数が一致するか（二重列挙がないことの証明）
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task Execute_FoundCountMatchesActualOutputLines()
+    public async Task ExecuteAsync_FoundCountMatchesActualOutputLines()
     {
         // Arrange
         var repository = new NoteRepository();
@@ -222,7 +192,7 @@ public class SearchCommandTests
 
         try
         {
-            command.Execute("world");
+            await command.ExecuteAsync("world");
         }
         finally
         {
@@ -276,27 +246,7 @@ public class SearchCommandTests
         if (File.Exists(testFilePath)) File.Delete(testFilePath);
     }
 
-    // TDD: TST-27 - 破損 JSON で InvalidDataException が伝播するか(同期版)
-    [Fact]
-    [Trait("Category", "Unit")]
-    public void Execute_WhenCorruptedJson_ThrowsInvalidDataException()
-    {
-        var repository = new NoteRepository();
-        var testFilePath = $"test_notes_{Guid.NewGuid()}.json";
-        File.WriteAllText(testFilePath, "{ not valid json }}");
-        var command = new SearchCommand(repository, testFilePath);
-
-        try
-        {
-            Assert.Throws<InvalidDataException>(() => command.Execute("keyword"));
-        }
-        finally
-        {
-            if (File.Exists(testFilePath)) File.Delete(testFilePath);
-        }
-    }
-
-    // TDD: TST-27 - 破損 JSON で InvalidDataException が伝播するか(非同期版)
+    // TDD: TST-27 - 破損 JSON で InvalidDataException が伝播するか
     [Fact]
     [Trait("Category", "Unit")]
     public async Task ExecuteAsync_WhenCorruptedJson_ThrowsInvalidDataException()
