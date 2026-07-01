@@ -899,13 +899,15 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] TST-32. 状態遷移テスト（コマンドの実行順序・前提条件）がない
+### [x] TST-32. 状態遷移テスト（コマンドの実行順序・前提条件）がない
 
 **対象ファイル**: `PastNotes.Console.Tests/ConsoleAppTests.cs`
 
 **問題**: `search`・`view`・`view-html` は `notes.json` が存在することを前提とするが、ファイルが存在しない状態での動作（「No notes found. Run 'fetch' command first.」）と、存在する状態での動作の両方を組み合わせた状態遷移テストがない。個別のコマンドのテストはあるが、実行順序による状態変化が正しく処理されることを保証するテストが不足している。
 
-**修正案**: `notes.json` なし → `search`/`view` → エラー → `fetch` → `search`/`view` → 正常 の流れを確認するテストを追加する。
+**対処**: `ConsoleAppTests.StateTransition_NotesFileAbsentThenPresent_SearchAndViewBehaveAccordingly`（`Category=Unit`）を追加した。`notes.json` なし → `search`/`view` が exit 1・`No notes found. Run 'fetch' command first.` を返す → `NoteRepository.SaveToFileAsync` で `notes.json` を作成（実 API を使う `fetch` の代わりに状態変化のみを再現）→ `search`/`view` が exit 0・期待どおりの内容を返す、という一連の状態遷移を1テストで検証する。実 API 呼び出しを伴わないため `Category=Unit`（DESIGN-2 と同様、CWD への実ファイル I/O を伴う許容範囲のユニットテスト）。69件全ユニットテストパス。
+
+横展開確認: `view-html` も同様に `notes.json` の有無で挙動が変わるが、ファイルなし・破損 JSON の各状態は TST-24 で個別にテスト済みのため対象外とした（本項目の課題文も `search`・`view` を主眼としている）。
 
 ---
 

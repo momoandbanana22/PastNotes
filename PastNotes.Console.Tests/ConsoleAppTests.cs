@@ -615,4 +615,98 @@ public class ConsoleAppTests
                 Directory.Delete("html_output", recursive: true);
         }
     }
+
+    // TDD: TST-32 - notes.json の有無による search/view の状態遷移テスト
+    // (notes.json なし → search/view はエラー → notes.json 作成 → search/view は正常、の一連の状態変化を確認)
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task StateTransition_NotesFileAbsentThenPresent_SearchAndViewBehaveAccordingly()
+    {
+        if (File.Exists("notes.json"))
+            File.Delete("notes.json");
+
+        var originalOutput = System.Console.Out;
+
+        try
+        {
+            // 状態1: notes.json が存在しない → search/view はエラー(exit 1)
+            using (var searchWriter = new StringWriter())
+            {
+                System.Console.SetOut(searchWriter);
+                int searchResultBeforeFetch;
+                try
+                {
+                    searchResultBeforeFetch = await Program.Main(new[] { "search", "keyword" });
+                }
+                finally
+                {
+                    System.Console.SetOut(originalOutput);
+                }
+                Assert.Equal(1, searchResultBeforeFetch);
+                Assert.Contains("No notes found. Run 'fetch' command first.", searchWriter.ToString());
+            }
+
+            using (var viewWriter = new StringWriter())
+            {
+                System.Console.SetOut(viewWriter);
+                int viewResultBeforeFetch;
+                try
+                {
+                    viewResultBeforeFetch = await Program.Main(new[] { "view" });
+                }
+                finally
+                {
+                    System.Console.SetOut(originalOutput);
+                }
+                Assert.Equal(1, viewResultBeforeFetch);
+                Assert.Contains("No notes found. Run 'fetch' command first.", viewWriter.ToString());
+            }
+
+            // 状態遷移: notes.json を作成(fetch でノートが保存された状態に相当)
+            var repository = new PastNotes.NoteRepository();
+            var notes = new List<PastNotes.Note>
+            {
+                new PastNotes.Note { Id = "1", Text = "keyword note", CreatedAt = DateTime.Now }
+            };
+            await repository.SaveToFileAsync(notes, "notes.json");
+
+            // 状態2: notes.json が存在する → search/view は正常(exit 0)
+            using (var searchWriter = new StringWriter())
+            {
+                System.Console.SetOut(searchWriter);
+                int searchResultAfterFetch;
+                try
+                {
+                    searchResultAfterFetch = await Program.Main(new[] { "search", "keyword" });
+                }
+                finally
+                {
+                    System.Console.SetOut(originalOutput);
+                }
+                Assert.Equal(0, searchResultAfterFetch);
+                Assert.Contains("Found 1", searchWriter.ToString());
+            }
+
+            using (var viewWriter = new StringWriter())
+            {
+                System.Console.SetOut(viewWriter);
+                int viewResultAfterFetch;
+                try
+                {
+                    viewResultAfterFetch = await Program.Main(new[] { "view" });
+                }
+                finally
+                {
+                    System.Console.SetOut(originalOutput);
+                }
+                Assert.Equal(0, viewResultAfterFetch);
+                Assert.Contains("Total notes: 1", viewWriter.ToString());
+            }
+        }
+        finally
+        {
+            if (File.Exists("notes.json"))
+                File.Delete("notes.json");
+        }
+    }
 }
