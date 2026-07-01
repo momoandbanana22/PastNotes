@@ -406,6 +406,35 @@ public class MisskeyApiClientTests
         await Assert.ThrowsAsync<ArgumentException>(() => client.GetNotesWithCache(startDate, endDate));
     }
 
+    // TDD: BUG-41 - GetNotesWithCacheにしかない startDate > endDate 検証を GetNotesWithPagination にも横展開
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesWithPagination_WhenStartDateIsAfterEndDate_ThrowsArgumentException()
+    {
+        // Arrange
+        var client = new MisskeyApiClient("https://misskey.io", "valid-token");
+        var startDate = new DateTime(2024, 2, 1);
+        var endDate = new DateTime(2024, 1, 1);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => client.GetNotesWithPagination(startDate, endDate));
+    }
+
+    // TDD: BUG-41 - GetNotesWithCacheにしかない startDate > endDate 検証を GetNotesWithRetry にも横展開
+    // (FetchCommand が実際に使う経路のため、これが本番で最も重要)
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task GetNotesWithRetry_WhenStartDateIsAfterEndDate_ThrowsArgumentException()
+    {
+        // Arrange
+        var client = new MisskeyApiClient("https://misskey.io", "valid-token");
+        var startDate = new DateTime(2024, 2, 1);
+        var endDate = new DateTime(2024, 1, 1);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => client.GetNotesWithRetry(startDate, endDate, maxRetries: 3));
+    }
+
     // TDD: BUG-35 - 進捗コールバックが呼ばれること、Console には書かれないこと
     [Fact]
     [Trait("Category", "Unit")]

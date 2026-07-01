@@ -174,13 +174,18 @@ public class MisskeyApiClient : IMisskeyApiClient
         return ParseApiResponse(jsonResponse);
     }
 
-    public async Task<IEnumerable<Note>> GetNotesWithCache(DateTime startDate, DateTime endDate)
+    private static void ValidateDateRange(DateTime startDate, DateTime endDate)
     {
-        // 日付範囲のバリデーション
         if (startDate > endDate)
         {
             throw new ArgumentException("Start date must be before end date");
         }
+    }
+
+    public async Task<IEnumerable<Note>> GetNotesWithCache(DateTime startDate, DateTime endDate)
+    {
+        // 日付範囲のバリデーション
+        ValidateDateRange(startDate, endDate);
 
         // キャッシュキーを生成
         var cacheKey = $"notes_{startDate:o}_{endDate:o}";
@@ -242,6 +247,8 @@ public class MisskeyApiClient : IMisskeyApiClient
 
     public async Task<IEnumerable<Note>> GetNotesWithPagination(DateTime startDate, DateTime endDate, Action<string>? progress = null)
     {
+        ValidateDateRange(startDate, endDate);
+
         if (_httpClient == null)
         {
             throw new InvalidOperationException("HttpClient is required to call the Misskey API");
@@ -290,6 +297,8 @@ public class MisskeyApiClient : IMisskeyApiClient
 
     public async Task<IEnumerable<Note>> GetNotesWithRetry(DateTime startDate, DateTime endDate, int maxRetries, Action<string>? progress = null)
     {
+        ValidateDateRange(startDate, endDate);
+
         if (_httpClient == null)
         {
             throw new InvalidOperationException("HttpClient is required to call the Misskey API");

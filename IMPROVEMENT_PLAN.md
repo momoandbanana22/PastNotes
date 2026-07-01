@@ -491,7 +491,7 @@ catch (Exception ex)
 
 ---
 
-### [ ] BUG-41. `startDate > endDate` のバリデーションが `GetNotesWithCache` にしかなく、実際に使われている `GetNotesWithRetry`/`GetNotesWithPagination` には存在しない
+### [x] BUG-41. `startDate > endDate` のバリデーションが `GetNotesWithCache` にしかなく、実際に使われている `GetNotesWithRetry`/`GetNotesWithPagination` には存在しない
 
 **対象ファイル**: `PastNotes/MisskeyApiClient.cs`（177-183、243-251、291-299行目）
 
@@ -510,7 +510,15 @@ catch (Exception ex)
 
 **関連**: DESIGN-5・DESIGN-6（`GetNotesWithCache` の未使用化）、BUG-7（同ファイル・同メソッドのページネーション早期終了バグ）
 
-**対処**: 未対応。`GetNotesWithPaginationFromApiAsync`（全メソッドが最終的に委譲する共通メソッド）の冒頭に検証を1箇所追加するのが根本対応（CLAUDE.mdルール3）。TDD で `GetNotesWithPagination_WhenStartDateIsAfterEndDate_ThrowsArgumentException`・`GetNotesWithRetry_WhenStartDateIsAfterEndDate_ThrowsArgumentException` を追加し RED を確認した上で対応する。
+**対処**: TDD で対応。失敗テスト `GetNotesWithPagination_WhenStartDateIsAfterEndDate_ThrowsArgumentException`・`GetNotesWithRetry_WhenStartDateIsAfterEndDate_ThrowsArgumentException`（いずれも `GetNotesWithCache` の既存テストと同じ、`HttpClient` なしコンストラクタ・startDate=2024-02-01/endDate=2024-01-01）を追加し、両方とも `ArgumentException` ではなく `InvalidOperationException`（`_httpClient == null` チェックが先に発火）で失敗することを確認して RED を確認した。
+
+当初案（`GetNotesWithPaginationFromApiAsync` 一箇所にのみ検証を追加）は採用しなかった。理由: `GetNotesWithCache` は `_httpClient == null` チェックより前に日付検証を行う順序で既存テスト（`GetNotesWithCache_WhenStartDateIsAfterEndDate_ThrowsArgumentException`）が書かれており、共有の `GetNotesWithPaginationFromApiAsync`（`_httpClient` チェックの後に呼ばれる）にのみ検証を移すと、`HttpClient` なしコンストラクタでは `InvalidOperationException` が先に発生し既存テストが GREEN のまま維持できない。そのため、検証ロジック自体は `ValidateDateRange(DateTime, DateTime)` という1つの private static メソッドに一元化し、`GetNotesWithCache`・`GetNotesWithPagination`・`GetNotesWithRetry` の3メソッドそれぞれの冒頭（各メソュッド自身の `_httpClient == null` チェックより前）から呼び出す形にした。ロジックの実装は1箇所（CLAUDE.mdルール3の「共通の原因を一か所で直せないか」を満たす）だが、各メソッドの既存の事前条件チェック順序（日付検証 → HttpClient有無）は変えていない。
+
+修正後、追加した2件の RED が解消され GREEN になることを確認した。
+
+横展開確認: `startDate > endDate` を Grep で再検索し、`MisskeyApiClient.cs` 内の当該チェックが `ValidateDateRange` の1箇所に統一されたことを確認した。`FetchCommand.cs`（36行目）に同様のチェックが残っているが、これは別ファイル・別クラスの話であり BUG-42 として別途記録済み（本項目は `MisskeyApiClient` 内の横展開のみを対象とする）。
+
+`PastNotes.Tests` 68件 → 70件（追加2件）、`PastNotes.Console.Tests` 66件、全ユニットテストパス、`dotnet build` 警告0件を確認済み。
 
 ---
 
