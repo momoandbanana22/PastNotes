@@ -283,6 +283,17 @@ public class ConsoleAppTests
         }
     }
 
+    // TDD: BUG-40 / TST-30 - 起動時に Console.OutputEncoding が UTF-8 に設定されているか
+    // (日本語出力が Windows のデフォルトエンコーディング(CP932)と衝突して文字化けする問題への対処)
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Main_WhenStarted_SetsConsoleOutputEncodingToUtf8()
+    {
+        await Program.Main(Array.Empty<string>());
+
+        Assert.Equal("utf-8", System.Console.OutputEncoding.WebName);
+    }
+
     // TDD: DOC-4 - --max-retries がusageメッセージに記載されていること
     [Fact]
     [Trait("Category", "Unit")]

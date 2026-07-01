@@ -472,7 +472,7 @@ catch (Exception ex)
 
 ---
 
-### [ ] BUG-40. 日本語出力が文字化けする
+### [x] BUG-40. 日本語出力が文字化けする
 
 **対象ファイル**: `PastNotes.Console/Program.cs`、`PastNotes.Console/Commands/ViewCommand.cs`（54・97行目）、`PastNotes/MisskeyApiClient.cs`（272行目）
 
@@ -483,7 +483,11 @@ catch (Exception ex)
 
 ユニットテストは `StringWriter` でキャプチャするためエンコーディング問題が隠れ、統合テスト実行まで気づかなかった。
 
-**修正案**: `Program.cs` の起動時に `Console.OutputEncoding = System.Text.Encoding.UTF8;` を追加する。
+**対処**: TDD で対応。失敗テスト `Main_WhenStarted_SetsConsoleOutputEncodingToUtf8`（`Program.Main` 実行後に `Console.OutputEncoding.WebName` が `"utf-8"` であることを検証）を先に追加し、実行環境の既定値が `Codepage - 932` であることを確認して RED を確認した後、`Program.cs` の `Main` 冒頭に `Console.OutputEncoding = System.Text.Encoding.UTF8;` を追加して GREEN を確認した（TST-30 のテストを兼ねる）。
+
+横展開確認: `static.*Main\(` を Grep で検索し、エントリポイントは `PastNotes.Console/Program.cs` の1箇所のみ（BUG-21 でライブラリ側の `Program.cs` は削除済み）であることを確認済み。
+
+`PastNotes.Tests` 68件、`PastNotes.Console.Tests` 66件、全ユニットテストパス、`dotnet build` 警告0件を確認済み。
 
 ---
 
@@ -857,13 +861,13 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] TST-30. `Program.cs` の起動時エンコーディング設定を検証するテストがない
+### [x] TST-30. `Program.cs` の起動時エンコーディング設定を検証するテストがない
 
 **対象ファイル**: `PastNotes.Console.Tests/ConsoleAppTests.cs`、`PastNotes.Console/Program.cs`
 
 **問題**: `MisskeyApiClient.GetNotesWithPaginationFromApiAsync`（272行目）が日本語文字列 `"  取得中... {allNotes.Count} 件"` を出力するが、`Program.cs` に `Console.OutputEncoding = Encoding.UTF8` の設定がなく、Windows 環境で文字化けが発生する（BUG-40）。この問題はコードを読めば発見できるにもかかわらず、`Program.cs` の起動初期化コードを検証するユニットテストがなかったために見落とされた。
 
-**修正案**: BUG-40 の修正（`Console.OutputEncoding = Encoding.UTF8` 追加）に合わせて、`ConsoleAppTests` に起動時の出力エンコーディングが UTF-8 であることを確認するテストを追加する。
+**対処**: BUG-40 の対処と同一コミットで対応済み。`ConsoleAppTests.Main_WhenStarted_SetsConsoleOutputEncodingToUtf8` を追加し、`Program.Main` 実行後に `Console.OutputEncoding.WebName == "utf-8"` であることを検証する。
 
 ---
 

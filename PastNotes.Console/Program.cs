@@ -9,6 +9,10 @@ public class Program
 
     public static async Task<int> Main(string[] args)
     {
+        // 日本語出力が環境依存のデフォルトエンコーディング(Windowsの場合CP932)と衝突して
+        // 文字化けするのを防ぐため、標準出力のエンコーディングをUTF-8に固定する
+        System.Console.OutputEncoding = System.Text.Encoding.UTF8;
+
         // .envファイルをロード（環境変数が未設定の場合のみ）
         PastNotes.DotEnvLoader.Load(".env");
 
