@@ -491,6 +491,51 @@ catch (Exception ex)
 
 ---
 
+### [ ] BUG-41. `startDate > endDate` のバリデーションが `GetNotesWithCache` にしかなく、実際に使われている `GetNotesWithRetry`/`GetNotesWithPagination` には存在しない
+
+**対象ファイル**: `PastNotes/MisskeyApiClient.cs`（177-183、243-251、291-299行目）
+
+**問題**: `GetNotesWithCache`（177行目）は冒頭で `if (startDate > endDate) throw new ArgumentException("Start date must be before end date");` を行っているが、`GetNotesWithPagination`（243行目）・`GetNotesWithRetry`（291行目）にはこの検証がない。3メソッドとも最終的に同じ `GetNotesWithPaginationFromApiAsync` に処理を委譲する兄弟メソッドであり、本来同じ入力検証を持つべきだが、検証ロジックが `GetNotesWithCache` にしか実装されていない。
+
+さらに DESIGN-5/DESIGN-6 の対応により `GetNotesWithCache` は現状どの呼び出し元からも使われておらず（インターフェースからも削除済み）、実際に本番で使われている `FetchCommand` → `GetNotesWithRetry` の経路には検証が一切存在しない状態になっている。
+
+**具体的な失敗シナリオ**:
+1. ユーザーが `fetch --start 2024-02-01 --end 2024-01-01`（start と end を逆に指定）を実行
+2. `FetchCommandHandler` は `DateTime.TryParse` で個別に日付フォーマットのみ検証し、大小関係はチェックしない
+3. `FetchCommand.ExecuteAsync` → `GetNotesWithRetry` → `GetNotesWithPaginationFromApiAsync` に到達
+4. 269行目の `notes.Where(note => note.CreatedAt >= startDate && note.CreatedAt <= endDate)` は `startDate > endDate` のとき恒常的に空集合になる
+5. 281行目の `notes.Last().CreatedAt < startDate` によりページネーションが早期終了し、例外もエラーメッセージもなく「Saved 0 notes」で正常終了する
+
+ユーザーは日付を逆指定した入力ミスに気づけず、正しい期間を指定したのに結果が0件だったと誤解する。
+
+**関連**: DESIGN-5・DESIGN-6（`GetNotesWithCache` の未使用化）、BUG-7（同ファイル・同メソッドのページネーション早期終了バグ）
+
+**対処**: 未対応。`GetNotesWithPaginationFromApiAsync`（全メソッドが最終的に委譲する共通メソッド）の冒頭に検証を1箇所追加するのが根本対応（CLAUDE.mdルール3）。TDD で `GetNotesWithPagination_WhenStartDateIsAfterEndDate_ThrowsArgumentException`・`GetNotesWithRetry_WhenStartDateIsAfterEndDate_ThrowsArgumentException` を追加し RED を確認した上で対応する。
+
+---
+
+### [ ] BUG-42. `startDate > endDate` のバリデーションが `SearchCommand`・`ViewCommand` にも存在しない（BUG-41 の横展開）
+
+**対象ファイル**: `PastNotes.Console/Commands/SearchCommand.cs`（12-19行目）、`PastNotes.Console/Commands/ViewCommand.cs`（13-22行目）
+
+**問題**: BUG-41 の調査で `Start date must be before` を Grep 横展開検索したところ、`FetchCommand.ExecuteAsync(DateTime, DateTime)`（36-39行目）は `startDate > endDate` のとき `ArgumentException("Start date must be before or equal to end date")` を投げているが、同じく `--start`/`--end` を受け取る `SearchCommand` コンストラクタ・`ViewCommand` コンストラクタには同種の検証が一切ない。両コマンドとも `TimeZoneHelper.ConvertToUtc` で変換するのみで大小関係はチェックせず、`ExecuteAsync` 内で `_repository.FilterByDateRange(notes, startDate, endDate)` に渡している。
+
+`SearchCommandHandler.cs`・`ViewCommandHandler.cs`（CLI引数パース層）も `DateTime.TryParse` で各日付のフォーマットのみ検証しており、`--start`/`--end` の大小関係はどの層でもチェックされていない。
+
+**具体的な失敗シナリオ**:
+1. ユーザーが `view --start 2024-02-01 --end 2024-01-01`（start と end を逆に指定）を実行
+2. `ViewCommandHandler` は各日付を個別に `DateTime.TryParse` するのみで大小関係はチェックしない
+3. `ViewCommand.ExecuteAsync` → `NoteRepository.FilterByDateRange` の `note.CreatedAt >= startDate && note.CreatedAt <= endDate` が恒常的に false
+4. エラーも警告もなく「Total notes: 0」が表示され、正常終了（exit 0）する
+
+`search` も同一構造のため同じ失敗シナリオが成立する。ユーザーは日付の逆指定に気づけず、対象期間にノートがなかったと誤解する。
+
+**関連**: BUG-41（`MisskeyApiClient` 側の同一パターン）。`FetchCommand` にのみ存在する検証が `SearchCommand`/`ViewCommand`/`MisskeyApiClient` の大半のメソッドに横展開されていない、という同一の根本原因（入力検証がケースバイケースで場当たり的に追加されている）。
+
+**対処**: 未対応。BUG-41 と合わせて対応方針を検討する（例: `NoteRepository.FilterByDateRange` 冒頭での一元検証、または各コマンドのコンストラクタでの検証）。TDD で `SearchCommand`・`ViewCommand` それぞれに `_WhenStartDateAfterEndDate_ThrowsArgumentException` 相当のテストを追加し RED を確認した上で対応する。
+
+---
+
 ## REFACTOR: リファクタリング
 
 *動作を変えずにコード構造・一貫性を改善する変更。*
@@ -930,6 +975,56 @@ if (notes == null || !notes.Any())
 **対処**: TDD で対応。失敗テスト `ExecuteAsync_WhenAppendModeWithCorruptedExistingFile_ReturnsOneAndPrintsToStderr`（`--append` 指定・既存 `notes.json` が破損 JSON のケースで `command.ExecuteAsync` を直接呼び出す）を追加し、`InvalidDataException` が未捕捉のまま伝播することを確認して RED を確認した後、`FetchAndSaveAsync` に `catch (InvalidDataException ex)` を追加（`UnauthorizedException`・`ApiException` と同じ stderr 出力パターン）して GREEN を確認した。BUG-38 で確立した「`FetchCommand` のエラーは exit 1・stderr に統一する」方針を `InvalidDataException` にも適用したことになる。70件全ユニットテストパス、`dotnet build` 警告0件。
 
 横展開確認: `view-html`（`ViewHtmlCommand`）でも破損 JSON 時に `Program.cs` の汎用ハンドラ経由で stdout にエラーが出力されることを確認した（`ConsoleAppTests.Main_WhenViewHtmlWithCorruptedJson_ReturnsOneAndPrintsError` は stdout のみを検証しており、これを裏付ける）。これは DESIGN-3（`SearchCommand`/`ViewCommand` の例外が `Program.cs` 経由で stdout に出る問題）と同一分類の課題であり、`ViewHtmlCommand` も対象に含めて DESIGN-3 側で一括検討する（本項目ではこれ以上の修正は行わない）。
+
+---
+
+### [ ] TST-35. `SearchCommand` に `--end` 値なし時のテストがない（BUG-34 の横展開漏れ）
+
+**対象ファイル**: `PastNotes.Console.Tests/ConsoleAppTests.cs`
+
+**問題**: `SearchCommandHandler.cs`（24-45行目）と `ViewCommandHandler.cs`（17-42行目）は `--start`/`--end` の引数検証ロジック（値なしチェック→日付フォーマット検証）が完全に同一構造。BUG-34 のコメント（174行目）「search/view で --start/--end に値を渡さないとエラーを返すか」は本来 search/view 両方で `--start`/`--end` 両方をカバーする意図と読めるが、実際には以下の非対称が存在する。
+
+| テストケース | Search | View |
+|---|---|---|
+| `--start` 値なし | `SearchCommand_WhenStartFlagHasNoValue_ReturnsOneAndPrintsError`（177行目） | `ViewCommand_WhenStartFlagHasNoValue_ReturnsOneAndPrintsError`（413行目） |
+| `--end` 値なし | なし | `ViewCommand_WhenEndFlagHasNoValue_ReturnsOneAndPrintsError`（198行目） |
+| `--start` 不正フォーマット | `SearchCommand_WhenInvalidStartDate_ReturnsOneAndPrintsError`（220行目） | `ViewCommand_WhenInvalidStartDate_ReturnsOneAndPrintsError`（435行目） |
+| `--end` 不正フォーマット | `SearchCommand_WhenInvalidEndDate_ReturnsOneAndPrintsError`（391行目） | `ViewCommand_WhenInvalidEndDate_ReturnsOneAndPrintsError`（241行目） |
+
+`SearchCommand` で `--end` 値なし（例: `search keyword --end`）のケースだけテストがない。実装（`SearchCommandHandler.cs:34-40`）は `Console.Error.WriteLine("Error: --end requires a date value...")` を正しく返しているため動作バグではなく、純粋なテストの抜け。
+
+**対処**: 未対応。`SearchCommand_WhenEndFlagHasNoValue_ReturnsOneAndPrintsError` を追加する。実装は既に正しいため、テスト追加時点で GREEN になる想定（挙動を裏付けるテストの追加）。
+
+---
+
+### [ ] TST-36. `MisskeyApiClient.HandleErrorResponse` の 401（Unauthorized）・default（未分類エラー）分岐が直接テストされていない
+
+**対象ファイル**: `PastNotes.Tests/MisskeyApiClientTests.cs`、`PastNotes/MisskeyApiClient.cs`（114-133行目）
+
+**問題**: `HandleErrorResponse` は5つの分岐を持つ（404→`NotFoundException`、401→`UnauthorizedException`、429→`RateLimitExceededException`、500/502/503→`ServerErrorException`、default→`ApiException`）。`MisskeyApiClientTests.cs` を全件確認したところ、実際の HTTP レスポンスをモックしてこのメソッドを直接検証しているのは 404（`GetNotesFromApiAsync_WhenReturns404_ShouldThrowNotFoundException`, 1184行目）・429（`GetNotesWithRetry_WhenMaxRetriesExceeded...`, 1044行目ほか）・500（`GetNotesWithCache_WhenApiCallFails_ThrowsApiException`, 377行目）の3分岐のみで、401 と default の2分岐には対応するテストが `PastNotes.Tests` に存在しない（`UnauthorizedException` は `PastNotes.Tests` 内に一件も出現しない）。
+
+`PastNotes.Console.Tests/Commands/FetchCommandTests.cs` に `ExecuteAsync_WhenApiReturns401_ReturnsOneAndPrintsError`（429行目）があるが、これは `Mock<IMisskeyApiClient>` が `UnauthorizedException` を直接 `ThrowsAsync` するモックであり、実際の HTTP 401 レスポンスが `HandleErrorResponse` によって正しく `UnauthorizedException` に変換されることは検証していない。
+
+**対処**: 未対応。TDD で `GetNotesFromApiAsync_WhenReturns401_ShouldThrowUnauthorizedException`（404テストと同一パターンで401モックに変更）・`GetNotesFromApiAsync_WhenReturnsUnhandledStatusCode_ShouldThrowApiException`（例: 400 Bad Request）を追加する。実装は既に正しいはずのため、追加時点で GREEN になる想定。
+
+---
+
+### [ ] TST-37. `NoteHtmlGenerator` の XSS テストが `GenerateHtml`（単一ノート）と `GenerateHtmlForAllNotes`（複数ノート）で非対称
+
+**対象ファイル**: `PastNotes.Tests/NoteHtmlGeneratorTests.cs`、`PastNotes/NoteHtmlGenerator.cs`
+
+**問題**: `NoteHtmlGenerator` には `GenerateHtml`（21-69行目、`view-html` では未使用・現状 `NoteHtmlGeneratorOutputTests` からのみ呼ばれる）と `GenerateHtmlForAllNotes`（71-145行目、`ViewHtmlCommand` が実際に使用）の2メソッドがあり、いずれも `note.Text`・`file.Name`・`file.Url` を `WebUtility.HtmlEncode` でエスケープする同一パターンを持つ。しかし XSS テストのカバレッジが非対称になっている。
+
+| フィールド | `GenerateHtmlForAllNotes` | `GenerateHtml` |
+|---|---|---|
+| `note.Text` | ✅ `GenerateHtmlForAllNotes_WhenNoteTextContainsHtmlTags_ShouldEscapeOutput`（8行目） | ❌ なし |
+| `note.Id`（タイトルにのみ出力、`GenerateHtmlForAllNotes` は `Id` を出力しないため対象外） | 対象外 | ✅ `GenerateHtml_WhenNoteIdContainsHtmlSpecialChars_EncodesIdInTitle`（79行目） |
+| `file.Name` | ✅ `GenerateHtmlForAllNotes_WhenFileNameContainsHtmlTags_ShouldEscapeAltAttribute`（38行目） | ❌ なし |
+| `file.Url` | ❌ なし（`https://example.com/...` の正常系のみ） | ❌ なし |
+
+`GenerateHtml`（単一ノート）の `Text`・`file.Name`・`file.Url` のエスケープと、`GenerateHtmlForAllNotes`（複数ノート）の `file.Url` のエスケープには、悪意あるペイロードを用いた検証が一切ない。実装（`WebUtility.HtmlEncode`）は両メソッドで同一のため動作バグの可能性は低いが、CLAUDE.md のテスト観点表（セキュリティ）に照らすと、BUG-12/BUG-33 で確立した「HTML 出力はテキスト・属性ごとに XSS ペイロードで検証する」方針が全出力箇所に横展開されていない。
+
+**対処**: 未対応。TDD で `GenerateHtml_WhenNoteTextContainsHtmlTags_ShouldEscapeOutput`・`GenerateHtml_WhenFileNameOrUrlContainsHtmlTags_ShouldEscapeAttributes`・`GenerateHtmlForAllNotes_WhenFileUrlContainsHtmlTags_ShouldEscapeSrcAttribute` を追加する。実装は既に正しいはずのため、追加時点で GREEN になる想定。
 
 ---
 
