@@ -864,13 +864,18 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] TST-29. `SearchCommandTests`・`ViewCommandTests` に日付フィルタリング系テストの重複がある
+### [x] TST-29. `SearchCommandTests`・`ViewCommandTests` に日付フィルタリング系テストの重複がある
 
 **対象ファイル**: `PastNotes.Console.Tests/Commands/SearchCommandTests.cs`、`PastNotes.Console.Tests/Commands/ViewCommandTests.cs`
 
 **問題**: 両クラスに UTC→JST 変換・秒数表示・日付フィルタリングを確認するテストがほぼ同じ構造で存在しており、`NoteRepository.FilterByDateRange` の動作を重複して検証している。フィルタリングロジック自体は `NoteRepositoryTests` で検証すれば十分。
 
-**修正案**: コマンドクラスのテストでは「フィルタリングを呼び出すこと」を確認する最小限のテストに絞り、境界値検証は `NoteRepositoryTests` に集約する。
+**調査結果**: 全テストを精査した結果、「安全に削除できる重複」と「削除すべきでない重複（実質は別責務）」に分かれることが判明した。
+
+1. **安全に統合した重複**（`ViewCommandTests.cs` 内）: `Execute_WhenDateRangeSpecified_ShowsOnlyNotesInRange`（jan/feb 2件・Jan含む/Feb除外のみ検証）は、`Execute_TotalCountMatchesActualDisplayedNotes`（BUG-29のため既存・jan/feb/mar 3件で同一シナリオ+`Total notes: 1`検証まで含む上位互換）に完全に包含されていた。`ExecuteAsync` 版も同様。統合の際、前者にあった `Assert.Equal(0, result)`（戻り値検証）が後者に欠けていたため、統合先に追加した上で前者2件を削除した。
+2. **削除すべきでない「重複」**: `SearchCommandTests`・`ViewCommandTests` それぞれが持つ「UTC→JST変換」（`Execute_WhenCalledWithUtcDateTime_ConvertsToJst`）・「秒数表示」（`Execute_WhenCalledWithExistingNotes_DisplaysDateTimeWithSeconds`）テストは、一見構造が似ているが**各コマンドクラスが独立して同じ変換ロジックを実装している**ため、片方を消すと片方の実装だけが壊れた場合に検知できない。実際に BUG-20（`SearchCommand` だけ UTC→JST 変換をせず表示していた）はこの独立実装の食い違いによって発生した既知のバグであり、`SearchCommand`・`ViewCommand` 双方にテストがあることでこの再発を防いでいる。同様に「日付フィルタリングを呼び出すこと」を確認するテスト自体も、BUG-26（`SearchCommand`）・BUG-29（`ViewCommand`）という別々の実際のバグへの regression テストを兼ねており、コマンドクラス単位で維持する必要があると判断した。
+
+**対処**: 上記1のみ統合により重複を解消（4件→2件、68件全ユニットテストパス、動作不変）。上記2は根本原因（コマンドごとに変換・フィルタリングロジックが独立実装されている設計、DESIGN-4参照）を解消しない限り安全に削減できないため、削除せず本項目としては対応完了とする。
 
 ---
 
