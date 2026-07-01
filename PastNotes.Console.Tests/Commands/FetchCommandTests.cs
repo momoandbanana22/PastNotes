@@ -536,6 +536,53 @@ public class FetchCommandTests
         Assert.DoesNotContain("Server error", outWriter.ToString());
     }
 
+    // TDD: TST-34 - --append 指定時に既存 notes.json が破損 JSON の場合、BUG-38 と同様 stderr に統一されるべき
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ExecuteAsync_WhenAppendModeWithCorruptedExistingFile_ReturnsOneAndPrintsToStderr()
+    {
+        // Arrange
+        var mockApiClient = new Mock<IMisskeyApiClient>();
+        var repository = new NoteRepository();
+        var testFilePath = $"test_corrupt_append_{Guid.NewGuid()}.json";
+        await File.WriteAllTextAsync(testFilePath, "{ not valid json }}");
+
+        var newNotes = new List<Note>
+        {
+            new Note { Id = "new-1", Text = "New note", CreatedAt = DateTime.UtcNow }
+        };
+        mockApiClient
+            .Setup(x => x.GetNotesWithRetry(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<Action<string>?>()))
+            .ReturnsAsync(newNotes);
+
+        var command = new FetchCommand(mockApiClient.Object, repository, testFilePath, append: true);
+
+        var originalError = System.Console.Error;
+        var originalOut = System.Console.Out;
+        using var errWriter = new StringWriter();
+        using var outWriter = new StringWriter();
+        System.Console.SetError(errWriter);
+        System.Console.SetOut(outWriter);
+
+        // Act
+        int result;
+        try
+        {
+            result = await command.ExecuteAsync(30);
+        }
+        finally
+        {
+            System.Console.SetError(originalError);
+            System.Console.SetOut(originalOut);
+            if (File.Exists(testFilePath)) File.Delete(testFilePath);
+        }
+
+        // Assert
+        Assert.Equal(1, result);
+        Assert.Contains("Error:", errWriter.ToString());
+        Assert.DoesNotContain("Error:", outWriter.ToString());
+    }
+
     // TDD: BUG-24 - ExecuteAsync(days) の進捗表示が JST であることを確認
     [Fact]
     [Trait("Category", "Unit")]

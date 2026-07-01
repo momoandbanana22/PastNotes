@@ -87,5 +87,10 @@ public class FetchCommand
             System.Console.Error.WriteLine($"Error: {ex.Message}");
             return 1;
         }
+        catch (InvalidDataException ex)
+        {
+            System.Console.Error.WriteLine($"Error: {ex.Message}");
+            return 1;
+        }
     }
 }
