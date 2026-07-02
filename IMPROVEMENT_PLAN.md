@@ -691,6 +691,36 @@ Error: Start date must be before end date               (stderr)
 
 ---
 
+### [ ] BUG-49. `fetch` の `--start`/`--end` に値なしで渡した場合、`search`/`view` と異なり専用エラーを返さず汎用 Usage にフォールスルーする
+
+**対象ファイル**: `PastNotes.Console/Cli/FetchCommandHandler.cs`（88〜112行目）、`SearchCommandHandler.cs`（20〜47行目）、`ViewCommandHandler.cs`（15〜42行目）
+
+**問題**: `SearchCommandHandler`・`ViewCommandHandler` は `--start`/`--end` に値がない場合、`"Error: --start requires a date value..."` 等の専用エラーを `stderr` に出力して exit 1 する（BUG-34/TST-35 で確立）。一方 `FetchCommandHandler` は `--days` については同様の専用エラーを持つ（BUG-47）が、`--start`/`--end` については値の有無を区別せず、`sIdx + 1 < args.Length && eIdx + 1 < args.Length` を満たさない場合はまとめて汎用の `Usage:` メッセージ（`stdout`、exit 1）にフォールスルーする。exit code は 1 のため機能的には壊れていないが、どのフラグが原因かを名指ししない点で BUG-36/37/47 の「値なしフラグは専用エラーを返す」という方針と一貫していない。
+
+**具体的な失敗シナリオ**: `pastnotes fetch --token dummy --start` を実行すると、`--start` が値なしであることに触れないまま `Usage: PastNotes.Console fetch --days <days>` 等の全般的な使い方が `stdout` に表示される。`--days` だけ専用エラーを得られるのに対し、`--start`/`--end` は原因の特定しにくい汎用メッセージのみとなる。
+
+**既存テスト**: `ConsoleAppTests.FetchCommand_WhenOnlyStartDateProvided_ReturnsOneAndPrintsUsage`（TST-24）が現状の Usage フォールスルー動作をそのまま検証しており、この非対称は意図的な設計か横展開漏れか未確定のまま固定されている。
+
+**修正案（対応する場合）**: `FetchCommandHandler.cs` に `sIdx >= 0 && sIdx + 1 >= args.Length` → `Error: --start requires a date value`、`eIdx >= 0 && eIdx + 1 >= args.Length` → `Error: --end requires a date value` の分岐を、`--days`/`--start`/`--end` いずれも指定されていない完全な未指定ケース（現状の Usage 表示が妥当なケース）より前に追加する。既存テスト `FetchCommand_WhenOnlyStartDateProvided_ReturnsOneAndPrintsUsage` は「`--start` のみ・`--end` 自体が存在しない」ケースを検証しているため、修正後も Usage 表示のままで良いか、`--end` 不足の専用エラーに変えるべきかを先に決める必要がある。
+
+**対処**: 未対応。動作上のバグではなく設計方針の確認が必要なため、対応するかどうかを含めて要検討。
+
+---
+
+### [ ] BUG-50. 日付範囲バリデーションの例外メッセージが `MisskeyApiClient`/`NoteRepository` と `FetchCommand` で表現が異なる
+
+**対象ファイル**: `PastNotes/MisskeyApiClient.cs`（`ValidateDateRange`）、`PastNotes/NoteRepository.cs`（`FilterByDateRange`）、`PastNotes.Console/Commands/FetchCommand.cs`（`ExecuteAsync(DateTime, DateTime)`）
+
+**問題**: `MisskeyApiClient.ValidateDateRange`・`NoteRepository.FilterByDateRange` は `startDate > endDate` のとき `"Start date must be before end date"` を投げる（実際は `>` チェックのため等価は許容されており、メッセージは厳密には不正確）。一方 `FetchCommand.ExecuteAsync(DateTime, DateTime)` は同じ条件で `"Start date must be before or equal to end date"` を投げており、表現が異なる。挙動はどちらも同じ（等価は許容）だが、同一の検証を指すメッセージが3箇所で統一されていない。
+
+**影響**: 動作上の問題はないが、エラーメッセージを見るユーザー・ログ解析にとって表記揺れとなる。
+
+**修正案（対応する場合）**: 3箇所とも `"Start date must be before or equal to end date"`（実際の挙動に合わせた表現）に統一する。
+
+**対処**: 未対応。動作に影響しない表記統一のため優先度は低い。
+
+---
+
 ## REFACTOR: リファクタリング
 
 *動作を変えずにコード構造・一貫性を改善する変更。*
@@ -1262,6 +1292,20 @@ TST-22（`FetchCommandTests` の重複）・TST-29（`SearchCommandTests`/`ViewC
 **対処**: リファクタリングのため新規テストは追加せず（CLAUDE.md ルール1）、`ViewHtmlCommandTests` クラス（5テスト）を内容を一切変更せずに `PastNotes.Console.Tests/Commands/ViewHtmlCommandTests.cs` へ移動した。`ViewCommandTests.cs` には `ViewCommandTests` クラスのみが残る。`dotnet build`（0警告・0エラー）、`PastNotes.Console.Tests` 75件（移動前後で件数不変）、全ユニットテストパスを確認済み。
 
 `PastNotes.Console.Tests` 側への `TestOrganizationTests` 相当の再発防止テスト追加は本項目のスコープ外とし、必要であれば別途 TST 項目として起票する。
+
+---
+
+### [ ] TST-42. `NoteHtmlGeneratorOutputTests` が `NoteHtmlGeneratorTests.cs` に同居しファイル名と一致していない（TST-23/TST-41 の横展開漏れ）
+
+**対象ファイル**: `PastNotes.Tests/NoteHtmlGeneratorTests.cs`（`NoteHtmlGeneratorTests` クラスに加えて `NoteHtmlGeneratorOutputTests` クラスが同居）
+
+**問題**: TST-23 で `NoteTests.cs` から `NoteHtmlGeneratorOutputTests` を `NoteHtmlGeneratorTests.cs` に移動した際、名前空間は `PastNotes.Tests` に統一したが、クラス名とファイル名を一致させる（TST-41 で `PastNotes.Console.Tests` 側に適用した）方針までは適用されなかった。そのため `NoteHtmlGeneratorTests.cs` 1ファイルに `NoteHtmlGeneratorTests`（`GenerateHtmlForAllNotes` のXSSテスト）と `NoteHtmlGeneratorOutputTests`（`GenerateHtml`・`OpenInBrowser` 等のテスト）という2クラスが同居している。`TestOrganizationTests` は両クラスが `PastNotes.Tests` 名前空間に属することのみを検証しており、ファイル名との一致は検証していない。
+
+動作上の問題はない（TST-23/41 と同様、C#はファイル名とクラス名の一致を強制しない）が、新しい開発者が `GenerateHtml`（単一ノート）のテストを探す際に `NoteHtmlGeneratorTests.cs` を見落とすリスクがあり、TST-41 で確立した「ファイル名とクラス名を一致させる」方針と一貫していない。
+
+**修正案（対応する場合）**: `NoteHtmlGeneratorOutputTests` クラスを `PastNotes.Tests/NoteHtmlGeneratorOutputTests.cs` に分離する（内容は変更しない）。あわせて `TestOrganizationTests` にファイル名との一致を検証するテストを追加するか検討する。
+
+**対処**: 未対応。
 
 ---
 
