@@ -1245,7 +1245,7 @@ TST-22（`FetchCommandTests` の重複）・TST-29（`SearchCommandTests`/`ViewC
 - `IntegrationTest_WhenCalledWithRealApi_ReturnsActualNotes` は内容を変更せず `GetNotesWithCache_WhenCalledTwiceWithRealApi_UsesCache`（2回呼び出してキャッシュが効くことを検証、という実際の意図が伝わる名前）にリネームした。
 - `EndToEndTest_FetchSaveAndSearchNotes`（fetch→save→load→searchのE2Eフロー）・`VerifyActualNoteData_ValidateNoteFields`（各ノートのフィールド妥当性検証）は他と重複する観点がないため維持した。
 
-`dotnet build`（0警告・0エラー）、`dotnet test --filter "Category=Unit"`（`PastNotes.Tests` 79件、動作不変）を確認済み。統合テスト自体（`Category=Integration`）は本セッションでは `MISSKEY_INSTANCE_URL`/`MISSKEY_API_TOKEN` が未設定のため実行できておらず、`dotnet build` によるコンパイル成功のみ確認した状態である。ユーザー環境で `dotnet test --filter "Category=Integration"` の実行を依頼する。
+`dotnet build`（0警告・0エラー）、`dotnet test --filter "Category=Unit"`（`PastNotes.Tests` 79件、動作不変）を確認済み。統合テスト自体はユーザー環境で `MISSKEY_INSTANCE_URL`/`MISSKEY_API_TOKEN` を設定した上でフィルタなしの `dotnet test` を実行し、統合4件（本項目で整理した `GetNotesWithCache_WhenCalledWithRealApi_FetchesMoreThan100NotesWithoutDuplication` を含む）を含む全160件（ユニット154件+統合6件）が成功することを確認済み。
 
 ---
 
