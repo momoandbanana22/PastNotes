@@ -1295,7 +1295,7 @@ TST-22（`FetchCommandTests` の重複）・TST-29（`SearchCommandTests`/`ViewC
 
 ---
 
-### [ ] TST-42. `NoteHtmlGeneratorOutputTests` が `NoteHtmlGeneratorTests.cs` に同居しファイル名と一致していない（TST-23/TST-41 の横展開漏れ）
+### [x] TST-42. `NoteHtmlGeneratorOutputTests` が `NoteHtmlGeneratorTests.cs` に同居しファイル名と一致していない（TST-23/TST-41 の横展開漏れ）
 
 **対象ファイル**: `PastNotes.Tests/NoteHtmlGeneratorTests.cs`（`NoteHtmlGeneratorTests` クラスに加えて `NoteHtmlGeneratorOutputTests` クラスが同居）
 
@@ -1305,7 +1305,7 @@ TST-22（`FetchCommandTests` の重複）・TST-29（`SearchCommandTests`/`ViewC
 
 **修正案（対応する場合）**: `NoteHtmlGeneratorOutputTests` クラスを `PastNotes.Tests/NoteHtmlGeneratorOutputTests.cs` に分離する（内容は変更しない）。あわせて `TestOrganizationTests` にファイル名との一致を検証するテストを追加するか検討する。
 
-**対処**: 未対応。
+**対処**: リファクタリングのため新規テストは追加せず（CLAUDE.md ルール1、TST-41 と同一方針）、`NoteHtmlGeneratorOutputTests` クラス（14テスト）を内容を一切変更せずに `PastNotes.Tests/NoteHtmlGeneratorOutputTests.cs` へ移動した。`NoteHtmlGeneratorTests.cs` には `NoteHtmlGeneratorTests` クラスのみが残る。`dotnet build`（0警告・0エラー）、`PastNotes.Tests` 79件（移動前後で件数不変）、全ユニットテストパスを確認済み。`PastNotes.Tests` 側への `TestOrganizationTests` のファイル名一致検証追加は本項目のスコープ外とし、必要であれば別途 TST 項目として起票する。
 
 ---
 
