@@ -1227,7 +1227,7 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] TST-40. `MisskeyApiClientTests` の実API統合テストが重複し、一部が不安定な検証方法を使っている
+### [x] TST-40. `MisskeyApiClientTests` の実API統合テストが重複し、一部が不安定な検証方法を使っている
 
 **対象ファイル**: `PastNotes.Tests/MisskeyApiClientTests.cs`（583〜986行付近、`[Trait("Category", "Integration")]` の6メソッド）
 
@@ -1238,6 +1238,14 @@ if (notes == null || !notes.Any())
 TST-22（`FetchCommandTests` の重複）・TST-29（`SearchCommandTests`/`ViewCommandTests` の重複）で確立した「重複テストの整理」がユニットテストには適用されたが、統合テストへの横展開確認が行われていなかった。
 
 **修正案**: 6件の検証内容を精査し、`GetNotesWithCache`（キャッシュ動作込み）・ページネーション（100件超取得）・`fetch`→`search`のE2Eフロー、の3観点に統合する。`DebugIntegrationTest_VerifyActualApiCall` の実行時間による検証は削除する（同じ「実APIを呼んでいること」は `notes.Count() > 0` で代替可能なため）。
+
+**対処**: リファクタリングのため新規テストは追加せず（CLAUDE.md ルール1）、6件を4件に整理した。
+- `GetNotesWithCache_WhenCalledWithRealApi_ShouldFetchMoreThan100Notes`（100件超取得）と `GetNotesWithCache_WhenUsingUntilIdPagination_ShouldFetchAllNotesCorrectly`（重複IDなし）は、同じ `GetNotesWithCache` 呼び出し1回で両方とも検証できるため `GetNotesWithCache_WhenCalledWithRealApi_FetchesMoreThan100NotesWithoutDuplication` に統合した。
+- `DebugIntegrationTest_VerifyActualApiCall`（実行時間>100msで実API呼び出しを判定する不安定な検証）は削除した。実際にAPIから取得したノートが1件以上あることは他のテスト（`GetNotesWithCache_WhenCalledTwiceWithRealApi_UsesCache` 等）で既に検証されており、実行時間による代替検証は不要と判断した。
+- `IntegrationTest_WhenCalledWithRealApi_ReturnsActualNotes` は内容を変更せず `GetNotesWithCache_WhenCalledTwiceWithRealApi_UsesCache`（2回呼び出してキャッシュが効くことを検証、という実際の意図が伝わる名前）にリネームした。
+- `EndToEndTest_FetchSaveAndSearchNotes`（fetch→save→load→searchのE2Eフロー）・`VerifyActualNoteData_ValidateNoteFields`（各ノートのフィールド妥当性検証）は他と重複する観点がないため維持した。
+
+`dotnet build`（0警告・0エラー）、`dotnet test --filter "Category=Unit"`（`PastNotes.Tests` 79件、動作不変）を確認済み。統合テスト自体（`Category=Integration`）は本セッションでは `MISSKEY_INSTANCE_URL`/`MISSKEY_API_TOKEN` が未設定のため実行できておらず、`dotnet build` によるコンパイル成功のみ確認した状態である。ユーザー環境で `dotnet test --filter "Category=Integration"` の実行を依頼する。
 
 ---
 

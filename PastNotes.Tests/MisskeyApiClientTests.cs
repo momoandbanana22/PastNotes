@@ -578,9 +578,12 @@ public class MisskeyApiClientTests
         Assert.Equal("image1.jpg", note.Files[0].Name);
     }
 
+    // TDD: TST-40 - 実API統合テストの重複整理。
+    // 元は「100件超のページネーション」と「untilIdページネーションで重複IDがないこと」が
+    // 別テストに分かれていたが、どちらも同じ GetNotesWithCache 呼び出しで同時に検証できるため統合した。
     [Fact]
     [Trait("Category", "Integration")]
-    public async Task GetNotesWithCache_WhenCalledWithRealApi_ShouldFetchMoreThan100Notes()
+    public async Task GetNotesWithCache_WhenCalledWithRealApi_FetchesMoreThan100NotesWithoutDuplication()
     {
         // Arrange
         var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL") ?? "https://misskey.io";
@@ -597,16 +600,23 @@ public class MisskeyApiClientTests
         var endDate = DateTime.Now;
 
         // Act
-        var notes = await client.GetNotesWithCache(startDate, endDate);
+        var notes = (await client.GetNotesWithCache(startDate, endDate)).ToList();
 
-        // Assert
-        Assert.NotNull(notes);
-        Assert.True(notes.Count() > 100, "Expected more than 100 notes to be fetched with pagination");
+        // Assert: ページネーションが機能していれば100件を超えるはず
+        Assert.True(notes.Count > 100, "Expected more than 100 notes to be fetched with pagination");
+
+        // Assert: untilIdページネーションでノートが重複していないこと
+        var noteIds = notes.Select(n => n.Id).ToList();
+        var uniqueNoteIds = noteIds.Distinct().ToList();
+        Assert.Equal(noteIds.Count, uniqueNoteIds.Count);
     }
 
+    // TDD: TST-40 - 実API統合テストの重複整理。
+    // 「実際にAPIを呼び出す」ことの検証に加え、2回呼び出してキャッシュが効くことを確認する
+    // （旧 IntegrationTest_WhenCalledWithRealApi_ReturnsActualNotes からリネーム、内容は変更なし）
     [Fact]
     [Trait("Category", "Integration")]
-    public async Task IntegrationTest_WhenCalledWithRealApi_ReturnsActualNotes()
+    public async Task GetNotesWithCache_WhenCalledTwiceWithRealApi_UsesCache()
     {
         // Arrange
         var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL");
@@ -633,35 +643,6 @@ public class MisskeyApiClientTests
         var notes2 = await client.GetNotesWithCache(startDate, endDate);
         Assert.NotNull(notes2);
         Assert.Equal(notes.Count(), notes2.Count()); // キャッシュが効いているはず
-    }
-
-    [Fact]
-    [Trait("Category", "Integration")]
-    public async Task DebugIntegrationTest_VerifyActualApiCall()
-    {
-        // Arrange
-        var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL");
-        var apiToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
-
-        if (string.IsNullOrEmpty(instanceUrl) || string.IsNullOrEmpty(apiToken))
-        {
-            Assert.Fail("統合テストを実行するには環境変数を設定してください。'dotnet test --filter \"Category=Integration\"' を使用して統合テストのみを実行してください。");
-        }
-
-        var httpClient = new HttpClient();
-        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
-        var startDate = DateTime.Now.AddDays(-30);
-        var endDate = DateTime.Now;
-
-        // Act
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        var notes = await client.GetNotesWithCache(startDate, endDate);
-        stopwatch.Stop();
-
-        // Assert
-        Assert.NotNull(notes);
-        // 実際のAPI呼び出しであれば、実行時間は100ms以上であるはず
-        Assert.True(stopwatch.ElapsedMilliseconds > 100, $"実行時間が短すぎます: {stopwatch.ElapsedMilliseconds}ms (実際のAPI呼び出しであれば100ms以上)");
     }
 
     [Fact]
@@ -958,37 +939,6 @@ public class MisskeyApiClientTests
             Assert.DoesNotContain("sinceDate", requestBody);
             Assert.DoesNotContain("untilDate", requestBody);
         }
-    }
-
-    [Fact]
-    [Trait("Category", "Integration")]
-    public async Task GetNotesWithCache_WhenUsingUntilIdPagination_ShouldFetchAllNotesCorrectly()
-    {
-        // Arrange
-        var instanceUrl = Environment.GetEnvironmentVariable("MISSKEY_INSTANCE_URL") ?? "https://misskey.io";
-        var apiToken = Environment.GetEnvironmentVariable("MISSKEY_API_TOKEN");
-
-        if (string.IsNullOrEmpty(apiToken))
-        {
-            Assert.Fail("統合テストを実行するには環境変数を設定してください。");
-        }
-
-        var httpClient = new HttpClient();
-        var client = new MisskeyApiClient(instanceUrl, apiToken, httpClient);
-        var startDate = DateTime.Now.AddDays(-7);
-        var endDate = DateTime.Now;
-
-        // Act
-        var notes = await client.GetNotesWithCache(startDate, endDate);
-
-        // Assert
-        Assert.NotNull(notes);
-        Assert.True(notes.Count() > 0, "Expected at least one note to be fetched");
-        
-        // ノートが重複していないことを確認
-        var noteIds = notes.Select(n => n.Id).ToList();
-        var uniqueNoteIds = noteIds.Distinct().ToList();
-        Assert.Equal(noteIds.Count, uniqueNoteIds.Count);
     }
 
     // TDD: FEAT-1 / BUG-35 - GetNotesWithCache はコールバックなしで呼ぶため Console に何も書かない
