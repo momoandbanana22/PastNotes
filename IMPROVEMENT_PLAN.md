@@ -650,6 +650,43 @@ return 1;
 
 ---
 
+### [ ] BUG-47. `fetch --days`（値なし）が他フラグと出力先・メッセージが不統一
+
+**対象ファイル**: `PastNotes.Console/Cli/FetchCommandHandler.cs`（65〜100行目）
+
+**問題**: BUG-36（`--token`/`--instance-url`）・BUG-37（`--max-retries`）は値が渡されない場合に専用の `Error: ... requires a value` を `stderr` に出力して exit 1 する。しかし `--days` だけは同じ状況（`fetch --days`（値なしで末尾）を実行）で専用のエラーを持たず、`daysIdx + 1 < args.Length` が偽になった結果、`sIdx`/`eIdx` も未指定のため else 分岐の汎用 Usage（`stdout`、`--days` に触れない）にフォールスルーする。exit 1 にはなるため機能的には壊れていないが、値なしフラグのエラー方針（BUG-34/36/37）が `--days` にだけ横展開されていない。
+
+**具体的な失敗シナリオ**（実際に `.exe` を実行して再現確認済み）:
+```
+$ pastnotes fetch --days
+Usage: PastNotes.Console fetch --days <days>
+   or: PastNotes.Console fetch --start <date> --end <date>
+Date format: yyyy-MM-dd or yyyy-MM-dd HH:mm:ss
+Note: Date ranges are treated as JST (Japan Standard Time)
+```
+`--token`/`--instance-url`/`--max-retries` と異なり、`stderr` には何も出力されず、`--days` の値が抜けていることを名指しするメッセージもない。
+
+**修正案**: `daysIdx >= 0 && daysIdx + 1 >= args.Length` の場合に `Error: --days requires a number value` を `stderr` に出力して return 1 する分岐を、既存の `if (daysIdx >= 0 && daysIdx + 1 < args.Length)` の前に追加する（BUG-36/37 と同一パターン）。
+
+---
+
+### [ ] BUG-48. `fetch --days` に負の値を渡すと、原因が分かりにくいエラーになる
+
+**対象ファイル**: `PastNotes.Console/Commands/FetchCommand.cs`（`ExecuteAsync(int days)`）、`PastNotes/MisskeyApiClient.cs`（`ValidateDateRange`）
+
+**問題**: `ExecuteAsync(int days)` は `days` の符号を検証せずに `utcNow.AddDays(-days)` を計算する。負の値（例: `-5`）を渡すと `convertedStartDate` が `convertedEndDate` より未来になり、`GetNotesWithRetry` 内の `ValidateDateRange` が `ArgumentException("Start date must be before end date")` を投げて exit 1 にはなる（クラッシュや無言の誤動作はしない）。しかしこのエラーメッセージは「日付範囲が逆」としか言っておらず、原因が `--days` に負の値を渡したことだとユーザーが気づきにくい。加えて、例外が発生する前に `Fetching notes from {未来日付} to {今日}...` という矛盾したメッセージが `stdout` に出力されてしまう。
+
+**具体的な失敗シナリオ**（実際に `.exe` を実行して再現確認済み）:
+```
+$ pastnotes fetch --days -5 --token dummy
+Fetching notes from 2026-07-07 to 2026-07-02 (JST)...  (stdout)
+Error: Start date must be before end date               (stderr)
+```
+
+**修正案**: `FetchCommandHandler.cs` の `int.TryParse(args[daysIdx + 1], out int days)` 直後に `days < 0` のチェックを追加し、`Error: --days must be a non-negative number` 等を `stderr` に出力して return 1 する（`Fetching notes from...` の出力より前段で止める）。
+
+---
+
 ## REFACTOR: リファクタリング
 
 *動作を変えずにコード構造・一貫性を改善する変更。*
@@ -1183,6 +1220,32 @@ if (notes == null || !notes.Any())
 **対処**: TDD で対応。`TestOrganizationTests` に `MisskeyApiClientTests_ShouldBeInPastNotesTestsNamespace`・`MockHttpMessageHandler_ShouldBeInPastNotesTestsNamespace` を先に追加し、`namespace PastNotes` のままの状態で両方とも `Expected: "PastNotes.Tests" / Actual: "PastNotes"` で RED になることを確認した。その後 `MisskeyApiClientTests.cs` の `namespace PastNotes;` を `namespace PastNotes.Tests;` に変更し（プロダクションクラス参照のため `using PastNotes;` を追加）、GREEN を確認した。
 
 横展開確認: `MockHttpMessageHandler`・`MisskeyApiClientTests` への参照を Grep 検索し、`PastNotes.Tests` プロジェクト内に本ファイル以外からの参照がないこと（名前空間変更が他ファイルに影響しないこと）を確認した。`dotnet build`（0警告・0エラー）、`dotnet test --filter "Category=Unit"`（`PastNotes.Console.Tests` 73件・`PastNotes.Tests` 77件 → 79件、計152件全成功）を確認済み。
+
+---
+
+### [ ] TST-40. `MisskeyApiClientTests` の実API統合テストが重複し、一部が不安定な検証方法を使っている
+
+**対象ファイル**: `PastNotes.Tests/MisskeyApiClientTests.cs`（583〜986行付近、`[Trait("Category", "Integration")]` の6メソッド）
+
+**問題**: 全体監査で `GetNotesWithCache_WhenCalledWithRealApi_ShouldFetchMoreThan100Notes`・`IntegrationTest_WhenCalledWithRealApi_ReturnsActualNotes`・`DebugIntegrationTest_VerifyActualApiCall`・`EndToEndTest_FetchSaveAndSearchNotes`・`VerifyActualNoteData_ValidateNoteFields`・`GetNotesWithCache_WhenUsingUntilIdPagination_ShouldFetchAllNotesCorrectly` の6件が、いずれも実 Misskey API に対して `GetNotesWithCache` を呼び「1件以上ノートが返ること」を中心に重複した検証をしていることが判明した。テスト名（`DebugIntegrationTest_...`）から探索的なデバッグ用に追加され、そのまま整理されずに残った形跡がある。
+
+とりわけ `DebugIntegrationTest_VerifyActualApiCall` は `stopwatch.ElapsedMilliseconds > 100` を「実際にネットワーク越しにAPIを呼んだ証拠」として使っており、ネットワーク状況やAPI応答速度によっては100ms未満で応答が返り、実装に問題がなくてもテストが不安定に失敗しうる。
+
+TST-22（`FetchCommandTests` の重複）・TST-29（`SearchCommandTests`/`ViewCommandTests` の重複）で確立した「重複テストの整理」がユニットテストには適用されたが、統合テストへの横展開確認が行われていなかった。
+
+**修正案**: 6件の検証内容を精査し、`GetNotesWithCache`（キャッシュ動作込み）・ページネーション（100件超取得）・`fetch`→`search`のE2Eフロー、の3観点に統合する。`DebugIntegrationTest_VerifyActualApiCall` の実行時間による検証は削除する（同じ「実APIを呼んでいること」は `notes.Count() > 0` で代替可能なため）。
+
+---
+
+### [ ] TST-41. `ViewHtmlCommandTests` クラスが `ViewCommandTests.cs` に同居しファイル名と一致していない（TST-23の横展開漏れ）
+
+**対象ファイル**: `PastNotes.Console.Tests/Commands/ViewCommandTests.cs`（378行目、`ViewHtmlCommandTests` クラス）
+
+**問題**: TST-23 で `PastNotes.Tests` プロジェクト内の「ファイル名とテストクラス名の不一致」（`NoteHtmlGeneratorTests.cs` に `TimeZoneHelperTests` が同居等）を是正し、再発防止の `TestOrganizationTests` を追加したが、その横展開確認は `PastNotes.Tests` プロジェクトのみを対象としており、`PastNotes.Console.Tests` プロジェクトは確認されていなかった。`PastNotes.Console.Tests/Commands/ViewCommandTests.cs` には `ViewCommandTests` クラス（1〜377行目）に加えて `ViewHtmlCommandTests` クラス（378行目〜）が同居しており、同じパターンが未対応のまま残っている。
+
+動作上の問題はない（TST-23と同様、C#はファイル名とクラス名の一致を強制しない）が、新しい開発者が `ViewHtmlCommand` のテストを探す際に `ViewCommandTests.cs` を見落とすリスクがある。
+
+**修正案**: `ViewHtmlCommandTests` クラスを `PastNotes.Console.Tests/Commands/ViewHtmlCommandTests.cs` に分離する。`PastNotes.Tests/TestOrganizationTests.cs` と同様の名前空間・ファイル配置検証テストを `PastNotes.Console.Tests` 側にも追加できないか合わせて検討する。
 
 ---
 
