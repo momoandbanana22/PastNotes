@@ -1249,7 +1249,7 @@ TST-22（`FetchCommandTests` の重複）・TST-29（`SearchCommandTests`/`ViewC
 
 ---
 
-### [ ] TST-41. `ViewHtmlCommandTests` クラスが `ViewCommandTests.cs` に同居しファイル名と一致していない（TST-23の横展開漏れ）
+### [x] TST-41. `ViewHtmlCommandTests` クラスが `ViewCommandTests.cs` に同居しファイル名と一致していない（TST-23の横展開漏れ）
 
 **対象ファイル**: `PastNotes.Console.Tests/Commands/ViewCommandTests.cs`（378行目、`ViewHtmlCommandTests` クラス）
 
@@ -1258,6 +1258,10 @@ TST-22（`FetchCommandTests` の重複）・TST-29（`SearchCommandTests`/`ViewC
 動作上の問題はない（TST-23と同様、C#はファイル名とクラス名の一致を強制しない）が、新しい開発者が `ViewHtmlCommand` のテストを探す際に `ViewCommandTests.cs` を見落とすリスクがある。
 
 **修正案**: `ViewHtmlCommandTests` クラスを `PastNotes.Console.Tests/Commands/ViewHtmlCommandTests.cs` に分離する。`PastNotes.Tests/TestOrganizationTests.cs` と同様の名前空間・ファイル配置検証テストを `PastNotes.Console.Tests` 側にも追加できないか合わせて検討する。
+
+**対処**: リファクタリングのため新規テストは追加せず（CLAUDE.md ルール1）、`ViewHtmlCommandTests` クラス（5テスト）を内容を一切変更せずに `PastNotes.Console.Tests/Commands/ViewHtmlCommandTests.cs` へ移動した。`ViewCommandTests.cs` には `ViewCommandTests` クラスのみが残る。`dotnet build`（0警告・0エラー）、`PastNotes.Console.Tests` 75件（移動前後で件数不変）、全ユニットテストパスを確認済み。
+
+`PastNotes.Console.Tests` 側への `TestOrganizationTests` 相当の再発防止テスト追加は本項目のスコープ外とし、必要であれば別途 TST 項目として起票する。
 
 ---
 
