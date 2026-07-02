@@ -68,6 +68,18 @@ public static class FetchCommandHandler
                 return 1;
             }
 
+            if (sIdx >= 0 && sIdx + 1 >= args.Length)
+            {
+                System.Console.Error.WriteLine("Error: --start requires a date value. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
+                return 1;
+            }
+
+            if (eIdx >= 0 && eIdx + 1 >= args.Length)
+            {
+                System.Console.Error.WriteLine("Error: --end requires a date value. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
+                return 1;
+            }
+
             if (daysIdx >= 0 && daysIdx + 1 < args.Length)
             {
                 if (!int.TryParse(args[daysIdx + 1], out int days))

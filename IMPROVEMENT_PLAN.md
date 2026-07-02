@@ -691,7 +691,7 @@ Error: Start date must be before end date               (stderr)
 
 ---
 
-### [ ] BUG-49. `fetch` の `--start`/`--end` に値なしで渡した場合、`search`/`view` と異なり専用エラーを返さず汎用 Usage にフォールスルーする
+### [x] BUG-49. `fetch` の `--start`/`--end` に値なしで渡した場合、`search`/`view` と異なり専用エラーを返さず汎用 Usage にフォールスルーする
 
 **対象ファイル**: `PastNotes.Console/Cli/FetchCommandHandler.cs`（88〜112行目）、`SearchCommandHandler.cs`（20〜47行目）、`ViewCommandHandler.cs`（15〜42行目）
 
@@ -703,7 +703,7 @@ Error: Start date must be before end date               (stderr)
 
 **修正案（対応する場合）**: `FetchCommandHandler.cs` に `sIdx >= 0 && sIdx + 1 >= args.Length` → `Error: --start requires a date value`、`eIdx >= 0 && eIdx + 1 >= args.Length` → `Error: --end requires a date value` の分岐を、`--days`/`--start`/`--end` いずれも指定されていない完全な未指定ケース（現状の Usage 表示が妥当なケース）より前に追加する。既存テスト `FetchCommand_WhenOnlyStartDateProvided_ReturnsOneAndPrintsUsage` は「`--start` のみ・`--end` 自体が存在しない」ケースを検証しているため、修正後も Usage 表示のままで良いか、`--end` 不足の専用エラーに変えるべきかを先に決める必要がある。
 
-**対処**: 未対応。動作上のバグではなく設計方針の確認が必要なため、対応するかどうかを含めて要検討。
+**対処**: TDD で対応。失敗テスト `ConsoleAppTests.FetchCommand_WhenStartFlagHasNoValue_ReturnsOneAndPrintsError`（`fetch --token dummy --start` で stderr に `--start` を含むエラーが出て exit 1 になることを検証）・`FetchCommand_WhenEndFlagHasNoValue_ReturnsOneAndPrintsError`（`fetch --token dummy --start 2024-01-01 --end` で stderr に `--end` を含むエラーが出て exit 1 になることを検証）を追加し、いずれも stderr が空文字列のまま `Assert.Contains` が失敗し RED を確認した。その後 `FetchCommandHandler.cs` の `--days cannot be used together with --start/--end` チェックの直後に `sIdx >= 0 && sIdx + 1 >= args.Length` → `Error: --start requires a date value...`、`eIdx >= 0 && eIdx + 1 >= args.Length` → `Error: --end requires a date value...` を `stderr` に出力して return 1 する分岐を追加し GREEN を確認した。既存テスト `FetchCommand_WhenOnlyStartDateProvided_ReturnsOneAndPrintsUsage`（`--start` に値があり `--end` 自体が存在しないケース）は影響を受けず Usage 表示のまま維持されることも確認した。`dotnet build`（0警告・0エラー）、`PastNotes.Console.Tests` 75件 → 77件、全ユニットテストパス。
 
 ---
 

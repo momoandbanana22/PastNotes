@@ -438,6 +438,50 @@ public class ConsoleAppTests
         }
     }
 
+    // TDD: BUG-49 - fetch --start に値なしで渡した場合、search/viewと同様に専用エラーを返すか
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task FetchCommand_WhenStartFlagHasNoValue_ReturnsOneAndPrintsError()
+    {
+        var originalError = System.Console.Error;
+        using var stringWriter = new StringWriter();
+        System.Console.SetError(stringWriter);
+
+        try
+        {
+            var args = new[] { "fetch", "--token", "dummy", "--start" };
+            var result = await Program.Main(args);
+            Assert.Equal(1, result);
+            Assert.Contains("--start", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetError(originalError);
+        }
+    }
+
+    // TDD: BUG-49 - fetch --end に値なしで渡した場合、search/viewと同様に専用エラーを返すか
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task FetchCommand_WhenEndFlagHasNoValue_ReturnsOneAndPrintsError()
+    {
+        var originalError = System.Console.Error;
+        using var stringWriter = new StringWriter();
+        System.Console.SetError(stringWriter);
+
+        try
+        {
+            var args = new[] { "fetch", "--token", "dummy", "--start", "2024-01-01", "--end" };
+            var result = await Program.Main(args);
+            Assert.Equal(1, result);
+            Assert.Contains("--end", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetError(originalError);
+        }
+    }
+
     // TST-24: search にキーワードなし → Usage 表示パス
     [Fact]
     [Trait("Category", "Unit")]
