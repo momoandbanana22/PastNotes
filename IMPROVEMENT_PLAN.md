@@ -622,7 +622,7 @@ Fetching notes from 2026-06-02 to 2026-07-02 (JST)...
 
 ---
 
-### [ ] BUG-46. `Unknown command`・`No notes found. Run 'fetch' command first.` が終了コード1なのにstdoutに出力される（DESIGN-3/DESIGN-8の横展開漏れ）
+### [x] BUG-46. `Unknown command`・`No notes found. Run 'fetch' command first.` が終了コード1なのにstdoutに出力される（DESIGN-3/DESIGN-8の横展開漏れ）
 
 **対象ファイル**: `PastNotes.Console/Program.cs`（55行目）、`PastNotes.Console/Commands/SearchCommand.cs`（27行目）、`ViewCommand.cs`（30行目）、`ViewHtmlCommand.cs`（26行目）
 
@@ -643,6 +643,10 @@ return 1;
 **具体的な失敗シナリオ**: `pastnotes bogus-command 2>/dev/null` や `pastnotes search keyword 2>/dev/null`（`notes.json` 不在）のように stderr を捨てるシェルスクリプトから呼び出すと、他のエラー（DESIGN-3/DESIGN-8で対応済み）は抑制されるが、この4箇所のメッセージだけ抑制されずそのまま標準出力に混入する。
 
 **修正案**: 4箇所の `Console.WriteLine` を `Console.Error.WriteLine` に変更し、対応する既存テストの `Console.SetOut` 検証を `Console.SetError` 検証に更新する（DESIGN-8と同一パターン）。
+
+**対処**: TDD で対応。既存4テスト（`ConsoleAppTests.Main_WhenCalledWithUnknownCommand_ReturnsOneAndPrintsError`・`Main_WhenViewHtmlWithNoNotes_ReturnsOneAndPrintsMessage`・`StateTransition_NotesFileAbsentThenPresent_SearchAndViewBehaveAccordingly`・`ViewHtmlCommandTests.Execute_WhenNoNotesFile_ReturnsOneAndPrintsMessage`）を先に `Console.SetOut` → `Console.SetError` 検証に書き換え（テスト名も `...ToStderr` に変更）、いずれも `Assert.Contains` が空文字列に対して失敗し RED になることを確認した。その後 `Program.cs`・`SearchCommand.cs`・`ViewCommand.cs`・`ViewHtmlCommand.cs` の4箇所の `Console.WriteLine` を `Console.Error.WriteLine` に変更して GREEN を確認した。`dotnet build`（0警告・0エラー）、`dotnet test --filter "Category=Unit"`（`PastNotes.Console.Tests` 73件・`PastNotes.Tests` 77件、計150件全成功）を確認済み。
+
+横展開確認: `System.Console.WriteLine` を Grep で再検索し、終了コード非0を返す経路でstdoutに出力する箇所が残っていないことを確認した（`Usage:` 表示はDESIGN-8で意図的にstdoutのまま維持されている使用方法ガイドであり対象外）。
 
 ---
 

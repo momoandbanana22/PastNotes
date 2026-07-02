@@ -500,13 +500,14 @@ public class ViewHtmlCommandTests
     }
 
     // TST-24: ノートファイルが存在しない場合 → "No notes found" パス
+    // TDD: BUG-46 - No notes found は終了コード1のエラーのため stdout ではなく stderr に出力されるべき
     [Fact]
     [Trait("Category", "Unit")]
-    public void Execute_WhenNoNotesFile_ReturnsOneAndPrintsMessage()
+    public void Execute_WhenNoNotesFile_ReturnsOneAndPrintsMessageToStderr()
     {
-        var originalOut = System.Console.Out;
+        var originalError = System.Console.Error;
         using var sw = new StringWriter();
-        System.Console.SetOut(sw);
+        System.Console.SetError(sw);
         try
         {
             var repository = new NoteRepository();
@@ -519,7 +520,7 @@ public class ViewHtmlCommandTests
         }
         finally
         {
-            System.Console.SetOut(originalOut);
+            System.Console.SetError(originalError);
         }
     }
 

@@ -495,13 +495,14 @@ public class ConsoleAppTests
     }
 
     // TST-24: Unknown command パスのカバレッジ
+    // TDD: BUG-46 - Unknown command は終了コード1のエラーのため stdout ではなく stderr に出力されるべき
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task Main_WhenCalledWithUnknownCommand_ReturnsOneAndPrintsError()
+    public async Task Main_WhenCalledWithUnknownCommand_ReturnsOneAndPrintsErrorToStderr()
     {
-        var originalOutput = System.Console.Out;
+        var originalError = System.Console.Error;
         using var stringWriter = new StringWriter();
-        System.Console.SetOut(stringWriter);
+        System.Console.SetError(stringWriter);
 
         try
         {
@@ -511,7 +512,7 @@ public class ConsoleAppTests
         }
         finally
         {
-            System.Console.SetOut(originalOutput);
+            System.Console.SetError(originalError);
         }
     }
 
@@ -561,16 +562,17 @@ public class ConsoleAppTests
     }
 
     // TST-24: view-html コマンド（ノートなし）パス
+    // TDD: BUG-46 - No notes found は終了コード1のエラーのため stdout ではなく stderr に出力されるべき
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task Main_WhenViewHtmlWithNoNotes_ReturnsOneAndPrintsMessage()
+    public async Task Main_WhenViewHtmlWithNoNotes_ReturnsOneAndPrintsMessageToStderr()
     {
         if (File.Exists("notes.json"))
             File.Delete("notes.json");
 
-        var originalOutput = System.Console.Out;
+        var originalError = System.Console.Error;
         using var stringWriter = new StringWriter();
-        System.Console.SetOut(stringWriter);
+        System.Console.SetError(stringWriter);
 
         try
         {
@@ -580,7 +582,7 @@ public class ConsoleAppTests
         }
         finally
         {
-            System.Console.SetOut(originalOutput);
+            System.Console.SetError(originalError);
         }
     }
 
@@ -753,6 +755,7 @@ public class ConsoleAppTests
 
     // TDD: TST-32 - notes.json の有無による search/view の状態遷移テスト
     // (notes.json なし → search/view はエラー → notes.json 作成 → search/view は正常、の一連の状態変化を確認)
+    // TDD: BUG-46 - No notes found は終了コード1のエラーのため stdout ではなく stderr に出力されるべき
     [Fact]
     [Trait("Category", "Unit")]
     public async Task StateTransition_NotesFileAbsentThenPresent_SearchAndViewBehaveAccordingly()
@@ -761,13 +764,14 @@ public class ConsoleAppTests
             File.Delete("notes.json");
 
         var originalOutput = System.Console.Out;
+        var originalError = System.Console.Error;
 
         try
         {
             // 状態1: notes.json が存在しない → search/view はエラー(exit 1)
             using (var searchWriter = new StringWriter())
             {
-                System.Console.SetOut(searchWriter);
+                System.Console.SetError(searchWriter);
                 int searchResultBeforeFetch;
                 try
                 {
@@ -775,7 +779,7 @@ public class ConsoleAppTests
                 }
                 finally
                 {
-                    System.Console.SetOut(originalOutput);
+                    System.Console.SetError(originalError);
                 }
                 Assert.Equal(1, searchResultBeforeFetch);
                 Assert.Contains("No notes found. Run 'fetch' command first.", searchWriter.ToString());
@@ -783,7 +787,7 @@ public class ConsoleAppTests
 
             using (var viewWriter = new StringWriter())
             {
-                System.Console.SetOut(viewWriter);
+                System.Console.SetError(viewWriter);
                 int viewResultBeforeFetch;
                 try
                 {
@@ -791,7 +795,7 @@ public class ConsoleAppTests
                 }
                 finally
                 {
-                    System.Console.SetOut(originalOutput);
+                    System.Console.SetError(originalError);
                 }
                 Assert.Equal(1, viewResultBeforeFetch);
                 Assert.Contains("No notes found. Run 'fetch' command first.", viewWriter.ToString());

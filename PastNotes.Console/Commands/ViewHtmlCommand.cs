@@ -23,7 +23,7 @@ public class ViewHtmlCommand
         
         if (!notes.Any())
         {
-            System.Console.WriteLine("No notes found. Run 'fetch' command first.");
+            System.Console.Error.WriteLine("No notes found. Run 'fetch' command first.");
             return 1;
         }
 

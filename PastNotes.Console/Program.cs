@@ -52,7 +52,7 @@ public class Program
             return await ViewHtmlCommandHandler.RunAsync(args);
         }
 
-        System.Console.WriteLine($"Unknown command: {command}");
+        System.Console.Error.WriteLine($"Unknown command: {command}");
         return 1;
     }
 }
