@@ -703,7 +703,7 @@ Error: Start date must be before end date               (stderr)
 
 **修正案（対応する場合）**: `FetchCommandHandler.cs` に `sIdx >= 0 && sIdx + 1 >= args.Length` → `Error: --start requires a date value`、`eIdx >= 0 && eIdx + 1 >= args.Length` → `Error: --end requires a date value` の分岐を、`--days`/`--start`/`--end` いずれも指定されていない完全な未指定ケース（現状の Usage 表示が妥当なケース）より前に追加する。既存テスト `FetchCommand_WhenOnlyStartDateProvided_ReturnsOneAndPrintsUsage` は「`--start` のみ・`--end` 自体が存在しない」ケースを検証しているため、修正後も Usage 表示のままで良いか、`--end` 不足の専用エラーに変えるべきかを先に決める必要がある。
 
-**対処**: TDD で対応。失敗テスト `ConsoleAppTests.FetchCommand_WhenStartFlagHasNoValue_ReturnsOneAndPrintsError`（`fetch --token dummy --start` で stderr に `--start` を含むエラーが出て exit 1 になることを検証）・`FetchCommand_WhenEndFlagHasNoValue_ReturnsOneAndPrintsError`（`fetch --token dummy --start 2024-01-01 --end` で stderr に `--end` を含むエラーが出て exit 1 になることを検証）を追加し、いずれも stderr が空文字列のまま `Assert.Contains` が失敗し RED を確認した。その後 `FetchCommandHandler.cs` の `--days cannot be used together with --start/--end` チェックの直後に `sIdx >= 0 && sIdx + 1 >= args.Length` → `Error: --start requires a date value...`、`eIdx >= 0 && eIdx + 1 >= args.Length` → `Error: --end requires a date value...` を `stderr` に出力して return 1 する分岐を追加し GREEN を確認した。既存テスト `FetchCommand_WhenOnlyStartDateProvided_ReturnsOneAndPrintsUsage`（`--start` に値があり `--end` 自体が存在しないケース）は影響を受けず Usage 表示のまま維持されることも確認した。`dotnet build`（0警告・0エラー）、`PastNotes.Console.Tests` 75件 → 77件、全ユニットテストパス。
+**対処**: TDD で対応。失敗テスト `ConsoleAppTests.FetchCommand_WhenStartFlagHasNoValue_ReturnsOneAndPrintsError`（`fetch --token dummy --start` で stderr に `--start` を含むエラーが出て exit 1 になることを検証）・`FetchCommand_WhenEndFlagHasNoValue_ReturnsOneAndPrintsError`（`fetch --token dummy --start 2024-01-01 --end` で stderr に `--end` を含むエラーが出て exit 1 になることを検証）を追加し、いずれも stderr が空文字列のまま `Assert.Contains` が失敗し RED を確認した。その後 `FetchCommandHandler.cs` の `--days cannot be used together with --start/--end` チェックの直後に `sIdx >= 0 && sIdx + 1 >= args.Length` → `Error: --start requires a date value...`、`eIdx >= 0 && eIdx + 1 >= args.Length` → `Error: --end requires a date value...` を `stderr` に出力して return 1 する分岐を追加し GREEN を確認した。既存テスト `FetchCommand_WhenOnlyStartDateProvided_ReturnsOneAndPrintsUsage`（`--start` に値があり `--end` 自体が存在しないケース）は影響を受けず Usage 表示のまま維持されることも確認した。`dotnet build`（0警告・0エラー）、`PastNotes.Console.Tests` 75件 → 77件、全ユニットテストパス。その後ユーザー環境で `MISSKEY_INSTANCE_URL`/`MISSKEY_API_TOKEN` を設定した上でフィルタなしの `dotnet test` を実行し、統合6件を含む全162件（ユニット156件+統合6件）が成功することを確認済み。
 
 ---
 
@@ -717,7 +717,7 @@ Error: Start date must be before end date               (stderr)
 
 **修正案（対応する場合）**: 3箇所とも `"Start date must be before or equal to end date"`（実際の挙動に合わせた表現）に統一する。
 
-**対処**: 動作を変えないメッセージ文言統一のためリファクタリングとして対応（CLAUDE.md ルール1により新規テストは追加せず）。事前に `Assert.Equal`/`Assert.Contains` でこれらの例外メッセージ文言を直接検証しているテストがないことを Grep で確認した上で、`MisskeyApiClient.ValidateDateRange`・`NoteRepository.FilterByDateRange` の例外メッセージを `FetchCommand.ExecuteAsync(DateTime, DateTime)` と同じ `"Start date must be before or equal to end date"` に統一した。`dotnet build`（0警告・0エラー）、`PastNotes.Console.Tests` 77件・`PastNotes.Tests` 79件、計156件全ユニットテストパス（件数・内容とも変更なし）を確認済み。
+**対処**: 動作を変えないメッセージ文言統一のためリファクタリングとして対応（CLAUDE.md ルール1により新規テストは追加せず）。事前に `Assert.Equal`/`Assert.Contains` でこれらの例外メッセージ文言を直接検証しているテストがないことを Grep で確認した上で、`MisskeyApiClient.ValidateDateRange`・`NoteRepository.FilterByDateRange` の例外メッセージを `FetchCommand.ExecuteAsync(DateTime, DateTime)` と同じ `"Start date must be before or equal to end date"` に統一した。`dotnet build`（0警告・0エラー）、`PastNotes.Console.Tests` 77件・`PastNotes.Tests` 79件、計156件全ユニットテストパス（件数・内容とも変更なし）を確認済み。その後ユーザー環境で `MISSKEY_INSTANCE_URL`/`MISSKEY_API_TOKEN` を設定した上でフィルタなしの `dotnet test` を実行し、統合6件を含む全162件が成功することを確認済み。
 
 ---
 
@@ -1305,7 +1305,7 @@ TST-22（`FetchCommandTests` の重複）・TST-29（`SearchCommandTests`/`ViewC
 
 **修正案（対応する場合）**: `NoteHtmlGeneratorOutputTests` クラスを `PastNotes.Tests/NoteHtmlGeneratorOutputTests.cs` に分離する（内容は変更しない）。あわせて `TestOrganizationTests` にファイル名との一致を検証するテストを追加するか検討する。
 
-**対処**: リファクタリングのため新規テストは追加せず（CLAUDE.md ルール1、TST-41 と同一方針）、`NoteHtmlGeneratorOutputTests` クラス（14テスト）を内容を一切変更せずに `PastNotes.Tests/NoteHtmlGeneratorOutputTests.cs` へ移動した。`NoteHtmlGeneratorTests.cs` には `NoteHtmlGeneratorTests` クラスのみが残る。`dotnet build`（0警告・0エラー）、`PastNotes.Tests` 79件（移動前後で件数不変）、全ユニットテストパスを確認済み。`PastNotes.Tests` 側への `TestOrganizationTests` のファイル名一致検証追加は本項目のスコープ外とし、必要であれば別途 TST 項目として起票する。
+**対処**: リファクタリングのため新規テストは追加せず（CLAUDE.md ルール1、TST-41 と同一方針）、`NoteHtmlGeneratorOutputTests` クラス（14テスト）を内容を一切変更せずに `PastNotes.Tests/NoteHtmlGeneratorOutputTests.cs` へ移動した。`NoteHtmlGeneratorTests.cs` には `NoteHtmlGeneratorTests` クラスのみが残る。`dotnet build`（0警告・0エラー）、`PastNotes.Tests` 79件（移動前後で件数不変）、全ユニットテストパスを確認済み。`PastNotes.Tests` 側への `TestOrganizationTests` のファイル名一致検証追加は本項目のスコープ外とし、必要であれば別途 TST 項目として起票する。その後ユーザー環境で `MISSKEY_INSTANCE_URL`/`MISSKEY_API_TOKEN` を設定した上でフィルタなしの `dotnet test` を実行し、統合6件を含む全162件が成功することを確認済み。
 
 ---
 
