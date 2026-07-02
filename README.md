@@ -90,6 +90,8 @@ APIトークンは Misskey の「設定 → API」から取得できます。
     dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --days 30 --max-retries 5
     dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- fetch --days 30 --max-retries 0
 
+`--days` と `--start`/`--end` は同時に指定できません。両方指定するとエラーメッセージを出力して終了コード 1 を返します。
+
 #### 検索・表示系コマンド（ローカルに保存されたnotes.jsonを対象）
 
     # ノート検索（全期間）
@@ -126,6 +128,7 @@ APIトークンは Misskey の「設定 → API」から取得できます。
 - **上書き**: デフォルトでは `fetch` を実行するたびに `notes.json` が**上書き**されます。`--append` を指定すると既存データにマージします（重複IDは新しい方を優先）。
 - **`view` の表示順序**: `fetch` で保存した順序（新着順）で表示されます。
 - **`search` で 0 件の場合**: ヒットしなかった場合は `Found 0 notes matching '...'` と表示し、終了コード 0 を返します（`notes.json` が存在しない場合は終了コード 1）。
+- **`fetch` の `--days`/`--start`/`--end`**: `--days` と `--start`/`--end` は排他的です。同時に指定するとエラーメッセージを出力して終了コード 1 を返します。
 
 改善計画・既知の問題は [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) を参照してください。
 開発者向けドキュメントは [DEVELOPMENT.md](DEVELOPMENT.md) を参照してください。
