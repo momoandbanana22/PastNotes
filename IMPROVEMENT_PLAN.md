@@ -622,6 +622,30 @@ Fetching notes from 2026-06-02 to 2026-07-02 (JST)...
 
 ---
 
+### [ ] BUG-46. `Unknown command`・`No notes found. Run 'fetch' command first.` が終了コード1なのにstdoutに出力される（DESIGN-3/DESIGN-8の横展開漏れ）
+
+**対象ファイル**: `PastNotes.Console/Program.cs`（55行目）、`PastNotes.Console/Commands/SearchCommand.cs`（27行目）、`ViewCommand.cs`（30行目）、`ViewHtmlCommand.cs`（26行目）
+
+**問題**: DESIGN-3（例外の出力先をstderrに統一）・DESIGN-8（引数バリデーションエラーの出力先をstderrに統一）で「終了コード非0のエラー通知はstderrに統一する」という方針を確立したが、以下の4箇所はどちらの対応時にも横展開されず、`Console.WriteLine`（stdout）のまま終了コード1を返している。
+
+```csharp
+// Program.cs:55
+System.Console.WriteLine($"Unknown command: {command}");
+return 1;
+
+// SearchCommand.cs:27 / ViewCommand.cs:30 / ViewHtmlCommand.cs:26
+System.Console.WriteLine("No notes found. Run 'fetch' command first.");
+return 1;
+```
+
+既存テスト（`ConsoleAppTests.Main_WhenCalledWithUnknownCommand_ReturnsOneAndPrintsError`・`Main_WhenViewHtmlWithNoNotes_ReturnsOneAndPrintsMessage`・`StateTransition_NotesFileAbsentThenPresent_SearchAndViewBehaveAccordingly`、`ViewHtmlCommandTests.Execute_WhenNoNotesFile_ReturnsOneAndPrintsMessage`）はいずれも `Console.SetOut` でこれらのメッセージをstdout前提のまま検証しており、この不統一を検知できていなかった。
+
+**具体的な失敗シナリオ**: `pastnotes bogus-command 2>/dev/null` や `pastnotes search keyword 2>/dev/null`（`notes.json` 不在）のように stderr を捨てるシェルスクリプトから呼び出すと、他のエラー（DESIGN-3/DESIGN-8で対応済み）は抑制されるが、この4箇所のメッセージだけ抑制されずそのまま標準出力に混入する。
+
+**修正案**: 4箇所の `Console.WriteLine` を `Console.Error.WriteLine` に変更し、対応する既存テストの `Console.SetOut` 検証を `Console.SetError` 検証に更新する（DESIGN-8と同一パターン）。
+
+---
+
 ## REFACTOR: リファクタリング
 
 *動作を変えずにコード構造・一貫性を改善する変更。*
@@ -1139,6 +1163,18 @@ if (notes == null || !notes.Any())
 - RED確認: `Program.cs` の `Console.OutputEncoding = UTF8` を一時的にコメントアウトして実行し、`Assert.Contains("テスト投稿です", output)` が `"[2024-01-01 09:00:00] �"` に対して失敗することを確認した。
 - GREEN確認: コメントアウトを元に戻し、対象テストが成功することを確認した。
 - リグレッション確認: `dotnet build`（0警告・0エラー）、`dotnet test --filter "Category=Unit"`（`PastNotes.Console.Tests` 72件・`PastNotes.Tests` 76件、計148件全成功）を確認した。統合テスト（`Category=Integration`）は本セッションでは `MISSKEY_INSTANCE_URL`/`MISSKEY_API_TOKEN` が未設定のため実行していない。ユーザー環境で `dotnet test`（フィルタなし・全テスト）の実行を依頼する。
+
+---
+
+### [ ] TST-39. `MisskeyApiClientTests.cs` の名前空間が `PastNotes` のままで `PastNotes.Tests` と一致していない（TST-23の横展開漏れ）
+
+**対象ファイル**: `PastNotes.Tests/MisskeyApiClientTests.cs`（1行目）
+
+**問題**: TST-23で `TimeZoneHelperTests`・`NoteHtmlGeneratorTests` の名前空間を `PastNotes` から `PastNotes.Tests` に修正し、`TestOrganizationTests` で再発防止のテストを追加したが、テストプロジェクト最大のファイルである `MisskeyApiClientTests.cs`（`MisskeyApiClientTests` クラス・`MockHttpMessageHandler` クラスとも）は `namespace PastNotes;` のまま見落とされていた。`TestOrganizationTests` は `TimeZoneHelperTests`・`NoteHtmlGeneratorTests`・`NoteHtmlGeneratorOutputTests`・`NoteRepositoryTests` の4クラスの名前空間のみを検証しており、`MisskeyApiClientTests`・`MockHttpMessageHandler` は対象に含まれていないため、この不一致を自動検知できない。
+
+動作上の問題はない（C#はテストプロジェクトのフォルダ名と名前空間の一致を強制しない）が、プロダクションコードと同じ `namespace PastNotes` にテストクラスが同居しており、プロジェクトの命名規則（テストは `PastNotes.Tests`）と一致しない。
+
+**修正案**: `MisskeyApiClientTests.cs` の `namespace PastNotes;` を `namespace PastNotes.Tests;` に変更する（動作を変えないリファクタリングのため新規テスト不要、CLAUDE.mdルール1）。合わせて `TestOrganizationTests` に `MisskeyApiClientTests`・`MockHttpMessageHandler` の名前空間検証を追加し、同種の見落としが再発した場合に検知できるようにする。
 
 ---
 
