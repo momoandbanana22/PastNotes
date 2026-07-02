@@ -134,10 +134,14 @@ dotnet test
 
 ### カバレッジレポート
 
-カバレッジレポートを生成するには:
+各テストプロジェクトの `.csproj` に `CollectCoverage=true` が設定されているため、追加のフラグなしで `dotnet test` を実行するだけでカバレッジレポートが自動生成されます。
 
 ```bash
-dotnet test --collect:"XPlat Code Coverage"
+dotnet test --filter "Category=Unit"
 ```
 
-レポートは `coverage/coverage.cobertura.xml` に生成されます。
+レポートは各テストプロジェクト配下の `coverage/coverage.cobertura.xml` に生成されます(例: `PastNotes.Tests/coverage/coverage.cobertura.xml`、`PastNotes.Console.Tests/coverage/coverage.cobertura.xml`)。
+
+**注意**: カバレッジレポートは実行した全テストが成功した場合のみ生成されます。統合テスト用の環境変数(`MISSKEY_INSTANCE_URL`・`MISSKEY_API_TOKEN`)を設定せずにフィルタなしで `dotnet test` を実行すると、統合テストが失敗しレポートが無言で生成されません。カバレッジを確認する際は上記のように `--filter "Category=Unit"` を付けて実行してください。
+
+`--collect:"XPlat Code Coverage"` を指定した場合は、上記とは別に `coverlet.collector` によるレポートが各テストプロジェクトの `TestResults/<GUID>/coverage.cobertura.xml` に生成されます。出力先が異なるだけで内容は同じため、通常は指定不要です。
