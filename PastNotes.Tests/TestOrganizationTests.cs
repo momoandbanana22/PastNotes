@@ -43,4 +43,23 @@ public class TestOrganizationTests
         Assert.NotNull(type);
         Assert.Equal("PastNotes.Tests", type.Namespace);
     }
+
+    // TDD: TST-39 - MisskeyApiClientTests.cs がTST-23の横展開漏れでnamespace PastNotesのままだった
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void MisskeyApiClientTests_ShouldBeInPastNotesTestsNamespace()
+    {
+        var type = GetTestType("MisskeyApiClientTests");
+        Assert.NotNull(type);
+        Assert.Equal("PastNotes.Tests", type.Namespace);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void MockHttpMessageHandler_ShouldBeInPastNotesTestsNamespace()
+    {
+        var type = GetTestType("MockHttpMessageHandler");
+        Assert.NotNull(type);
+        Assert.Equal("PastNotes.Tests", type.Namespace);
+    }
 }

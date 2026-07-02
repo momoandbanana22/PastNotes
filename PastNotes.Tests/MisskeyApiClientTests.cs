@@ -1,4 +1,6 @@
-namespace PastNotes;
+using PastNotes;
+
+namespace PastNotes.Tests;
 
 public class MockHttpMessageHandler : HttpMessageHandler
 {

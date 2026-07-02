@@ -1170,7 +1170,7 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] TST-39. `MisskeyApiClientTests.cs` の名前空間が `PastNotes` のままで `PastNotes.Tests` と一致していない（TST-23の横展開漏れ）
+### [x] TST-39. `MisskeyApiClientTests.cs` の名前空間が `PastNotes` のままで `PastNotes.Tests` と一致していない（TST-23の横展開漏れ）
 
 **対象ファイル**: `PastNotes.Tests/MisskeyApiClientTests.cs`（1行目）
 
@@ -1179,6 +1179,10 @@ if (notes == null || !notes.Any())
 動作上の問題はない（C#はテストプロジェクトのフォルダ名と名前空間の一致を強制しない）が、プロダクションコードと同じ `namespace PastNotes` にテストクラスが同居しており、プロジェクトの命名規則（テストは `PastNotes.Tests`）と一致しない。
 
 **修正案**: `MisskeyApiClientTests.cs` の `namespace PastNotes;` を `namespace PastNotes.Tests;` に変更する（動作を変えないリファクタリングのため新規テスト不要、CLAUDE.mdルール1）。合わせて `TestOrganizationTests` に `MisskeyApiClientTests`・`MockHttpMessageHandler` の名前空間検証を追加し、同種の見落としが再発した場合に検知できるようにする。
+
+**対処**: TDD で対応。`TestOrganizationTests` に `MisskeyApiClientTests_ShouldBeInPastNotesTestsNamespace`・`MockHttpMessageHandler_ShouldBeInPastNotesTestsNamespace` を先に追加し、`namespace PastNotes` のままの状態で両方とも `Expected: "PastNotes.Tests" / Actual: "PastNotes"` で RED になることを確認した。その後 `MisskeyApiClientTests.cs` の `namespace PastNotes;` を `namespace PastNotes.Tests;` に変更し（プロダクションクラス参照のため `using PastNotes;` を追加）、GREEN を確認した。
+
+横展開確認: `MockHttpMessageHandler`・`MisskeyApiClientTests` への参照を Grep 検索し、`PastNotes.Tests` プロジェクト内に本ファイル以外からの参照がないこと（名前空間変更が他ファイルに影響しないこと）を確認した。`dotnet build`（0警告・0エラー）、`dotnet test --filter "Category=Unit"`（`PastNotes.Console.Tests` 73件・`PastNotes.Tests` 77件 → 79件、計152件全成功）を確認済み。
 
 ---
 
