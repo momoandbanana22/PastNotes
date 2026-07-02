@@ -650,7 +650,7 @@ return 1;
 
 ---
 
-### [ ] BUG-47. `fetch --days`（値なし）が他フラグと出力先・メッセージが不統一
+### [x] BUG-47. `fetch --days`（値なし）が他フラグと出力先・メッセージが不統一
 
 **対象ファイル**: `PastNotes.Console/Cli/FetchCommandHandler.cs`（65〜100行目）
 
@@ -667,6 +667,8 @@ Note: Date ranges are treated as JST (Japan Standard Time)
 `--token`/`--instance-url`/`--max-retries` と異なり、`stderr` には何も出力されず、`--days` の値が抜けていることを名指しするメッセージもない。
 
 **修正案**: `daysIdx >= 0 && daysIdx + 1 >= args.Length` の場合に `Error: --days requires a number value` を `stderr` に出力して return 1 する分岐を、既存の `if (daysIdx >= 0 && daysIdx + 1 < args.Length)` の前に追加する（BUG-36/37 と同一パターン）。
+
+**対処**: TDD で対応。失敗テスト `ConsoleAppTests.FetchCommand_WhenDaysFlagHasNoValue_ReturnsOneAndPrintsError`（`fetch --token dummy --days` で stderr に `--days` を含むエラーが出て exit 1 になることを検証）を追加し、`Assert.Contains("--days", ...)` が空文字列に対して失敗し RED を確認した後、`FetchCommandHandler.cs` の `daysIdx`/`sIdx`/`eIdx` 算出直後に `if (daysIdx >= 0 && daysIdx + 1 >= args.Length) { Error: --days requires a number value; return 1; }` を追加して GREEN を確認した。`dotnet build`（0警告・0エラー）、`PastNotes.Console.Tests` 73件 → 74件、全ユニットテストパス。
 
 ---
 

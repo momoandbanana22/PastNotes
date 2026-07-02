@@ -56,6 +56,12 @@ public static class FetchCommandHandler
             var sIdx     = Array.IndexOf(args, "--start");
             var eIdx     = Array.IndexOf(args, "--end");
 
+            if (daysIdx >= 0 && daysIdx + 1 >= args.Length)
+            {
+                System.Console.Error.WriteLine("Error: --days requires a number value");
+                return 1;
+            }
+
             if (daysIdx >= 0 && (sIdx >= 0 || eIdx >= 0))
             {
                 System.Console.Error.WriteLine("Error: --days cannot be used together with --start/--end");

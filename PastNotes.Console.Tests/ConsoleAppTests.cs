@@ -386,6 +386,29 @@ public class ConsoleAppTests
         }
     }
 
+    // TDD: BUG-47 - --days に値なしで渡した場合、他フラグ(--token/--instance-url/--max-retries)と
+    // 同様に専用のエラーをstderrに返すか（現状はUsageにフォールスルーしてしまう）
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task FetchCommand_WhenDaysFlagHasNoValue_ReturnsOneAndPrintsError()
+    {
+        var originalError = System.Console.Error;
+        using var stringWriter = new StringWriter();
+        System.Console.SetError(stringWriter);
+
+        try
+        {
+            var args = new[] { "fetch", "--token", "dummy", "--days" };
+            var result = await Program.Main(args);
+            Assert.Equal(1, result);
+            Assert.Contains("--days", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetError(originalError);
+        }
+    }
+
     // TST-24: search にキーワードなし → Usage 表示パス
     [Fact]
     [Trait("Category", "Unit")]
