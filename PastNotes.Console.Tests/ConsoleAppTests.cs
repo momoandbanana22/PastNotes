@@ -407,6 +407,27 @@ public class ConsoleAppTests
         }
     }
 
+    // TDD: BUG-43 - キーワードを省略し --start から書き始めると、フラグ名がそのままキーワード扱いされてしまう
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task SearchCommand_WhenKeywordOmittedButStartFlagGiven_ReturnsOneAndPrintsUsage()
+    {
+        var originalOutput = System.Console.Out;
+        using var stringWriter = new StringWriter();
+        System.Console.SetOut(stringWriter);
+
+        try
+        {
+            var result = await Program.Main(new[] { "search", "--start", "2024-01-01" });
+            Assert.Equal(1, result);
+            Assert.Contains("Usage:", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+        }
+    }
+
     // TST-24: search --end に無効な日付
     [Fact]
     [Trait("Category", "Unit")]

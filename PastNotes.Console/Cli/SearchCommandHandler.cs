@@ -7,7 +7,7 @@ public static class SearchCommandHandler
 {
     public static async Task<int> RunAsync(string[] args)
     {
-        if (args.Length < 2)
+        if (args.Length < 2 || args[1].StartsWith("--"))
         {
             System.Console.WriteLine("Usage: PastNotes.Console search <keyword>");
             return 1;

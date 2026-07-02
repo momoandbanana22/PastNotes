@@ -552,7 +552,7 @@ catch (Exception ex)
 
 ---
 
-### [ ] BUG-43. `search` でキーワードを省略し `--start`/`--end` から書き始めると、フラグ名がそのまま検索キーワードとして扱われる
+### [x] BUG-43. `search` でキーワードを省略し `--start`/`--end` から書き始めると、フラグ名がそのまま検索キーワードとして扱われる
 
 **対象ファイル**: `PastNotes.Console/Cli/SearchCommandHandler.cs`（`args.Length < 2` チェック、`var keyword = args[1];`）
 
@@ -569,6 +569,10 @@ Found 1 notes matching '--start':
 **関連**: BUG-34/36/37 と同種の「値・引数の欠落を無言でスルーする」パターンだが、位置引数（keyword）側は未対応のまま残っていた。CLAUDE.md のテスト観点表「引数の組み合わせ」に該当し、対応するテストも存在しない。
 
 **修正案**: `args[1]` が `--` で始まる場合はキーワード省略とみなし、`Usage: PastNotes.Console search <keyword>` を出力して exit 1 する（`args.Length < 2` のチェックと同様の扱いにする）。
+
+**対処**: TDD で対応。失敗テスト `SearchCommand_WhenKeywordOmittedButStartFlagGiven_ReturnsOneAndPrintsUsage`（`search --start 2024-01-01` で `Usage:` が出て exit 1 になることを検証）を追加し RED を確認した後、`SearchCommandHandler.cs` の `if (args.Length < 2)` を `if (args.Length < 2 || args[1].StartsWith("--"))` に変更して GREEN を確認した。
+
+横展開確認: `args[1]` を Grep で検索し、位置引数（フラグではない必須引数）を受け取るコマンドは `search` の `SearchCommandHandler.cs` のみであることを確認した（`fetch`/`view`/`view-html` は全てフラグのみでオプション引数に位置引数はない）。`PastNotes.Console.Tests` 69件 → 70件、全ユニットテストパス、`dotnet build` 警告0件を確認済み。
 
 ---
 
