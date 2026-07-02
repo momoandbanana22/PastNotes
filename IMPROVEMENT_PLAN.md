@@ -707,7 +707,7 @@ Error: Start date must be before end date               (stderr)
 
 ---
 
-### [ ] BUG-50. 日付範囲バリデーションの例外メッセージが `MisskeyApiClient`/`NoteRepository` と `FetchCommand` で表現が異なる
+### [x] BUG-50. 日付範囲バリデーションの例外メッセージが `MisskeyApiClient`/`NoteRepository` と `FetchCommand` で表現が異なる
 
 **対象ファイル**: `PastNotes/MisskeyApiClient.cs`（`ValidateDateRange`）、`PastNotes/NoteRepository.cs`（`FilterByDateRange`）、`PastNotes.Console/Commands/FetchCommand.cs`（`ExecuteAsync(DateTime, DateTime)`）
 
@@ -717,7 +717,7 @@ Error: Start date must be before end date               (stderr)
 
 **修正案（対応する場合）**: 3箇所とも `"Start date must be before or equal to end date"`（実際の挙動に合わせた表現）に統一する。
 
-**対処**: 未対応。動作に影響しない表記統一のため優先度は低い。
+**対処**: 動作を変えないメッセージ文言統一のためリファクタリングとして対応（CLAUDE.md ルール1により新規テストは追加せず）。事前に `Assert.Equal`/`Assert.Contains` でこれらの例外メッセージ文言を直接検証しているテストがないことを Grep で確認した上で、`MisskeyApiClient.ValidateDateRange`・`NoteRepository.FilterByDateRange` の例外メッセージを `FetchCommand.ExecuteAsync(DateTime, DateTime)` と同じ `"Start date must be before or equal to end date"` に統一した。`dotnet build`（0警告・0エラー）、`PastNotes.Console.Tests` 77件・`PastNotes.Tests` 79件、計156件全ユニットテストパス（件数・内容とも変更なし）を確認済み。
 
 ---
 

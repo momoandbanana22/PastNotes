@@ -178,7 +178,7 @@ public class MisskeyApiClient : IMisskeyApiClient
     {
         if (startDate > endDate)
         {
-            throw new ArgumentException("Start date must be before end date");
+            throw new ArgumentException("Start date must be before or equal to end date");
         }
     }
 
