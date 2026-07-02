@@ -599,6 +599,29 @@ Fetching notes from 2026-06-02 to 2026-07-02 (JST)...
 
 ---
 
+### [x] BUG-45. `dotnet test` 実行中のコンソールログが日本語部分だけ文字化けし、TST-38 の対応後も再現する（TST-30 の適用漏れ）
+
+**対象ファイル**: `PastNotes.Console.Tests/AssemblyConfig.cs`、`PastNotes.Tests/AssemblyConfig.cs`
+
+**問題**: TST-38 でエンドユーザー向けの `.exe` 実行経路は文字化けしないことを確認したが、`dotnet test` のコンソールログ自体は日本語部分（`取得中... N 件` 等）が文字化けしたままだった。これでは「文字化けが解消したかどうか」をユーザー自身がログを見て判断できず、コミット・リリースの可否を判断できないという指摘を受けた。
+
+**根本原因（実験で確認）**: BUG-40（TST-30）は `Program.cs` の `Main` 冒頭で `Console.OutputEncoding = UTF8` を設定するが、これは「`Program.Main()` を呼び出した場合にのみ」有効になる、テスト実行順序に依存した副作用でしかない。以下の対照実験で確認した。
+
+| テストコード | 結果 |
+|---|---|
+| `Console.WriteLine("取得中... 100 件")` を単独で実行 | 文字化けする |
+| `await Program.Main(Array.Empty<string>())` を呼んだ直後に同じ `Console.WriteLine` を実行 | 文字化けしない |
+
+`Console.OutputEncoding` はプロセス全体で共有される静的な状態のため、`Program.Main()` を呼ぶテストがたまたま先に実行されれば以降のテストは"たまたま"文字化けを免れるが、`Program.Main()` を経由しないテスト（`FetchCommand` を直接モックで呼ぶ単体テスト等）や、`Program.Main()` を呼ぶテストより先に実行されるテストでは保護されない。これが TST-38 で `.exe` 単体は問題ないと確認した後も `dotnet test` のログで文字化けが再現した理由である。
+
+**対処**: TDD で対応。`PastNotes.Console.Tests`・`PastNotes.Tests` それぞれに `TestAssemblyInitializerTests.TestAssembly_WhenLoaded_SetsConsoleOutputEncodingToUtf8`（`Console.OutputEncoding.WebName == "utf-8"` を検証）を追加し、実行前は "Codepage - 932" で RED になることを確認した。各 `AssemblyConfig.cs` に `[ModuleInitializer]` 属性を付けた `SetConsoleOutputEncodingToUtf8()` を追加し、CLR がテストアセンブリのロード時に（個々のテストの実行順序に関係なく）必ず一度だけ実行することを利用して GREEN にした。
+
+検証: 一時的に追加した `Console.WriteLine("取得中... 100 件")` を出力するだけのテストを `--logger "console;verbosity=detailed"` 付きで実行し、Bash・PowerShell の両方で文字化けせず表示されることを目視で確認した（確認後、検証用コードは削除）。
+
+`dotnet build`（0警告・0エラー）、`dotnet test --filter "Category=Unit"`（`PastNotes.Console.Tests` 73件・`PastNotes.Tests` 77件、計150件全成功）を確認済み。統合テストは本セッションでは `MISSKEY_INSTANCE_URL`/`MISSKEY_API_TOKEN` が未設定のため未実行。ユーザー環境でフィルタなしの `dotnet test` の実行を依頼する。
+
+---
+
 ## REFACTOR: リファクタリング
 
 *動作を変えずにコード構造・一貫性を改善する変更。*
@@ -1095,7 +1118,7 @@ if (notes == null || !notes.Any())
 
 ---
 
-### [ ] TST-38. ビルド済み `.exe` を実プロセスとして起動し、標準出力の UTF-8 出力を検証するテストがない
+### [x] TST-38. ビルド済み `.exe` を実プロセスとして起動し、標準出力の UTF-8 出力を検証するテストがない
 
 **背景**: `dotnet test` を実行すると、コンソールに以下のような文字化けが出力される（BUG-40 は解消済みだが再発したように見える）。
 
@@ -1109,7 +1132,13 @@ if (notes == null || !notes.Any())
 
 **現状のテストで確認できていないこと**: TST-30 は `Console.OutputEncoding.WebName == "utf-8"` という間接的な状態検証のみで、実際にビルドした `.exe` をプロセスとして起動し、標準出力へ書き込まれる生バイト列が UTF-8 として正しくデコードできることを検証するエンドツーエンドテストは存在しない。このリポジトリには他にプロセス起動（`Process.Start`）を伴うテストの前例もない。
 
-**対応方針**: 未着手。ユーザーの判断待ち（プロセス起動テストは実行が重く・遅くなりやすいため、既存の間接検証で十分とするか、実バイナリ検証を自動化するかはトレードオフがある）。
+**対処**: TDD で対応。`PastNotes.Console.Tests/EndToEndProcessTests.cs` に `RealProcess_WhenViewCommandOutputsJapaneseText_StandardOutputIsValidUtf8`（`Category=Unit`、実 API を使わないため env var 不要）を追加した。
+
+- `ProjectReference` により `PastNotes.Console.Tests` のビルド出力ディレクトリに `PastNotes.Console` の apphost（`PastNotes.exe`、フレームワーク依存）が自動的にコピーされることを `ls` で確認し、`dotnet publish` を伴わずに実プロセス検証ができることを確認した。
+- テストは一時ディレクトリに「添付ファイル」を含む日本語ノートの `notes.json` を作成し、`PastNotes.exe view --show-id` を `Process.Start`（`StandardOutputEncoding = UTF8`）で実行、標準出力に `テスト投稿です`・`添付ファイル:`・`画像ファイル.png` が正しく含まれ、置換文字 `�` が含まれないことを検証する。
+- RED確認: `Program.cs` の `Console.OutputEncoding = UTF8` を一時的にコメントアウトして実行し、`Assert.Contains("テスト投稿です", output)` が `"[2024-01-01 09:00:00] �"` に対して失敗することを確認した。
+- GREEN確認: コメントアウトを元に戻し、対象テストが成功することを確認した。
+- リグレッション確認: `dotnet build`（0警告・0エラー）、`dotnet test --filter "Category=Unit"`（`PastNotes.Console.Tests` 72件・`PastNotes.Tests` 76件、計148件全成功）を確認した。統合テスト（`Category=Integration`）は本セッションでは `MISSKEY_INSTANCE_URL`/`MISSKEY_API_TOKEN` が未設定のため実行していない。ユーザー環境で `dotnet test`（フィルタなし・全テスト）の実行を依頼する。
 
 ---
 
