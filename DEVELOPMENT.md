@@ -40,6 +40,25 @@ dotnet run --project PastNotes.Console/PastNotes.Console.csproj -- view-html --o
 dotnet test PastNotes.Console.Tests/PastNotes.Console.Tests.csproj
 ```
 
+### 配布用ビルド（publish）
+
+エンドユーザー向けに .NET SDK 不要で実行できる自己完結型の単一 .exe をビルドする手順です。
+
+```powershell
+dotnet publish PastNotes.Console/PastNotes.Console.csproj `
+  -c Release `
+  -r win-x64 `
+  --self-contained true `
+  -p:PublishSingleFile=true `
+  -o ./publish
+```
+
+`.\publish\PastNotes.exe` が生成されます。`publish/` は `.gitignore` で除外されているためコミットされません。
+
+```powershell
+.\publish\PastNotes.exe fetch --days 30
+```
+
 ## TDD開発ルール
 
 このプロジェクトではテスト駆動開発（TDD）を採用しています。以下のルールに従って開発を進めてください。
