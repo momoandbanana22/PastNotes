@@ -552,6 +552,45 @@ catch (Exception ex)
 
 ---
 
+### [ ] BUG-43. `search` でキーワードを省略し `--start`/`--end` から書き始めると、フラグ名がそのまま検索キーワードとして扱われる
+
+**対象ファイル**: `PastNotes.Console/Cli/SearchCommandHandler.cs`（`args.Length < 2` チェック、`var keyword = args[1];`）
+
+**問題**: `SearchCommandHandler.RunAsync` は `args.Length < 2` のみを検証しており、`args[1]`（キーワードとして扱われる位置引数）が `--` で始まるオプションかどうかを一切チェックしていない。ユーザーが誤ってキーワードを省略し `pastnotes search --start 2024-01-01` のように実行すると、`args[1]` である `"--start"` という文字列がそのままキーワードとして `SearchCommand.ExecuteAsync` に渡され、日付フィルタも正しく適用された上でエラーなく実行されてしまう。
+
+**具体的な失敗シナリオ**（実際に `.exe` を実行して再現確認済み）:
+```
+$ pastnotes search --start 2024-01-01
+Found 1 notes matching '--start':
+[2024-01-15 09:00:00] hello --start world
+```
+ユーザーは「2024-01-01以降の全ノートを見たい」つもりが、`--start` という文字列を含むノートのみが検索され、意図と異なる結果が無言で返る。
+
+**関連**: BUG-34/36/37 と同種の「値・引数の欠落を無言でスルーする」パターンだが、位置引数（keyword）側は未対応のまま残っていた。CLAUDE.md のテスト観点表「引数の組み合わせ」に該当し、対応するテストも存在しない。
+
+**修正案**: `args[1]` が `--` で始まる場合はキーワード省略とみなし、`Usage: PastNotes.Console search <keyword>` を出力して exit 1 する（`args.Length < 2` のチェックと同様の扱いにする）。
+
+---
+
+### [ ] BUG-44. `fetch` で `--days` と `--start`/`--end` を同時指定すると、`--start`/`--end` が無言で無視される
+
+**対象ファイル**: `PastNotes.Console/Cli/FetchCommandHandler.cs`（`if (daysIdx >= 0 ...) ... else if (sIdx >= 0 ...)` の排他分岐）
+
+**問題**: `daysIdx >= 0 && daysIdx + 1 < args.Length` が真の場合は無条件に `--days` の分岐が使われ、`--start`/`--end` が同時に指定されていても一切参照されない。両方が指定された場合にエラーにする、あるいはどちらが優先されるかをユーザーに通知する処理がない。
+
+**具体的な失敗シナリオ**（実際に `.exe` を実行して再現確認済み）:
+```
+$ pastnotes fetch --days 30 --start 2024-01-01 --end 2024-01-31 --token dummy
+Fetching notes from 2026-06-02 to 2026-07-02 (JST)...
+```
+ユーザーが指定した `--start 2024-01-01 --end 2024-01-31` は完全に無視され、警告もなく直近30日分の期間で実行される。README・DEVELOPMENT.md にもこの組み合わせの挙動の記載はない。
+
+**関連**: BUG-43 と同じ根本原因（手書きの `Array.IndexOf` ベース引数解析に組み合わせ検証がない）。DESIGN-7 で許容された「`System.CommandLine` 未導入」というトレードオフの範囲内で個別に対処する。
+
+**修正案**: `daysIdx >= 0` かつ（`sIdx >= 0` または `eIdx >= 0`）の場合は `"Error: --days cannot be used together with --start/--end"` を出力して exit 1 する。
+
+---
+
 ## REFACTOR: リファクタリング
 
 *動作を変えずにコード構造・一貫性を改善する変更。*
