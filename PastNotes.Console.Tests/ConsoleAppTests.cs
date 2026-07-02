@@ -537,6 +537,29 @@ public class ConsoleAppTests
         }
     }
 
+    // TDD: BUG-44 - --days と --start/--end を同時指定すると --start/--end が無言で無視されるべきではない
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task FetchCommand_WhenDaysAndStartEndBothProvided_ReturnsOneAndPrintsError()
+    {
+        var originalError = System.Console.Error;
+        using var stringWriter = new StringWriter();
+        System.Console.SetError(stringWriter);
+
+        try
+        {
+            var args = new[] { "fetch", "--days", "30", "--start", "2024-01-01", "--end", "2024-01-31", "--token", "dummy-token" };
+            var result = await Program.Main(args);
+            Assert.Equal(1, result);
+            Assert.Contains("--days", stringWriter.ToString());
+            Assert.Contains("--start", stringWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetError(originalError);
+        }
+    }
+
     // TST-24: view-html コマンド（ノートなし）パス
     [Fact]
     [Trait("Category", "Unit")]

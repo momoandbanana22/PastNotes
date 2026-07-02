@@ -576,7 +576,7 @@ Found 1 notes matching '--start':
 
 ---
 
-### [ ] BUG-44. `fetch` で `--days` と `--start`/`--end` を同時指定すると、`--start`/`--end` が無言で無視される
+### [x] BUG-44. `fetch` で `--days` と `--start`/`--end` を同時指定すると、`--start`/`--end` が無言で無視される
 
 **対象ファイル**: `PastNotes.Console/Cli/FetchCommandHandler.cs`（`if (daysIdx >= 0 ...) ... else if (sIdx >= 0 ...)` の排他分岐）
 
@@ -592,6 +592,10 @@ Fetching notes from 2026-06-02 to 2026-07-02 (JST)...
 **関連**: BUG-43 と同じ根本原因（手書きの `Array.IndexOf` ベース引数解析に組み合わせ検証がない）。DESIGN-7 で許容された「`System.CommandLine` 未導入」というトレードオフの範囲内で個別に対処する。
 
 **修正案**: `daysIdx >= 0` かつ（`sIdx >= 0` または `eIdx >= 0`）の場合は `"Error: --days cannot be used together with --start/--end"` を出力して exit 1 する。
+
+**対処**: TDD で対応。失敗テスト `FetchCommand_WhenDaysAndStartEndBothProvided_ReturnsOneAndPrintsError`（`--days 30 --start 2024-01-01 --end 2024-01-31` を同時指定すると stderr にエラーが出て exit 1 になることを検証）を追加し、実際には認証エラー（"Failed to authenticate..."）で失敗して RED になることを確認した後、`FetchCommandHandler.cs` の引数パース冒頭に `if (daysIdx >= 0 && (sIdx >= 0 || eIdx >= 0)) { ...; return 1; }` を追加して GREEN を確認した。
+
+横展開確認: `search`/`view` は `--start`/`--end` 同士の組み合わせのみで、互いに排他的な関係にあるフラグの組は `fetch` の `--days` vs `--start`/`--end` 以外に存在しないことを確認した。`PastNotes.Console.Tests` 70件 → 71件、全ユニットテストパス、`dotnet build` 警告0件を確認済み。
 
 ---
 
