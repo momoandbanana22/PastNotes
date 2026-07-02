@@ -76,6 +76,12 @@ public static class FetchCommandHandler
                     return 1;
                 }
 
+                if (days < 0)
+                {
+                    System.Console.Error.WriteLine("Error: --days must be a non-negative number");
+                    return 1;
+                }
+
                 var result = await fetchCommand.ExecuteAsync(days);
                 return result;
             }

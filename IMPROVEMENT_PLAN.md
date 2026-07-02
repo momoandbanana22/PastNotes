@@ -672,7 +672,7 @@ Note: Date ranges are treated as JST (Japan Standard Time)
 
 ---
 
-### [ ] BUG-48. `fetch --days` に負の値を渡すと、原因が分かりにくいエラーになる
+### [x] BUG-48. `fetch --days` に負の値を渡すと、原因が分かりにくいエラーになる
 
 **対象ファイル**: `PastNotes.Console/Commands/FetchCommand.cs`（`ExecuteAsync(int days)`）、`PastNotes/MisskeyApiClient.cs`（`ValidateDateRange`）
 
@@ -686,6 +686,8 @@ Error: Start date must be before end date               (stderr)
 ```
 
 **修正案**: `FetchCommandHandler.cs` の `int.TryParse(args[daysIdx + 1], out int days)` 直後に `days < 0` のチェックを追加し、`Error: --days must be a non-negative number` 等を `stderr` に出力して return 1 する（`Fetching notes from...` の出力より前段で止める）。
+
+**対処**: TDD で対応。失敗テスト `ConsoleAppTests.FetchCommand_WhenDaysIsNegative_ReturnsOneAndPrintsError`（`fetch --token dummy --days -5` で stderr に `--days` を含むエラーが出て exit 1、stdout に `Fetching notes from` が出ないことを検証）を追加し、実際には `ValidateDateRange` 由来の `"Start date must be before end date"` のみが stderr に出て `--days` という文言がなく RED になることを確認した後、`FetchCommandHandler.cs` の `int.TryParse` 成功直後に `if (days < 0) { Error: --days must be a non-negative number; return 1; }` を追加して GREEN を確認した。これにより `FetchCommand.ExecuteAsync(days)` 呼び出し自体が行われなくなり、`Fetching notes from...` の矛盾した出力も発生しなくなる。`dotnet build`（0警告・0エラー）、`PastNotes.Console.Tests` 74件 → 75件、全ユニットテストパス。
 
 ---
 

@@ -409,6 +409,35 @@ public class ConsoleAppTests
         }
     }
 
+    // TDD: BUG-48 - --days に負の値を渡すと、原因(--days)を名指ししたエラーになるか。
+    // 修正前は ValidateDateRange の "Start date must be before end date" が投げられるだけで、
+    // --days が原因だと分からない上に "Fetching notes from..." がstdoutに出てしまっていた。
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task FetchCommand_WhenDaysIsNegative_ReturnsOneAndPrintsError()
+    {
+        var originalOutput = System.Console.Out;
+        var originalError = System.Console.Error;
+        using var outWriter = new StringWriter();
+        using var errWriter = new StringWriter();
+        System.Console.SetOut(outWriter);
+        System.Console.SetError(errWriter);
+
+        try
+        {
+            var args = new[] { "fetch", "--token", "dummy", "--days", "-5" };
+            var result = await Program.Main(args);
+            Assert.Equal(1, result);
+            Assert.Contains("--days", errWriter.ToString());
+            Assert.DoesNotContain("Fetching notes from", outWriter.ToString());
+        }
+        finally
+        {
+            System.Console.SetOut(originalOutput);
+            System.Console.SetError(originalError);
+        }
+    }
+
     // TST-24: search にキーワードなし → Usage 表示パス
     [Fact]
     [Trait("Category", "Unit")]
